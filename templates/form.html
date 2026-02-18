@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+<title>Question Paper Generator</title>
+
+<link rel="stylesheet" href="/static/css/style.css">
+
+</head>
+
+<body>
+
+<div class="app">
+
+<div class="header">
+
+<h1>Question Paper Generator</h1>
+
+<p>Professional exam papers powered by AI</p>
+
+</div>
+
+<div class="card">
+
+<div class="grid">
+
+<select id="standard">
+<option>6</option>
+<option>7</option>
+<option>8</option>
+<option>9</option>
+<option selected>10</option>
+</select>
+
+<select id="board">
+<option>CBSE</option>
+<option>ICSE</option>
+<option>State Board</option>
+<option>IB</option>
+</select>
+
+<select id="subject">
+<option>Mathematics</option>
+<option>Science</option>
+<option>English</option>
+<option>Social Studies</option>
+</select>
+
+<select id="difficulty">
+<option>Easy</option>
+<option selected>Medium</option>
+<option>Hard</option>
+<option>Mixed</option>
+</select>
+
+<select id="marks">
+<option>20</option>
+<option>40</option>
+<option>60</option>
+<option>80</option>
+<option selected>100</option>
+</select>
+
+</div>
+
+<textarea id="instructions"
+placeholder="Custom instructions (optional)">
+</textarea>
+
+<button onclick="generatePaper()" id="generateBtn">
+
+Generate Paper
+
+</button>
+
+</div>
+
+<div class="card">
+
+<div class="toolbar">
+
+<button onclick="downloadPDF()">Download PDF</button>
+
+<button onclick="copyPaper()">Copy</button>
+
+</div>
+
+<pre id="output">
+
+Your generated question paper will appear here.
+
+</pre>
+
+</div>
+
+</div>
+
+<script src="/static/js/app.js"></script>
+
+</body>
+</html>

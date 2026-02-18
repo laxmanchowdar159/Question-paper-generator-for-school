@@ -1,0 +1,107 @@
+body {
+
+margin:0;
+
+font-family: system-ui;
+
+background: linear-gradient(135deg,#0f172a,#1e293b);
+
+color:white;
+
+}
+
+.app {
+
+max-width:900px;
+
+margin:auto;
+
+padding:20px;
+
+}
+
+.header {
+
+text-align:center;
+
+margin-bottom:20px;
+
+}
+
+.card {
+
+background: rgba(30,41,59,0.8);
+
+padding:20px;
+
+border-radius:12px;
+
+margin-bottom:20px;
+
+}
+
+.grid {
+
+display:grid;
+
+grid-template-columns:1fr 1fr;
+
+gap:12px;
+
+}
+
+select, textarea {
+
+width:100%;
+
+padding:12px;
+
+border-radius:8px;
+
+border:none;
+
+background:#0f172a;
+
+color:white;
+
+}
+
+button {
+
+background:#3b82f6;
+
+border:none;
+
+padding:12px;
+
+border-radius:8px;
+
+color:white;
+
+cursor:pointer;
+
+}
+
+button:hover {
+
+background:#2563eb;
+
+}
+
+.toolbar {
+
+display:flex;
+
+gap:10px;
+
+margin-bottom:10px;
+
+}
+
+pre {
+
+white-space:pre-wrap;
+
+line-height:1.6;
+
+}

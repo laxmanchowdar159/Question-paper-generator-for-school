@@ -1,5 +1,4 @@
 flask
 openai
-reportlab
-python-docx
-python-dotenv
+fpdf2
+gunicorn
