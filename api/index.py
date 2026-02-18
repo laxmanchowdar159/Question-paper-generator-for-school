@@ -12,8 +12,8 @@ from dotenv import load_dotenv
 app = Flask(__name__, template_folder="../templates", static_folder="../static")
 
 load_dotenv()
-client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
 
+client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
 HISTORY_FILE = "history.json"
 
 generated_cache = {"paper": ""}
