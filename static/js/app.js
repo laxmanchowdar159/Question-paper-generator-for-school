@@ -78,20 +78,58 @@ function showMessage(text, type) {
     }
 }
 
-function prepareSubjectChapters() {
+async function prepareSubjectChapters() {
     const subj = document.getElementById('subject');
+    const classEl = document.getElementById('standard');
+    const boardEl = document.getElementById('board');
     const chap = document.getElementById('chapter');
-    subj.addEventListener('change', () => {
-        const list = chaptersBySubject[subj.value] || [];
-        chap.innerHTML = '<option value="" disabled selected>Choose a chapter...</option>';
-        list.forEach(c => {
-            const opt = document.createElement('option');
-            opt.value = c;
-            opt.textContent = c;
-            chap.appendChild(opt);
-        });
-        chap.disabled = list.length === 0;
-    });
+    
+    const loadChapters = async () => {
+        const subject = subj.value;
+        const classNum = classEl.value;
+        const board = boardEl.value;
+        
+        if (!subject || !classNum) {
+            chap.innerHTML = '<option value="" disabled selected>Choose a chapter...</option>';
+            chap.disabled = true;
+            return;
+        }
+        
+        chap.innerHTML = '<option value="" disabled selected>Loading chapters...</option>';
+        chap.disabled = true;
+        
+        try {
+            const res = await fetch('/get-chapters', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ class: classNum, subject: subject, board: board })
+            });
+            
+            const data = await res.json();
+            
+            if (data.success && data.chapters.length > 0) {
+                chap.innerHTML = '<option value="" disabled selected>Choose a chapter...</option>';
+                data.chapters.forEach(c => {
+                    const opt = document.createElement('option');
+                    opt.value = c;
+                    opt.textContent = c;
+                    chap.appendChild(opt);
+                });
+                chap.disabled = false;
+            } else {
+                chap.innerHTML = '<option value="" disabled selected>No chapters found</option>';
+                chap.disabled = true;
+            }
+        } catch (err) {
+            console.error('Failed to load chapters:', err);
+            chap.innerHTML = '<option value="" disabled selected>Error loading chapters</option>';
+            chap.disabled = true;
+        }
+    };
+    
+    subj.addEventListener('change', loadChapters);
+    classEl.addEventListener('change', loadChapters);
+    boardEl.addEventListener('change', loadChapters);
 }
 
 async function generatePaper() {
@@ -101,7 +139,7 @@ async function generatePaper() {
 
     generateBtn.disabled = true;
     generateBtn.innerHTML = '<span class="emoji">🚀</span> Generating...<span class="spinner"></span>';
-    modal.classList.add('show');
+    modal.style.display = 'flex';
 
     try {
         const formData = new FormData();
@@ -164,7 +202,7 @@ async function generatePaper() {
     } finally {
         generateBtn.disabled = false;
         generateBtn.innerHTML = '<span class="emoji">🚀</span> Generate Paper';
-        modal.classList.remove('show');
+        modal.style.display = 'none';
     }
 }
 

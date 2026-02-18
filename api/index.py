@@ -177,6 +177,35 @@ def split_key(text: str) -> Tuple[str, Optional[str]]:
     main, key = match[0].strip(), match[1].strip()
     return main, key
 
+
+def get_chapters_from_openai(class_num: str, subject: str, board: str) -> list:
+    """ExamCraft: Fetch available chapters for given class, subject, and board from OpenAI."""
+    prompt = f"""You are an educational expert. List ONLY the chapter names for {subject} in class {class_num} from {board} curriculum.
+    Format: Return ONLY a comma-separated list of chapter names without numbering. Be brief.
+    Example: "Real Numbers, Polynomials, Linear Equations, Quadratic Equations"
+    """
+    
+    response = client.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=[
+            {
+                "role": "system",
+                "content": "You are an educational curriculum expert. Return concise lists of chapter names."
+            },
+            {
+                "role": "user",
+                "content": prompt
+            }
+        ],
+        temperature=0.5,
+        max_tokens=200
+    )
+    
+    chapters_text = response.choices[0].message.content.strip()
+    # Split by comma and clean up
+    chapters = [ch.strip() for ch in chapters_text.split(",") if ch.strip()]
+    return chapters
+
 @app.route("/generate", methods=["POST"])
 def generate():
     try:
@@ -226,6 +255,34 @@ def generate():
         return jsonify({
             "success": False,
             "error": str(e)
+        }), 500
+
+
+@app.route("/get-chapters", methods=["POST"])
+def get_chapters():
+    """Get available chapters for the selected class, subject, and board."""
+    try:
+        data = request.json or {}
+        
+        class_num = data.get("class")
+        subject = data.get("subject")
+        board = data.get("board", "Andhra Board")
+        
+        if not class_num or not subject:
+            raise ValueError("Class and subject are required")
+        
+        chapters = get_chapters_from_openai(class_num, subject, board)
+        
+        return jsonify({
+            "success": True,
+            "chapters": chapters
+        })
+    except Exception as e:
+        app.logger.error("get_chapters() failed", exc_info=e)
+        return jsonify({
+            "success": False,
+            "error": str(e),
+            "chapters": []
         }), 500
 
 
