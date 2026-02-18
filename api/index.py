@@ -7,9 +7,11 @@ from io import BytesIO
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
 from docx import Document
+from dotenv import load_dotenv
 
 app = Flask(__name__, template_folder="../templates", static_folder="../static")
 
+load_dotenv()
 client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
 
 HISTORY_FILE = "history.json"

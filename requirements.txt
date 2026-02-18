@@ -2,3 +2,4 @@ flask
 openai
 reportlab
 python-docx
+python-dotenv
