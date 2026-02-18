@@ -1,96 +1,121 @@
 <!DOCTYPE html>
 <html>
 <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Premium Question Paper Generator</title>
+    <!-- Google font -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
 
-<title>Question Paper Generator</title>
-
-<link rel="stylesheet" href="/static/css/style.css">
-
+    <link rel="stylesheet" href="/static/css/style.css">
 </head>
 
 <body>
 
 <div class="app">
 
-<div class="header">
+<header class="header">
+    <h1>📝 Premium Question Paper Generator</h1>
+    <p>Generate beautifully formatted exam papers — now with Andhra Board support.</p>
+    <button id="themeToggle" class="theme-btn" title="Toggle light/dark">🌙</button>
+</header>
 
-<h1>Question Paper Generator</h1>
+<section class="card form-card">
+    <div class="grid">
+        <div class="form-group">
+            <label for="user_name">Your Name
+                <span class="tooltip" title="Optional: will appear on the paper">🛈</span>
+            </label>
+            <input type="text" id="user_name" placeholder="e.g. Mrs. Rao">
+        </div>
+        <div class="form-group">
+            <label for="school_name">School Name
+                <span class="tooltip" title="Optional: included in header">🛈</span>
+            </label>
+            <input type="text" id="school_name" placeholder="e.g. Sunrise High School">
+        </div>
+        <div class="form-group">
+            <label for="standard">Class</label>
+            <select id="standard">
+                <option>6</option>
+                <option>7</option>
+                <option>8</option>
+                <option>9</option>
+                <option selected>10</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="board">Board</label>
+            <select id="board">
+                <option>Andhra Board</option>
+                <option>CBSE</option>
+                <option>ICSE</option>
+                <option>State Board</option>
+                <option>IB</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="subject">Subject</label>
+            <select id="subject">
+                <option>Mathematics</option>
+                <option>Science</option>
+                <option>English</option>
+                <option>Social Studies</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="difficulty">Difficulty</label>
+            <select id="difficulty">
+                <option>Easy</option>
+                <option selected>Medium</option>
+                <option>Hard</option>
+                <option>Mixed</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="marks">Total Marks</label>
+            <select id="marks">
+                <option>20</option>
+                <option>40</option>
+                <option>60</option>
+                <option>80</option>
+                <option selected>100</option>
+            </select>
+        </div>
+    </div>
 
-<p>Professional exam papers powered by AI</p>
+    <div class="form-group full-width">
+        <label for="instructions">Additional Instructions</label>
+        <textarea id="instructions" placeholder="Custom instructions (optional)"></textarea>
+    </div>
+    <div class="form-group">
+        <label>
+            <input type="checkbox" id="include_key">
+            Include answer key
+            <span class="tooltip" title="Generates the answer key on a new page in the PDF">🛈</span>
+        </label>
+    </div>
 
-</div>
+    <button onclick="generatePaper()" id="generateBtn">
+        Generate Paper <span id="spinner" class="spinner hidden"></span>
+    </button>
+</section>
+
+<div class="message" id="message"></div>
 
 <div class="card">
-
-<div class="grid">
-
-<select id="standard">
-<option>6</option>
-<option>7</option>
-<option>8</option>
-<option>9</option>
-<option selected>10</option>
-</select>
-
-<select id="board">
-<option>CBSE</option>
-<option>ICSE</option>
-<option>State Board</option>
-<option>IB</option>
-</select>
-
-<select id="subject">
-<option>Mathematics</option>
-<option>Science</option>
-<option>English</option>
-<option>Social Studies</option>
-</select>
-
-<select id="difficulty">
-<option>Easy</option>
-<option selected>Medium</option>
-<option>Hard</option>
-<option>Mixed</option>
-</select>
-
-<select id="marks">
-<option>20</option>
-<option>40</option>
-<option>60</option>
-<option>80</option>
-<option selected>100</option>
-</select>
-
-</div>
-
-<textarea id="instructions"
-placeholder="Custom instructions (optional)">
-</textarea>
-
-<button onclick="generatePaper()" id="generateBtn">
-
-Generate Paper
-
-</button>
-
-</div>
-
-<div class="card">
-
-<div class="toolbar">
-
-<button onclick="downloadPDF()">Download PDF</button>
-
-<button onclick="copyPaper()">Copy</button>
-
-</div>
-
-<pre id="output">
-
-Your generated question paper will appear here.
-
-</pre>
-
+    <div class="toolbar">
+        <button onclick="downloadPDF()" id="downloadBtn" disabled>Download PDF</button>
+        <button onclick="copyPaper()" id="copyBtn" disabled>Copy</button>
+    </div>
+    <pre id="output">
+        Your generated question paper will appear here.
+    </pre>
+    <pre id="keyOutput" class="hidden">
+        Answer key will appear here if included.
+    </pre>
 </div>
 
 </div>
