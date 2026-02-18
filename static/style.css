@@ -1,0 +1,91 @@
+body {
+
+    font-family: Arial, sans-serif;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    margin: 0;
+    padding: 20px;
+}
+
+.container {
+
+    max-width: 900px;
+    margin: auto;
+}
+
+.card {
+
+    background: white;
+    padding: 25px;
+    border-radius: 12px;
+    margin-bottom: 20px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+}
+
+.subtitle {
+
+    color: gray;
+    margin-bottom: 20px;
+}
+
+.grid {
+
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+}
+
+.field label {
+
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+}
+
+select {
+
+    width: 100%;
+    padding: 10px;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+}
+
+button {
+
+    margin-top: 20px;
+    width: 100%;
+    padding: 12px;
+    background: #667eea;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 16px;
+    cursor: pointer;
+}
+
+button:hover {
+
+    background: #556cd6;
+}
+
+.output-card {
+
+    min-height: 300px;
+}
+
+.output-header {
+
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.copy-btn {
+
+    width: auto;
+    padding: 8px 12px;
+}
+
+pre {
+
+    white-space: pre-wrap;
+}

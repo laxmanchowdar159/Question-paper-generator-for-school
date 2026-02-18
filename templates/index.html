@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Question Paper Generator</title>
+
+<link rel="stylesheet" href="/static/style.css">
+
+</head>
+<body>
+
+<div class="container">
+
+    <div class="card">
+
+        <h1>📘 Question Paper Generator</h1>
+        <p class="subtitle">Generate professional exam papers instantly</p>
+
+        <div class="grid">
+
+            <div class="field">
+                <label>Subject</label>
+                <select id="subject">
+                    <option>Mathematics</option>
+                    <option>Science</option>
+                    <option>English</option>
+                    <option>Social Studies</option>
+                </select>
+            </div>
+
+            <div class="field">
+                <label>Class</label>
+                <select id="class">
+                    <option>6</option>
+                    <option>7</option>
+                    <option>8</option>
+                    <option>9</option>
+                    <option>10</option>
+                </select>
+            </div>
+
+            <div class="field">
+                <label>Board</label>
+                <select id="board">
+                    <option>CBSE</option>
+                    <option>ICSE</option>
+                    <option>State Board</option>
+                    <option>IB</option>
+                </select>
+            </div>
+
+            <div class="field">
+                <label>Marks</label>
+                <select id="marks">
+                    <option>20</option>
+                    <option>40</option>
+                    <option>60</option>
+                    <option>80</option>
+                    <option>100</option>
+                </select>
+            </div>
+
+        </div>
+
+        <button onclick="generatePaper()" id="generateBtn">
+            Generate Paper
+        </button>
+
+    </div>
+
+    <div class="card output-card">
+
+        <div class="output-header">
+            <h2>Generated Paper</h2>
+
+            <button onclick="copyPaper()" class="copy-btn">
+                Copy
+            </button>
+        </div>
+
+        <pre id="output">Your generated paper will appear here...</pre>
+
+    </div>
+
+</div>
+
+<script>
+
+async function generatePaper() {
+
+    const btn = document.getElementById("generateBtn");
+    btn.innerText = "Generating...";
+    btn.disabled = true;
+
+    const response = await fetch("/api/generate-paper", {
+
+        method: "POST",
+
+        headers: {
+            "Content-Type": "application/json"
+        },
+
+        body: JSON.stringify({
+
+            subject: document.getElementById("subject").value,
+            class: document.getElementById("class").value,
+            board: document.getElementById("board").value,
+            marks: document.getElementById("marks").value
+
+        })
+    });
+
+    const data = await response.json();
+
+    document.getElementById("output").innerText = data.paper;
+
+    btn.innerText = "Generate Paper";
+    btn.disabled = false;
+}
+
+
+function copyPaper() {
+
+    const text = document.getElementById("output").innerText;
+
+    navigator.clipboard.writeText(text);
+
+    alert("Copied to clipboard!");
+
+}
+
+</script>
+
+</body>
+</html>
