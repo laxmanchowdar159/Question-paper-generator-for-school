@@ -1,138 +1,80 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-<title>Question Paper Generator</title>
-
+<title>Question Paper Generator Pro</title>
 <link rel="stylesheet" href="/static/style.css">
-
 </head>
 <body>
 
-<div class="container">
+<div class="app">
 
-    <div class="card">
+<h1>Question Paper Generator Pro</h1>
 
-        <h1>📘 Question Paper Generator</h1>
-        <p class="subtitle">Generate professional exam papers instantly</p>
+<div class="card">
 
-        <div class="grid">
+<h3>Select Subjects</h3>
 
-            <div class="field">
-                <label>Subject</label>
-                <select id="subject">
-                    <option>Mathematics</option>
-                    <option>Science</option>
-                    <option>English</option>
-                    <option>Social Studies</option>
-                </select>
-            </div>
+<label><input type="checkbox" value="Mathematics"> Mathematics</label>
+<label><input type="checkbox" value="Science"> Science</label>
+<label><input type="checkbox" value="English"> English</label>
+<label><input type="checkbox" value="Social Studies"> Social Studies</label>
 
-            <div class="field">
-                <label>Class</label>
-                <select id="class">
-                    <option>6</option>
-                    <option>7</option>
-                    <option>8</option>
-                    <option>9</option>
-                    <option>10</option>
-                </select>
-            </div>
+<select id="class">
+<option>6</option>
+<option>7</option>
+<option>8</option>
+<option>9</option>
+<option>10</option>
+</select>
 
-            <div class="field">
-                <label>Board</label>
-                <select id="board">
-                    <option>CBSE</option>
-                    <option>ICSE</option>
-                    <option>State Board</option>
-                    <option>IB</option>
-                </select>
-            </div>
+<select id="board">
+<option>CBSE</option>
+<option>ICSE</option>
+<option>State Board</option>
+<option>IB</option>
+</select>
 
-            <div class="field">
-                <label>Marks</label>
-                <select id="marks">
-                    <option>20</option>
-                    <option>40</option>
-                    <option>60</option>
-                    <option>80</option>
-                    <option>100</option>
-                </select>
-            </div>
+<select id="marks">
+<option>20</option>
+<option>40</option>
+<option>60</option>
+<option>80</option>
+<option>100</option>
+</select>
 
-        </div>
+<select id="difficulty">
+<option>Easy</option>
+<option>Medium</option>
+<option>Hard</option>
+<option>Mixed</option>
+</select>
 
-        <button onclick="generatePaper()" id="generateBtn">
-            Generate Paper
-        </button>
+<textarea id="instructions" placeholder="Custom instructions"></textarea>
 
-    </div>
-
-    <div class="card output-card">
-
-        <div class="output-header">
-            <h2>Generated Paper</h2>
-
-            <button onclick="copyPaper()" class="copy-btn">
-                Copy
-            </button>
-        </div>
-
-        <pre id="output">Your generated paper will appear here...</pre>
-
-    </div>
+<button onclick="generate()">Generate</button>
 
 </div>
 
-<script>
+<div class="card">
 
-async function generatePaper() {
+<button onclick="downloadPDF()">Download PDF</button>
+<button onclick="downloadWord()">Export Word</button>
 
-    const btn = document.getElementById("generateBtn");
-    btn.innerText = "Generating...";
-    btn.disabled = true;
+<pre id="output"></pre>
 
-    const response = await fetch("/api/generate-paper", {
+</div>
 
-        method: "POST",
+<div class="card">
 
-        headers: {
-            "Content-Type": "application/json"
-        },
+<h3>History</h3>
 
-        body: JSON.stringify({
+<div id="history"></div>
 
-            subject: document.getElementById("subject").value,
-            class: document.getElementById("class").value,
-            board: document.getElementById("board").value,
-            marks: document.getElementById("marks").value
+</div>
 
-        })
-    });
+</div>
 
-    const data = await response.json();
-
-    document.getElementById("output").innerText = data.paper;
-
-    btn.innerText = "Generate Paper";
-    btn.disabled = false;
-}
-
-
-function copyPaper() {
-
-    const text = document.getElementById("output").innerText;
-
-    navigator.clipboard.writeText(text);
-
-    alert("Copied to clipboard!");
-
-}
-
-</script>
+<script src="/static/script.js"></script>
 
 </body>
 </html>
