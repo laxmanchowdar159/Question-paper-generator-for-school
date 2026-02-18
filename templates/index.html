@@ -9,116 +9,273 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
 
+    <!-- external stylesheet; absolute path ensures proper loading on Vercel -->
     <link rel="stylesheet" href="/static/css/style.css">
+
+    <!-- inline fallback in case the external CSS isn't loaded -->
+    <style>
+        body {
+            margin: 0;
+            font-family: 'Poppins', system-ui, sans-serif;
+            background: #f4f6f8;
+            color: #1e293b;
+        }
+        .app {
+            max-width: 900px;
+            margin: auto;
+            padding: 20px;
+        }
+        .header {
+            position: relative;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .theme-btn {
+            position: absolute;
+            top: 0;
+            right: 0;
+            background: transparent;
+            border: none;
+            font-size: 1.4rem;
+            cursor: pointer;
+        }
+        .card,
+        .form-card {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+        }
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+        .full-width {
+            grid-column: 1 / -1;
+        }
+        select, textarea, input[type="text"] {
+            width:100%;
+            padding:12px;
+            border-radius:8px;
+            border:1px solid #cbd5e1;
+            background:#ffffff;
+            color:#1e293b;
+        }
+        .form-group label {
+            display:block;
+            margin-bottom:4px;
+            font-size:0.9rem;
+            font-weight:600;
+        }
+        button {
+            background:#3b82f6;
+            border:none;
+            padding:12px 24px;
+            border-radius:8px;
+            color:white;
+            cursor:pointer;
+            font-size:1rem;
+            font-weight:600;
+        }
+        button:disabled,
+        button.disabled {
+            background:#6b7280;
+            cursor:not-allowed;
+        }
+        .spinner {
+            border:4px solid rgba(255,255,255,0.3);
+            border-top:4px solid white;
+            border-radius:50%;
+            width:20px;
+            height:20px;
+            animation:spin 1s linear infinite;
+            display:inline-block;
+            vertical-align:middle;
+            margin-left:8px;
+        }
+        .hidden { display:none; }
+        @keyframes spin { 0% { transform:rotate(0deg);} 100% { transform:rotate(360deg);} }
+        .message {
+            margin-bottom:10px;
+            min-height:1.2em;
+            font-weight:600;
+        }
+        .message.error { color:#ef4444; }
+        .message.success { color:#10b981; }
+        pre {
+            white-space:pre-wrap;
+            line-height:1.6;
+            background:#f9fafb;
+            padding:15px;
+            border-radius:8px;
+            overflow-x:auto;
+        }
+        .toolbar {
+            display:flex;
+            gap:10px;
+            margin-bottom:10px;
+        }
+        .tooltip {
+            font-size:0.9rem;
+            cursor:help;
+            margin-left:4px;
+        }
+        body.dark {
+            background:#1e293b;
+            color:#f1f5f9;
+        }
+        body.dark .card,
+        body.dark .form-card {
+            background:#334155;
+        }
+        body.dark input, body.dark select, body.dark textarea {
+            background:#475569;
+            color:#f1f5f9;
+            border:1px solid #64748b;
+        }
+        body.dark button {
+            background:#6366f1;
+        }
+        body.dark .message.success { color:#4ade80; }
+        body.dark .message.error { color:#f87171; }
+    </style>
 </head>
 
 <body>
 
-<div class="app">
-
-<header class="header">
+<main class="container">
+  <div class="header-section">
     <h1>📝 Premium Question Paper Generator</h1>
-    <p>Generate beautifully formatted exam papers — now with Andhra Board support.</p>
+    <p class="tagline">Generate beautifully formatted exam papers — now with Andhra Board support.</p>
     <button id="themeToggle" class="theme-btn" title="Toggle light/dark">🌙</button>
-</header>
+  </div>
 
-<section class="card form-card">
-    <div class="grid">
-        <div class="form-group">
-            <label for="user_name">Your Name
-                <span class="tooltip" title="Optional: will appear on the paper">🛈</span>
-            </label>
-            <input type="text" id="user_name" placeholder="e.g. Mrs. Rao">
-        </div>
-        <div class="form-group">
-            <label for="school_name">School Name
-                <span class="tooltip" title="Optional: included in header">🛈</span>
-            </label>
-            <input type="text" id="school_name" placeholder="e.g. Sunrise High School">
-        </div>
-        <div class="form-group">
-            <label for="standard">Class</label>
-            <select id="standard">
-                <option>6</option>
-                <option>7</option>
-                <option>8</option>
-                <option>9</option>
-                <option selected>10</option>
-            </select>
-        </div>
-        <div class="form-group">
-            <label for="board">Board</label>
-            <select id="board">
-                <option>Andhra Board</option>
-                <option>CBSE</option>
-                <option>ICSE</option>
-                <option>State Board</option>
-                <option>IB</option>
-            </select>
-        </div>
-        <div class="form-group">
-            <label for="subject">Subject</label>
-            <select id="subject">
-                <option>Mathematics</option>
-                <option>Science</option>
-                <option>English</option>
-                <option>Social Studies</option>
-            </select>
-        </div>
-        <div class="form-group">
-            <label for="difficulty">Difficulty</label>
-            <select id="difficulty">
-                <option>Easy</option>
-                <option selected>Medium</option>
-                <option>Hard</option>
-                <option>Mixed</option>
-            </select>
-        </div>
-        <div class="form-group">
-            <label for="marks">Total Marks</label>
-            <select id="marks">
-                <option>20</option>
-                <option>40</option>
-                <option>60</option>
-                <option>80</option>
-                <option selected>100</option>
-            </select>
-        </div>
-    </div>
+  <form id="paperForm" novalidate>
+    <div class="form-grid">
+      <div class="card">
+        <label for="user_name">Your Name</label>
+        <input type="text" id="user_name" placeholder="e.g. Mrs. Rao">
+        <small class="hint-text">Optional: will appear on the paper.</small>
+      </div>
+      <div class="card">
+        <label for="school_name">School Name</label>
+        <input type="text" id="school_name" placeholder="e.g. Sunrise High School">
+        <small class="hint-text">Optional: included in header.</small>
+      </div>
+      <div class="card">
+        <label for="standard">Class</label>
+        <select id="standard">
+            <option>6</option>
+            <option>7</option>
+            <option>8</option>
+            <option>9</option>
+            <option selected>10</option>
+        </select>
+      </div>
+      <div class="card">
+        <label for="board">Board</label>
+        <select id="board">
+            <option>Andhra Board</option>
+            <option>CBSE</option>
+            <option>ICSE</option>
+            <option>State Board</option>
+            <option>IB</option>
+        </select>
+      </div>
+      <div class="card">
+        <label for="subject">Subject</label>
+        <select id="subject">
+            <option>Mathematics</option>
+            <option>Science</option>
+            <option>English</option>
+            <option>Social Studies</option>
+        </select>
+      </div>
+      <div class="card">
+        <label for="chapter">Chapter</label>
+        <select id="chapter" disabled>
+            <option value="" disabled selected>Choose a chapter...</option>
+        </select>
+      </div>
+      <div class="card">
+        <label><span class="emoji">🎯</span> Difficulty</label>
+        <div class="difficulty-options">
+          <input type="radio" id="easy" name="difficulty" value="Easy">
+          <label for="easy" class="radio-label">Easy</label>
 
-    <div class="form-group full-width">
+          <input type="radio" id="medium" name="difficulty" value="Medium" checked>
+          <label for="medium" class="radio-label">Medium</label>
+
+          <input type="radio" id="hard" name="difficulty" value="Hard">
+          <label for="hard" class="radio-label">Hard</label>
+
+          <input type="radio" id="mixed" name="difficulty" value="Mixed">
+          <label for="mixed" class="radio-label">Mixed</label>
+        </div>
+      </div>
+      <div class="card">
+        <label for="marks">Total Marks</label>
+        <select id="marks">
+            <option>20</option>
+            <option>40</option>
+            <option>60</option>
+            <option>80</option>
+            <option selected>100</option>
+        </select>
+      </div>
+      <div class="card suggestions-card">
         <label for="instructions">Additional Instructions</label>
-        <textarea id="instructions" placeholder="Custom instructions (optional)"></textarea>
-    </div>
-    <div class="form-group">
+        <textarea id="instructions" rows="4" placeholder="Custom instructions (optional)"></textarea>
+      </div>
+      <div class="card">
         <label>
             <input type="checkbox" id="include_key">
             Include answer key
             <span class="tooltip" title="Generates the answer key on a new page in the PDF">🛈</span>
         </label>
+      </div>
+      <div class="button-container">
+        <button type="submit" id="generateBtn">
+          <span class="emoji">🚀</span> Generate & Download PDF
+        </button>
+      </div>
     </div>
+  </form>
 
-    <button onclick="generatePaper()" id="generateBtn">
-        Generate Paper <span id="spinner" class="spinner hidden"></span>
-    </button>
-</section>
+  <div id="loadingModal" class="modal" aria-hidden="true">
+    <div class="modal-content">Generating your paper, please wait...</div>
+  </div>
 
-<div class="message" id="message"></div>
+  <div id="errorMessage" class="error-message" role="alert" style="display:none;">
+    Something went wrong. Please try again.
+  </div>
 
-<div class="card">
-    <div class="toolbar">
-        <button onclick="downloadPDF()" id="downloadBtn" disabled>Download PDF</button>
-        <button onclick="copyPaper()" id="copyBtn" disabled>Copy</button>
-    </div>
-    <pre id="output">
-        Your generated question paper will appear here.
-    </pre>
-    <pre id="keyOutput" class="hidden">
-        Answer key will appear here if included.
-    </pre>
-</div>
+  <div class="message" id="message"></div>
 
-</div>
+  <div class="card">
+      <div class="toolbar">
+          <button onclick="downloadPDF()" id="downloadBtn" disabled>Download PDF</button>
+          <button onclick="copyPaper()" id="copyBtn" disabled>Copy</button>
+      </div>
+      <pre id="output">
+          Your generated question paper will appear here.
+      </pre>
+      <pre id="keyOutput" class="hidden">
+          Answer key will appear here if included.
+      </pre>
+  </div>
+
+  <div class="contact-info">
+      Trouble? <a href="mailto:laxmanchowdary159@gmail.com">Contact Support</a><br>
+      Made with ❤️ by Laxman Nimmagadda
+  </div>
+</main>
 
 <script src="/static/js/app.js"></script>
 

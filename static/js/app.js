@@ -1,16 +1,27 @@
 let pdfData = null;
 
-// UI element references
+// element refs
 const messageEl = document.getElementById("message");
 const outputEl = document.getElementById("output");
+const keyEl = document.getElementById("keyOutput");
 const generateBtn = document.getElementById("generateBtn");
 const downloadBtn = document.getElementById("downloadBtn");
 const copyBtn = document.getElementById("copyBtn");
 const themeToggle = document.getElementById("themeToggle");
+const modal = document.getElementById("loadingModal");
+const errorBox = document.getElementById("errorMessage");
 
-// save/load form fields between sessions
+// chapters list used for dynamic selector
+const chaptersBySubject = {
+    "Mathematics": ["Real Numbers","Polynomials","Linear Equations","Quadratic Equations"],
+    "Science": ["Chemical Reactions","Acids & Bases","Metals & Non-metals"],
+    "English": ["A Letter to God","Nelson Mandela","Two Stories about Flying"],
+    "Social Studies": ["Nationalism in India","The Making of a Global World"]
+};
+
+// persistence
 const storageKeys = [
-    'user_name','school_name','standard','board','subject','difficulty','marks','instructions','include_key'
+    'user_name','school_name','standard','board','subject','chapter','marks','instructions','include_key'
 ];
 function saveForm() {
     storageKeys.forEach(k => {
@@ -19,6 +30,9 @@ function saveForm() {
         const val = el.type === 'checkbox' ? el.checked : el.value;
         localStorage.setItem(k, val);
     });
+    // save difficulty radio separately
+    const diff = document.querySelector('input[name="difficulty"]:checked');
+    if (diff) localStorage.setItem('difficulty', diff.value);
 }
 function loadForm() {
     storageKeys.forEach(k => {
@@ -29,6 +43,11 @@ function loadForm() {
         if (el.type === 'checkbox') el.checked = (val === 'true');
         else el.value = val;
     });
+    const savedDiff = localStorage.getItem('difficulty');
+    if (savedDiff) {
+        const radio = document.querySelector(`input[name="difficulty"][value="${savedDiff}"]`);
+        if (radio) radio.checked = true;
+    }
 }
 
 function toggleTheme() {
@@ -36,81 +55,6 @@ function toggleTheme() {
     const icon = document.body.classList.contains('dark') ? '☀️' : '🌙';
     themeToggle.textContent = icon;
     localStorage.setItem('theme', icon);
-}
-
-// initialize
-loadForm();
-if (localStorage.getItem('theme') === '☀️') document.body.classList.add('dark');
-if (themeToggle) themeToggle.addEventListener('click', () => { toggleTheme(); });
-
-document.querySelectorAll('select,input,textarea').forEach(el => {
-    el.addEventListener('change', saveForm);
-});
-
-async function generatePaper() {
-    // clear previous state
-    messageEl.textContent = "";
-    outputEl.textContent = "";
-    pdfData = null;
-    setButtonsState(true);
-
-    generateBtn.disabled = true;
-    generateBtn.innerHTML = "Generating... <span class=\"spinner\"></span>";
-
-    try {
-        const res = await fetch("/generate", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                user_name: document.getElementById('user_name').value,
-                school_name: document.getElementById('school_name').value,
-                class: standard.value,
-                board: board.value,
-                subject: subject.value,
-                difficulty: difficulty.value,
-                marks: marks.value,
-                instructions: instructions.value,
-                include_key: document.getElementById('include_key').checked
-            })
-        });
-
-        const data = await res.json();
-        if (!res.ok || !data.success) {
-            throw new Error(data.error || "Failed to generate paper");
-        }
-
-        // if key was requested, split so the preview only shows the paper
-        let text = data.paper;
-        const wantKey = document.getElementById('include_key').checked;
-        let keyPortion = null;
-        if (wantKey) {
-            const parts = text.split(/answer key[:]?/i);
-            text = parts[0];
-            keyPortion = parts[1] ? parts[1].trim() : null;
-            const keyEl = document.getElementById('keyOutput');
-            if (keyEl) {
-                if (keyPortion) {
-                    keyEl.textContent = keyPortion;
-                    keyEl.classList.remove('hidden');
-                } else {
-                    keyEl.textContent = '';
-                    keyEl.classList.add('hidden');
-                }
-            }
-        } else {
-            const keyEl = document.getElementById('keyOutput');
-            if (keyEl) keyEl.classList.add('hidden');
-        }
-        outputEl.innerText = text;
-        pdfData = data.pdf;
-        showMessage("📝 Paper generated successfully!", "success");
-        setButtonsState(false);
-    } catch (err) {
-        showMessage(err.message, "error");
-    } finally {
-        generateBtn.disabled = false;
-        generateBtn.innerText = "Generate Paper";
-    }
 }
 
 function setButtonsState(disabled) {
@@ -128,8 +72,90 @@ function setButtonsState(disabled) {
 function showMessage(text, type) {
     messageEl.textContent = text;
     messageEl.classList.remove("error", "success");
-    if (type) {
-        messageEl.classList.add(type);
+    if (type) messageEl.classList.add(type);
+}
+
+function prepareSubjectChapters() {
+    const subj = document.getElementById('subject');
+    const chap = document.getElementById('chapter');
+    subj.addEventListener('change', () => {
+        const list = chaptersBySubject[subj.value] || [];
+        chap.innerHTML = '<option value="" disabled selected>Choose a chapter...</option>';
+        list.forEach(c => {
+            const opt = document.createElement('option');
+            opt.value = c;
+            opt.textContent = c;
+            chap.appendChild(opt);
+        });
+        chap.disabled = list.length === 0;
+    });
+}
+
+async function generatePaper() {
+    errorBox.style.display = 'none';
+    showMessage('', '');
+    setButtonsState(true);
+
+    generateBtn.disabled = true;
+    generateBtn.innerHTML = 'Generating... <span class="spinner"></span>';
+    modal.setAttribute('aria-hidden','false');
+    modal.style.display = 'flex';
+
+    try {
+        const formData = new FormData();
+        ['user_name','school_name','standard','board','subject','chapter','marks','instructions','include_key']
+            .forEach(id => {
+                const el = document.getElementById(id);
+                if (!el) return;
+                if (el.type === 'checkbox') formData.append(id, el.checked);
+                else formData.append(id, el.value);
+            });
+        // add difficulty radio
+        const diff = document.querySelector('input[name="difficulty"]:checked');
+        if (diff) formData.append('difficulty', diff.value);
+
+        const json = {};
+        formData.forEach((v,k)=>{ json[k]=v; });
+        // rename standard -> class for backend compatibility
+        if (json.standard !== undefined) {
+            json.class = json.standard;
+            delete json.standard;
+        }
+
+        const res = await fetch('/generate', {
+            method:'POST',
+            headers: {'Content-Type':'application/json'},
+            body: JSON.stringify(json)
+        });
+        const data = await res.json();
+        if (!res.ok || !data.success) throw new Error(data.error||'Failed');
+
+        let text = data.paper;
+        let keyPortion = null;
+        if (json.include_key === 'true' || json.include_key === true) {
+            const parts = text.split(/answer key[:]?/i);
+            text = parts[0];
+            keyPortion = parts[1] ? parts[1].trim() : null;
+            if (keyPortion) {
+                keyEl.textContent = keyPortion;
+                keyEl.classList.remove('hidden');
+            } else keyEl.classList.add('hidden');
+        } else {
+            keyEl.classList.add('hidden');
+        }
+
+        outputEl.innerText = text;
+        pdfData = data.pdf;
+        showMessage('📝 Paper generated successfully!', 'success');
+        setButtonsState(false);
+    } catch (err) {
+        errorBox.style.display = 'block';
+        showMessage(err.message, 'error');
+    } finally {
+        generateBtn.disabled = false;
+        generateBtn.innerText = 'Generate & Download PDF';
+        modal.setAttribute('aria-hidden','true');
+        modal.style.display = 'none';
     }
 }
 
@@ -155,3 +181,11 @@ function copyPaper() {
     navigator.clipboard.writeText(outputEl.innerText);
     showMessage("Copied to clipboard!", "success");
 }
+
+// initialization
+loadForm();
+if (localStorage.getItem('theme') === '☀️') document.body.classList.add('dark');
+if (themeToggle) themeToggle.addEventListener('click', () => { toggleTheme(); });
+document.querySelectorAll('select,input,textarea').forEach(el => { el.addEventListener('change', saveForm); });
+prepareSubjectChapters();
+

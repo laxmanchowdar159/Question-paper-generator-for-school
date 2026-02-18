@@ -161,6 +161,111 @@ body.dark button {
 body.dark .message.success { color:#4ade80; }
 body.dark .message.error { color:#f87171; }
 
+/* additional layout classes from reference project */
+
+main.container {
+    flex: 1;
+    min-height: 100vh;
+    width: 100%;
+    max-width: 100%;
+    padding: 2rem 2vw;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+    display:flex;
+    flex-direction:column;
+    gap:2.5rem;
+}
+
+.header-section {
+    text-align:center;
+    margin-bottom:1rem;
+}
+
+.tagline {
+    font-size:1.25rem;
+    color:#66778f;
+    margin-bottom:1rem;
+}
+
+.emoji { font-size:2rem; vertical-align:middle; }
+
+.form-grid {
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(320px,1fr));
+    gap:2.5rem;
+}
+
+.hint-text {
+    display:block;
+    font-size:0.9rem;
+    color:#66778f;
+    margin-top:0.25rem;
+    font-style:italic;
+}
+
+.difficulty-options { display:flex; gap:1rem; flex-wrap:wrap; }
+.difficulty-options input[type="radio"] { display:none; }
+
+.radio-label {
+    padding:0.6rem 1.2rem;
+    border:2px solid transparent;
+    border-radius:50px;
+    cursor:pointer;
+    font-size:1rem;
+    font-weight:600;
+    color:#66778f;
+    background:#f4f6f8;
+    user-select:none;
+    transition:all 0.3s ease;
+}
+.difficulty-options input[type="radio"]:checked + .radio-label {
+    background:#3b82f6;
+    color:#fff;
+    border-color:#3b82f6;
+    transform:scale(1.05);
+}
+.radio-label:hover { background:#e5e9f1; }
+
+.suggestions-card,.button-container { grid-column:1 / -1; }
+
+.button-container { display:flex; justify-content:center; margin-top:1rem; }
+.button-container button { max-width:480px; width:100%; }
+
+/* modal */
+.modal {
+    position:fixed;
+    top:0; left:0; right:0; bottom:0;
+    display:none;
+    justify-content:center;
+    align-items:center;
+    background:rgba(0,0,0,0.5);
+    z-index:1000;
+}
+.modal-content {
+    background:white;
+    padding:2rem 3rem;
+    border-radius:12px;
+    font-size:1.25rem;
+}
+
+.error-message {
+    background:#fee2e2;
+    color:#b91c1c;
+    padding:1rem 1.5rem;
+    border:1px solid #fca5a5;
+    border-radius:8px;
+    max-width:600px;
+    margin:auto;
+}
+
+.contact-info {
+    text-align:center;
+    font-size:0.9rem;
+    color:#6b7280;
+}
+
+
 .app {
 
 max-width:900px;

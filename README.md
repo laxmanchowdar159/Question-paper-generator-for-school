@@ -12,7 +12,10 @@ A simple Flask/Vercel application that uses OpenAI to generate school exam quest
 - LocalStorage remembers your last choices across visits
 - Light/dark theme toggle for comfort
 - Live paper preview with copy‑to‑clipboard and PDF download
-- Error/success messages, spinner and disabled states for buttons
+- Dynamic chapter selector that updates when you pick a subject
+- Difficulty level radios styled as selectable pills
+- Suggestions/instructions field with helpful hints
+- Loading modal and error box for smoother UX, plus contact/support info in footer
 - Static assets served correctly on Vercel
 
 ## Local development
@@ -41,4 +44,4 @@ A simple Flask/Vercel application that uses OpenAI to generate school exam quest
 
 The `vercel.json` configuration ensures static files are served directly and the catch-all route points to the Python function. Simply push to your GitHub repo and deploy on Vercel – remember to configure the OpenAI key.
 
-*UI enhancements include premium styling, theming, persistent form state, and helpful tooltips. PDF output uses A4 layout with margins, DejaVu fonts, optional logo, automatic page breaks, and inserts an answer key if requested. Prompt construction and backend logic have been streamlined for efficiency.*
+*UI enhancements include premium styling inspired by a working reference project, theming, persistent form state, dynamic fields, and helpful tooltips. The interface now has a modal loading indicator, error alerts, and radio‑style difficulty buttons. PDF output uses A4 layout with margins, DejaVu fonts, optional logo, automatic page breaks, and inserts an answer key if requested. Prompt construction and backend logic have been streamlined for efficiency.*
