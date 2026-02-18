@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
-    <title>Premium Question Paper Generator</title>
+    <title>ExamCraft - AI Question Paper Generator</title>
     <!-- Google font -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -151,24 +151,113 @@
 
 <main class="container">
   <div class="header-section">
-    <h1>📝 Premium Question Paper Generator</h1>
-    <p class="tagline">Generate beautifully formatted exam papers — now with Andhra Board support.</p>
+    <h1>📝 ExamCraft</h1>
+    <p class="tagline">Craft Perfect Exam Papers with AI in Minutes</p>
     <button id="themeToggle" class="theme-btn" title="Toggle light/dark">🌙</button>
+  </div>
+
+  <!-- Feature Highlights -->
+  <div class="features-showcase">
+    <div class="feature-card">
+      <div class="feature-icon">⚡</div>
+      <div class="feature-content">
+        <h3>AI-Powered</h3>
+        <p>Uses OpenAI GPT-4 to generate contextual, high-quality exam papers</p>
+      </div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">📋</div>
+      <div class="feature-content">
+        <h3>Answer Keys</h3>
+        <p>Generate answer keys on a separate page for easy grading</p>
+      </div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🎯</div>
+      <div class="feature-content">
+        <h3>Difficulty Control</h3>
+        <p>Choose Easy, Medium, Hard, or Mixed difficulty levels</p>
+      </div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🌙</div>
+      <div class="feature-content">
+        <h3>Dark Mode</h3>
+        <p>Eye-friendly dark theme for late-night paper creation</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- How to Use Guide -->
+  <div class="guide-section">
+    <div class="guide-header">
+      <h2>📚 How to Use</h2>
+      <button id="toggleGuide" class="btn-guide">Show Tips ▼</button>
+    </div>
+    <div id="guideContent" class="guide-content hidden">
+      <div class="guide-step">
+        <div class="step-number">1</div>
+        <div class="step-content">
+          <h4>Enter Your Details</h4>
+          <p>Fill in your name and school name (optional but recommended for the PDF header)</p>
+        </div>
+      </div>
+      <div class="guide-step">
+        <div class="step-number">2</div>
+        <div class="step-content">
+          <h4>Select Class & Board</h4>
+          <p>Choose your class (6-10) and board. <strong>Andhra Board</strong> is recommended for optimized content.</p>
+        </div>
+      </div>
+      <div class="guide-step">
+        <div class="step-number">3</div>
+        <div class="step-content">
+          <h4>Pick Subject & Chapter</h4>
+          <p>Select subject (Math, Science, English, Social Studies) and the specific chapter to focus on</p>
+        </div>
+      </div>
+      <div class="guide-step">
+        <div class="step-number">4</div>
+        <div class="step-content">
+          <h4>Set Difficulty & Marks</h4>
+          <p>Choose difficulty level (Easy/Medium/Hard/Mixed) and total marks (20-100)</p>
+        </div>
+      </div>
+      <div class="guide-step">
+        <div class="step-number">5</div>
+        <div class="step-content">
+          <h4>Add Custom Instructions (Optional)</h4>
+          <p>Include special requirements like "Focus on MCQs" or "Include case studies"</p>
+        </div>
+      </div>
+      <div class="guide-step">
+        <div class="step-number">6</div>
+        <div class="step-content">
+          <h4>Enable Answer Key (Optional)</h4>
+          <p>Check "Include answer key" to generate answers on a separate page in the PDF</p>
+        </div>
+      </div>
+      <div class="guide-step">
+        <div class="step-number">7</div>
+        <div class="step-content">
+          <h4>Generate & Download</h4>
+          <p>Click "Generate Paper" and wait. PDF auto-downloads in 1-2 seconds. You can also copy the text preview!</p>
+        </div>
+      </div>
+    </div>
   </div>
 
   <form id="paperForm" novalidate>
     <div class="form-grid">
-      <div class="card">
+      <div class="card compact">
         <label for="user_name">Your Name</label>
-        <input type="text" id="user_name" placeholder="e.g. Mrs. Rao">
-        <small class="hint-text">Optional: will appear on the paper.</small>
+        <input type="text" id="user_name" placeholder="Mrs. Rao">
       </div>
-      <div class="card">
+      <div class="card compact">
         <label for="school_name">School Name</label>
-        <input type="text" id="school_name" placeholder="e.g. Sunrise High School">
-        <small class="hint-text">Optional: included in header.</small>
+        <input type="text" id="school_name" placeholder="Sunrise High School">
       </div>
-      <div class="card">
+      <div class="card compact">
         <label for="standard">Class</label>
         <select id="standard">
             <option>6</option>
@@ -178,7 +267,7 @@
             <option selected>10</option>
         </select>
       </div>
-      <div class="card">
+      <div class="card compact">
         <label for="board">Board</label>
         <select id="board">
             <option>Andhra Board</option>
@@ -188,7 +277,7 @@
             <option>IB</option>
         </select>
       </div>
-      <div class="card">
+      <div class="card compact">
         <label for="subject">Subject</label>
         <select id="subject">
             <option>Mathematics</option>
@@ -197,30 +286,14 @@
             <option>Social Studies</option>
         </select>
       </div>
-      <div class="card">
+      <div class="card compact">
         <label for="chapter">Chapter</label>
         <select id="chapter" disabled>
-            <option value="" disabled selected>Choose a chapter...</option>
+            <option value="" disabled selected>Choose chapter...</option>
         </select>
       </div>
-      <div class="card">
-        <label><span class="emoji">🎯</span> Difficulty</label>
-        <div class="difficulty-options">
-          <input type="radio" id="easy" name="difficulty" value="Easy">
-          <label for="easy" class="radio-label">Easy</label>
-
-          <input type="radio" id="medium" name="difficulty" value="Medium" checked>
-          <label for="medium" class="radio-label">Medium</label>
-
-          <input type="radio" id="hard" name="difficulty" value="Hard">
-          <label for="hard" class="radio-label">Hard</label>
-
-          <input type="radio" id="mixed" name="difficulty" value="Mixed">
-          <label for="mixed" class="radio-label">Mixed</label>
-        </div>
-      </div>
-      <div class="card">
-        <label for="marks">Total Marks</label>
+      <div class="card compact">
+        <label for="marks">Marks</label>
         <select id="marks">
             <option>20</option>
             <option>40</option>
@@ -229,20 +302,33 @@
             <option selected>100</option>
         </select>
       </div>
+      <div class="card compact difficulty-card">
+        <label>Difficulty</label>
+        <div class="difficulty-options">
+          <input type="radio" id="easy" name="difficulty" value="Easy">
+          <label for="easy" class="radio-label">Easy</label>
+          <input type="radio" id="medium" name="difficulty" value="Medium" checked>
+          <label for="medium" class="radio-label">Medium</label>
+          <input type="radio" id="hard" name="difficulty" value="Hard">
+          <label for="hard" class="radio-label">Hard</label>
+          <input type="radio" id="mixed" name="difficulty" value="Mixed">
+          <label for="mixed" class="radio-label">Mixed</label>
+        </div>
+      </div>
       <div class="card suggestions-card">
         <label for="instructions">Additional Instructions</label>
-        <textarea id="instructions" rows="4" placeholder="Custom instructions (optional)"></textarea>
+        <textarea id="instructions" rows="3" placeholder="Custom instructions (optional)"></textarea>
       </div>
       <div class="card">
         <label>
             <input type="checkbox" id="include_key">
-            Include answer key
+            <span>Include answer key</span>
             <span class="tooltip" title="Generates the answer key on a new page in the PDF">🛈</span>
         </label>
       </div>
       <div class="button-container">
-        <button type="submit" id="generateBtn">
-          <span class="emoji">🚀</span> Generate & Download PDF
+        <button type="submit" id="generateBtn" class="btn-primary">
+          <span class="emoji">🚀</span> Generate Paper
         </button>
       </div>
     </div>
@@ -258,21 +344,25 @@
 
   <div class="message" id="message"></div>
 
-  <div class="card">
-      <div class="toolbar">
-          <button onclick="downloadPDF()" id="downloadBtn" disabled>Download PDF</button>
-          <button onclick="copyPaper()" id="copyBtn" disabled>Copy</button>
+  <div class="output-section">
+    <div class="output-header">
+      <h3>📄 Question Paper Preview</h3>
+      <div class="output-actions">
+        <button onclick="copyPaper()" id="copyBtn" disabled class="btn-secondary">📋 Copy</button>
       </div>
-      <pre id="output">
-          Your generated question paper will appear here.
-      </pre>
-      <pre id="keyOutput" class="hidden">
-          Answer key will appear here if included.
-      </pre>
+    </div>
+    <pre id="output" class="paper-output">Your generated question paper will appear here.</pre>
+  </div>
+
+  <div class="output-section hidden" id="keySection">
+    <div class="output-header">
+      <h3>🔑 Answer Key</h3>
+    </div>
+    <pre id="keyOutput" class="paper-output">Answer key will appear here if included.</pre>
   </div>
 
   <div class="contact-info">
-      Trouble? <a href="mailto:laxmanchowdary159@gmail.com">Contact Support</a><br>
+      <strong>ExamCraft</strong> - Craft Perfect Exam Papers | <a href="mailto:laxmanchowdary159@gmail.com">Support</a><br>
       Made with ❤️ by Laxman Nimmagadda
   </div>
 </main>

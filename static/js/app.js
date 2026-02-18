@@ -1,11 +1,14 @@
+// ExamCraft - AI Question Paper Generator
+// Client-side logic for form handling, API communication, and UI management
+
 let pdfData = null;
 
 // element refs
 const messageEl = document.getElementById("message");
 const outputEl = document.getElementById("output");
 const keyEl = document.getElementById("keyOutput");
+const keySection = document.getElementById("keySection");
 const generateBtn = document.getElementById("generateBtn");
-const downloadBtn = document.getElementById("downloadBtn");
 const copyBtn = document.getElementById("copyBtn");
 const themeToggle = document.getElementById("themeToggle");
 const modal = document.getElementById("loadingModal");
@@ -58,21 +61,21 @@ function toggleTheme() {
 }
 
 function setButtonsState(disabled) {
-    downloadBtn.disabled = disabled;
     copyBtn.disabled = disabled;
     if (disabled) {
-        downloadBtn.classList.add("disabled");
         copyBtn.classList.add("disabled");
     } else {
-        downloadBtn.classList.remove("disabled");
         copyBtn.classList.remove("disabled");
     }
 }
 
 function showMessage(text, type) {
     messageEl.textContent = text;
-    messageEl.classList.remove("error", "success");
-    if (type) messageEl.classList.add(type);
+    messageEl.classList.remove("error", "success", "show");
+    if (text) {
+        if (type) messageEl.classList.add(type);
+        messageEl.classList.add("show");
+    }
 }
 
 function prepareSubjectChapters() {
@@ -97,9 +100,8 @@ async function generatePaper() {
     setButtonsState(true);
 
     generateBtn.disabled = true;
-    generateBtn.innerHTML = 'Generating... <span class="spinner"></span>';
-    modal.setAttribute('aria-hidden','false');
-    modal.style.display = 'flex';
+    generateBtn.innerHTML = '<span class="emoji">🚀</span> Generating...<span class="spinner"></span>';
+    modal.classList.add('show');
 
     try {
         const formData = new FormData();
@@ -131,31 +133,38 @@ async function generatePaper() {
         if (!res.ok || !data.success) throw new Error(data.error||'Failed');
 
         let text = data.paper;
-        let keyPortion = null;
+        let hasKey = false;
         if (json.include_key === 'true' || json.include_key === true) {
             const parts = text.split(/answer key[:]?/i);
             text = parts[0];
-            keyPortion = parts[1] ? parts[1].trim() : null;
+            const keyPortion = parts[1] ? parts[1].trim() : null;
             if (keyPortion) {
                 keyEl.textContent = keyPortion;
-                keyEl.classList.remove('hidden');
-            } else keyEl.classList.add('hidden');
+                keySection.classList.remove('hidden');
+                hasKey = true;
+            } else {
+                keySection.classList.add('hidden');
+            }
         } else {
-            keyEl.classList.add('hidden');
+            keySection.classList.add('hidden');
         }
 
         outputEl.innerText = text;
         pdfData = data.pdf;
         showMessage('📝 Paper generated successfully!', 'success');
         setButtonsState(false);
+        
+        // Auto-download PDF after short delay
+        setTimeout(() => {
+            downloadPDF();
+        }, 1000);
     } catch (err) {
         errorBox.style.display = 'block';
         showMessage(err.message, 'error');
     } finally {
         generateBtn.disabled = false;
-        generateBtn.innerText = 'Generate & Download PDF';
-        modal.setAttribute('aria-hidden','true');
-        modal.style.display = 'none';
+        generateBtn.innerHTML = '<span class="emoji">🚀</span> Generate Paper';
+        modal.classList.remove('show');
     }
 }
 
@@ -188,4 +197,14 @@ if (localStorage.getItem('theme') === '☀️') document.body.classList.add('dar
 if (themeToggle) themeToggle.addEventListener('click', () => { toggleTheme(); });
 document.querySelectorAll('select,input,textarea').forEach(el => { el.addEventListener('change', saveForm); });
 prepareSubjectChapters();
+
+// Guide toggle
+const toggleGuideBtn = document.getElementById('toggleGuide');
+const guideContent = document.getElementById('guideContent');
+if (toggleGuideBtn) {
+    toggleGuideBtn.addEventListener('click', () => {
+        guideContent.classList.toggle('hidden');
+        toggleGuideBtn.textContent = guideContent.classList.contains('hidden') ? 'Show Tips ▼' : 'Hide Tips ▲';
+    });
+}
 

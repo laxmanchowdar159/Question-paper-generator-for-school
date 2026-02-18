@@ -8,6 +8,7 @@ from fpdf import FPDF
 from fpdf.enums import XPos, YPos
 
 # IMPORTANT: correct template/static paths for Vercel
+# ExamCraft - AI-powered exam paper generator
 app = Flask(
     __name__,
     template_folder="../templates",
@@ -29,6 +30,13 @@ client = OpenAI(
 # -------------------------------
 
 def generate_question_paper(data: Dict[str, Any]) -> str:
+    """ExamCraft: Generate a question paper using OpenAI
+    
+    Args:
+        data: Form data containing class, board, subject, difficulty, marks, etc.
+    Returns:
+        Generated question paper text
+    """
     # assemble prompt pieces; keep it short so the model has room
     parts = [
         f"You are an expert {data['board']} exam paper setter.",
