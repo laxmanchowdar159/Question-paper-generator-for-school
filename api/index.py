@@ -4,23 +4,28 @@ from openai import OpenAI
 from fpdf import FPDF
 from fpdf.enums import XPos, YPos
 
-app = Flask(__name__)
+# IMPORTANT: correct template/static paths for Vercel
+app = Flask(
+    __name__,
+    template_folder="../templates",
+    static_folder="../static"
+)
 
 # OpenAI client
 client = OpenAI(
     api_key=os.environ.get("OPENAI_API_KEY")
 )
 
-# ---------------------------
+# -------------------------------
 # Generate Question Paper
-# ---------------------------
+# -------------------------------
 
 def generate_question_paper(data):
 
     prompt = f"""
-You are a senior {data['board']} exam paper setter.
+You are an expert {data['board']} exam paper setter.
 
-Create a professional question paper.
+Generate a professional question paper.
 
 Class: {data['class']}
 Board: {data['board']}
@@ -28,15 +33,15 @@ Subject: {data['subject']}
 Difficulty: {data['difficulty']}
 Marks: {data['marks']}
 
-Instructions:
-{data['instructions']}
+Custom Instructions:
+{data.get('instructions','')}
 
 Requirements:
 
-• Professional exam format
+• Follow official board exam pattern
 • No answers
 • No explanations
-• Clear sections
+• Professional formatting
 
 Sections:
 
@@ -55,7 +60,7 @@ Total marks must equal {data['marks']}
         messages=[
             {
                 "role": "system",
-                "content": "You generate high-quality school exam papers."
+                "content": "You generate professional school exam papers."
             },
             {
                 "role": "user",
@@ -69,27 +74,33 @@ Total marks must equal {data['marks']}
     return response.choices[0].message.content
 
 
-# ---------------------------
+# -------------------------------
 # Create PDF
-# ---------------------------
+# -------------------------------
 
 def create_pdf(text, data):
 
     pdf = FPDF()
     pdf.add_page()
 
-    font_path = os.path.join("static", "fonts", "DejaVuSans.ttf")
+    font_path = os.path.join(
+        os.path.dirname(__file__),
+        "../static/fonts/DejaVuSans.ttf"
+    )
 
     pdf.add_font("DejaVu", "", font_path)
     pdf.add_font("DejaVu", "B", font_path)
 
     pdf.set_font("DejaVu", "B", 16)
 
-    pdf.cell(0, 10,
-             f"{data['board']} Examination",
-             new_x=XPos.LMARGIN,
-             new_y=YPos.NEXT,
-             align="C")
+    pdf.cell(
+        0,
+        10,
+        f"{data['board']} Examination",
+        new_x=XPos.LMARGIN,
+        new_y=YPos.NEXT,
+        align="C"
+    )
 
     pdf.set_font("DejaVu", "", 12)
 
@@ -104,9 +115,9 @@ def create_pdf(text, data):
     return bytes(pdf.output(dest="S"))
 
 
-# ---------------------------
+# -------------------------------
 # Routes
-# ---------------------------
+# -------------------------------
 
 @app.route("/")
 def home():
@@ -116,26 +127,37 @@ def home():
 @app.route("/generate", methods=["POST"])
 def generate():
 
-    data = request.json
+    try:
 
-    paper = generate_question_paper(data)
+        data = request.json
 
-    pdf_bytes = create_pdf(paper, data)
+        paper = generate_question_paper(data)
 
-    return jsonify({
-        "paper": paper,
-        "pdf": pdf_bytes.decode("latin-1")
-    })
+        pdf_bytes = create_pdf(paper, data)
+
+        return jsonify({
+            "success": True,
+            "paper": paper,
+            "pdf": pdf_bytes.decode("latin-1")
+        })
+
+    except Exception as e:
+
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500
 
 
 @app.route("/download", methods=["POST"])
 def download():
 
-    pdf = request.json["pdf"].encode("latin-1")
+    pdf_bytes = request.json["pdf"].encode("latin-1")
 
-    response = make_response(pdf)
+    response = make_response(pdf_bytes)
 
     response.headers.set("Content-Type", "application/pdf")
+
     response.headers.set(
         "Content-Disposition",
         "attachment",
@@ -145,6 +167,5 @@ def download():
     return response
 
 
-# Production entry
-if __name__ == "__main__":
-    app.run(debug=True)
+# CRITICAL FOR VERCEL
+app = app
