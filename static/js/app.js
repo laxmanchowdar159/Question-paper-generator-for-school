@@ -1,248 +1,354 @@
-// ExamCraft - AI Question Paper Generator
-// Client-side logic for form handling, API communication, and UI management
+// ============================================================
+// EXAMCRAFT - AI QUESTION PAPER GENERATOR
+// Modern, Improved JavaScript with Enhanced Functionality
+// ============================================================
 
+// ==================== STATE MANAGEMENT ====================
 let pdfData = null;
+let currentPaper = null;
+let currentKey = null;
 
-// element refs
-const messageEl = document.getElementById("message");
-const outputEl = document.getElementById("output");
-const keyEl = document.getElementById("keyOutput");
-const keySection = document.getElementById("keySection");
-const generateBtn = document.getElementById("generateBtn");
-const copyBtn = document.getElementById("copyBtn");
-const themeToggle = document.getElementById("themeToggle");
-const modal = document.getElementById("loadingModal");
-const errorBox = document.getElementById("errorMessage");
+// ==================== DOM ELEMENTS ====================
+const form = document.getElementById('paperForm');
+const generateBtn = document.getElementById('generateBtn');
+const copyBtn = document.getElementById('copyBtn');
+const downloadBtn = document.getElementById('downloadBtn');
+const themeToggle = document.getElementById('themeToggle');
+const loadingModal = document.getElementById('loadingModal');
+const messageBox = document.getElementById('messageBox');
+const errorBox = document.getElementById('errorBox');
+const outputSection = document.getElementById('outputSection');
+const keySection = document.getElementById('keySection');
+const outputEl = document.getElementById('output');
+const keyEl = document.getElementById('keyOutput');
 
-// chapters list used for dynamic selector
-const chaptersBySubject = {
-    "Mathematics": ["Real Numbers","Polynomials","Linear Equations","Quadratic Equations"],
-    "Science": ["Chemical Reactions","Acids & Bases","Metals & Non-metals"],
-    "English": ["A Letter to God","Nelson Mandela","Two Stories about Flying"],
-    "Social Studies": ["Nationalism in India","The Making of a Global World"]
-};
+// Form fields
+const userNameInput = document.getElementById('user_name');
+const schoolNameInput = document.getElementById('school_name');
+const standardSelect = document.getElementById('standard');
+const boardSelect = document.getElementById('board');
+const subjectSelect = document.getElementById('subject');
+const chapterSelect = document.getElementById('chapter');
+const marksSelect = document.getElementById('marks');
+const difficultyRadios = document.querySelectorAll('input[name="difficulty"]');
+const instructionsInput = document.getElementById('instructions');
+const includeKeyCheckbox = document.getElementById('include_key');
 
-// persistence
-const storageKeys = [
-    'user_name','school_name','standard','board','subject','chapter','marks','instructions','include_key'
-];
-function saveForm() {
-    storageKeys.forEach(k => {
-        const el = document.getElementById(k);
-        if (!el) return;
-        const val = el.type === 'checkbox' ? el.checked : el.value;
-        localStorage.setItem(k, val);
-    });
-    // save difficulty radio separately
-    const diff = document.querySelector('input[name="difficulty"]:checked');
-    if (diff) localStorage.setItem('difficulty', diff.value);
+// ==================== INITIALIZATION ====================
+document.addEventListener('DOMContentLoaded', () => {
+  initializeTheme();
+  loadFormData();
+  attachEventListeners();
+  updateChaptersOnSubjectChange();
+});
+
+// ==================== THEME MANAGEMENT ====================
+function initializeTheme() {
+  const savedTheme = localStorage.getItem('examcraft-theme');
+  if (savedTheme === 'dark') {
+    document.body.classList.add('dark');
+    themeToggle.textContent = '☀️';
+  } else {
+    document.body.classList.remove('dark');
+    themeToggle.textContent = '🌙';
+  }
 }
-function loadForm() {
-    storageKeys.forEach(k => {
-        const el = document.getElementById(k);
-        if (!el) return;
-        const val = localStorage.getItem(k);
-        if (val === null) return;
-        if (el.type === 'checkbox') el.checked = (val === 'true');
-        else el.value = val;
-    });
-    const savedDiff = localStorage.getItem('difficulty');
-    if (savedDiff) {
-        const radio = document.querySelector(`input[name="difficulty"][value="${savedDiff}"]`);
-        if (radio) radio.checked = true;
+
+themeToggle.addEventListener('click', () => {
+  document.body.classList.toggle('dark');
+  const isDark = document.body.classList.contains('dark');
+  themeToggle.textContent = isDark ? '☀️' : '🌙';
+  localStorage.setItem('examcraft-theme', isDark ? 'dark' : 'light');
+});
+
+// ==================== FORM PERSISTENCE ====================
+function saveFormData() {
+  const formState = {
+    user_name: userNameInput.value,
+    school_name: schoolNameInput.value,
+    standard: standardSelect.value,
+    board: boardSelect.value,
+    subject: subjectSelect.value,
+    chapter: chapterSelect.value,
+    marks: marksSelect.value,
+    difficulty: Array.from(difficultyRadios).find(r => r.checked)?.value || 'Medium',
+    instructions: instructionsInput.value,
+    include_key: includeKeyCheckbox.checked,
+  };
+  localStorage.setItem('examcraft-form', JSON.stringify(formState));
+}
+
+function loadFormData() {
+  const saved = localStorage.getItem('examcraft-form');
+  if (!saved) return;
+
+  try {
+    const state = JSON.parse(saved);
+    if (state.user_name) userNameInput.value = state.user_name;
+    if (state.school_name) schoolNameInput.value = state.school_name;
+    if (state.standard) standardSelect.value = state.standard;
+    if (state.board) boardSelect.value = state.board;
+    if (state.subject) subjectSelect.value = state.subject;
+    if (state.marks) marksSelect.value = state.marks;
+    if (state.instructions) instructionsInput.value = state.instructions;
+    if (state.include_key) includeKeyCheckbox.checked = state.include_key;
+    if (state.difficulty) {
+      const radio = Array.from(difficultyRadios).find(r => r.value === state.difficulty);
+      if (radio) radio.checked = true;
     }
+  } catch (error) {
+    console.error('Failed to load form data:', error);
+  }
 }
 
-function toggleTheme() {
-    document.body.classList.toggle('dark');
-    const icon = document.body.classList.contains('dark') ? '☀️' : '🌙';
-    themeToggle.textContent = icon;
-    localStorage.setItem('theme', icon);
+// ==================== EVENT LISTENERS ====================
+function attachEventListeners() {
+  // Form fields auto-save
+  [userNameInput, schoolNameInput, standardSelect, boardSelect, subjectSelect, 
+   chapterSelect, marksSelect, instructionsInput, includeKeyCheckbox, ...difficultyRadios]
+    .forEach(el => el?.addEventListener('change', saveFormData));
+
+  // Form submission
+  form.addEventListener('submit', handleGeneratePaper);
+
+  // Output buttons
+  copyBtn.addEventListener('click', copyPaperToClipboard);
+  downloadBtn.addEventListener('click', downloadPDF);
+
+  // Subject change triggers chapter loading
+  subjectSelect.addEventListener('change', updateChaptersOnSubjectChange);
+  standardSelect.addEventListener('change', updateChaptersOnSubjectChange);
+  boardSelect.addEventListener('change', updateChaptersOnSubjectChange);
 }
 
-function setButtonsState(disabled) {
-    copyBtn.disabled = disabled;
-    if (disabled) {
-        copyBtn.classList.add("disabled");
+// ==================== CHAPTER LOADING ====================
+async function updateChaptersOnSubjectChange() {
+  const subject = subjectSelect.value;
+  const standard = standardSelect.value;
+  const board = boardSelect.value;
+
+  if (!subject || !standard) {
+    chapterSelect.innerHTML = '<option value="" disabled selected>Select subject and class first</option>';
+    chapterSelect.disabled = true;
+    return;
+  }
+
+  try {
+    chapterSelect.innerHTML = '<option value="" disabled selected>Loading chapters...</option>';
+    chapterSelect.disabled = true;
+
+    const response = await fetch('/get-chapters', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ class: standard, subject, board }),
+    });
+
+    const data = await response.json();
+
+    if (data.success && data.chapters.length > 0) {
+      chapterSelect.innerHTML = '<option value="" disabled selected>Select a chapter</option>';
+      data.chapters.forEach(chapter => {
+        const option = document.createElement('option');
+        option.value = chapter;
+        option.textContent = chapter;
+        chapterSelect.appendChild(option);
+      });
+      chapterSelect.disabled = false;
     } else {
-        copyBtn.classList.remove("disabled");
+      chapterSelect.innerHTML = '<option value="" disabled selected>No chapters available</option>';
+      chapterSelect.disabled = true;
     }
+  } catch (error) {
+    console.error('Failed to load chapters:', error);
+    chapterSelect.innerHTML = '<option value="" disabled selected>Error loading chapters</option>';
+    chapterSelect.disabled = true;
+    showError('Failed to load chapters. Please try again.');
+  }
 }
 
-function showMessage(text, type) {
-    messageEl.textContent = text;
-    messageEl.classList.remove("error", "success", "show");
-    if (text) {
-        if (type) messageEl.classList.add(type);
-        messageEl.classList.add("show");
-    }
-}
+// ==================== PAPER GENERATION ====================
+async function handleGeneratePaper(e) {
+  e.preventDefault();
 
-async function prepareSubjectChapters() {
-    const subj = document.getElementById('subject');
-    const classEl = document.getElementById('standard');
-    const boardEl = document.getElementById('board');
-    const chap = document.getElementById('chapter');
-    
-    const loadChapters = async () => {
-        const subject = subj.value;
-        const classNum = classEl.value;
-        const board = boardEl.value;
-        
-        if (!subject || !classNum) {
-            chap.innerHTML = '<option value="" disabled selected>Choose a chapter...</option>';
-            chap.disabled = true;
-            return;
-        }
-        
-        chap.innerHTML = '<option value="" disabled selected>Loading chapters...</option>';
-        chap.disabled = true;
-        
-        try {
-            const res = await fetch('/get-chapters', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ class: classNum, subject: subject, board: board })
-            });
-            
-            const data = await res.json();
-            
-            if (data.success && data.chapters.length > 0) {
-                chap.innerHTML = '<option value="" disabled selected>Choose a chapter...</option>';
-                data.chapters.forEach(c => {
-                    const opt = document.createElement('option');
-                    opt.value = c;
-                    opt.textContent = c;
-                    chap.appendChild(opt);
-                });
-                chap.disabled = false;
-            } else {
-                chap.innerHTML = '<option value="" disabled selected>No chapters found</option>';
-                chap.disabled = true;
-            }
-        } catch (err) {
-            console.error('Failed to load chapters:', err);
-            chap.innerHTML = '<option value="" disabled selected>Error loading chapters</option>';
-            chap.disabled = true;
-        }
+  // Validate form
+  const subject = subjectSelect.value;
+  if (!subject) {
+    showError('Please select a subject');
+    return;
+  }
+
+  try {
+    // Show loading state
+    setLoadingState(true);
+    hideMessages();
+
+    // Collect form data
+    const formData = {
+      class: standardSelect.value,
+      board: boardSelect.value,
+      subject: subject,
+      chapter: chapterSelect.value || undefined,
+      marks: parseInt(marksSelect.value),
+      difficulty: Array.from(difficultyRadios).find(r => r.checked)?.value || 'Medium',
+      instructions: instructionsInput.value || undefined,
+      user_name: userNameInput.value || undefined,
+      school_name: schoolNameInput.value || undefined,
+      include_key: includeKeyCheckbox.checked,
     };
-    
-    subj.addEventListener('change', loadChapters);
-    classEl.addEventListener('change', loadChapters);
-    boardEl.addEventListener('change', loadChapters);
-}
 
-async function generatePaper() {
-    errorBox.style.display = 'none';
-    showMessage('', '');
-    setButtonsState(true);
+    // Send request to API
+    const response = await fetch('/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(formData),
+    });
 
-    generateBtn.disabled = true;
-    generateBtn.innerHTML = '<span class="emoji">🚀</span> Generating...<span class="spinner"></span>';
-    modal.style.display = 'flex';
+    const responseData = await response.json();
 
-    try {
-        const formData = new FormData();
-        ['user_name','school_name','standard','board','subject','chapter','marks','instructions','include_key']
-            .forEach(id => {
-                const el = document.getElementById(id);
-                if (!el) return;
-                if (el.type === 'checkbox') formData.append(id, el.checked);
-                else formData.append(id, el.value);
-            });
-        // add difficulty radio
-        const diff = document.querySelector('input[name="difficulty"]:checked');
-        if (diff) formData.append('difficulty', diff.value);
-
-        const json = {};
-        formData.forEach((v,k)=>{ json[k]=v; });
-        // rename standard -> class for backend compatibility
-        if (json.standard !== undefined) {
-            json.class = json.standard;
-            delete json.standard;
-        }
-
-        const res = await fetch('/generate', {
-            method:'POST',
-            headers: {'Content-Type':'application/json'},
-            body: JSON.stringify(json)
-        });
-        const data = await res.json();
-        if (!res.ok || !data.success) throw new Error(data.error||'Failed');
-
-        let text = data.paper;
-        let hasKey = false;
-        if (json.include_key === 'true' || json.include_key === true) {
-            const parts = text.split(/answer key[:]?/i);
-            text = parts[0];
-            const keyPortion = parts[1] ? parts[1].trim() : null;
-            if (keyPortion) {
-                keyEl.textContent = keyPortion;
-                keySection.classList.remove('hidden');
-                hasKey = true;
-            } else {
-                keySection.classList.add('hidden');
-            }
-        } else {
-            keySection.classList.add('hidden');
-        }
-
-        outputEl.innerText = text;
-        pdfData = data.pdf;
-        showMessage('📝 Paper generated successfully!', 'success');
-        setButtonsState(false);
-        
-        // Auto-download PDF after short delay
-        setTimeout(() => {
-            downloadPDF();
-        }, 1000);
-    } catch (err) {
-        errorBox.style.display = 'block';
-        showMessage(err.message, 'error');
-    } finally {
-        generateBtn.disabled = false;
-        generateBtn.innerHTML = '<span class="emoji">🚀</span> Generate Paper';
-        modal.style.display = 'none';
+    if (!response.ok || !responseData.success) {
+      throw new Error(responseData.error || 'Failed to generate paper');
     }
+
+    // Process the response
+    handleGenerationSuccess(responseData);
+  } catch (error) {
+    console.error('Generation error:', error);
+    showError(error.message || 'Failed to generate the exam paper. Please try again.');
+  } finally {
+    setLoadingState(false);
+  }
 }
 
-function downloadPDF() {
-    if (!pdfData) return;
-    fetch("/download", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ pdf: pdfData })
+function handleGenerationSuccess(data) {
+  let paperText = data.paper;
+  let keyText = null;
+
+  // Split answer key if it exists
+  if (includeKeyCheckbox.checked) {
+    const parts = paperText.split(/\nanswer\s+key[\s:]*/i);
+    if (parts.length > 1) {
+      paperText = parts[0].trim();
+      keyText = parts[1].trim();
+    }
+  }
+
+  // Store data
+  currentPaper = paperText;
+  currentKey = keyText;
+  pdfData = data.pdf;
+
+  // Display output
+  outputEl.textContent = paperText;
+  if (keyText) {
+    keyEl.textContent = keyText;
+    keySection.classList.remove('hidden');
+  } else {
+    keySection.classList.add('hidden');
+  }
+
+  // Show output sections
+  outputSection.classList.remove('hidden');
+
+  // Enable action buttons
+  copyBtn.disabled = false;
+  downloadBtn.disabled = false;
+
+  // Show success message
+  showSuccess('✅ Exam paper generated successfully!');
+
+  // Auto-download PDF
+  setTimeout(() => {
+    downloadPDF();
+  }, 800);
+}
+
+// ==================== CLIPBOARD ====================
+function copyPaperToClipboard() {
+  if (!currentPaper) return;
+
+  navigator.clipboard.writeText(currentPaper)
+    .then(() => {
+      showSuccess('✅ Paper copied to clipboard!');
     })
-        .then(res => res.blob())
-        .then(blob => {
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement("a");
-            a.href = url;
-            a.download = "question_paper.pdf";
-            a.click();
-        });
-}
-
-function copyPaper() {
-    if (!outputEl.innerText) return;
-    navigator.clipboard.writeText(outputEl.innerText);
-    showMessage("Copied to clipboard!", "success");
-}
-
-// initialization
-loadForm();
-if (localStorage.getItem('theme') === '☀️') document.body.classList.add('dark');
-if (themeToggle) themeToggle.addEventListener('click', () => { toggleTheme(); });
-document.querySelectorAll('select,input,textarea').forEach(el => { el.addEventListener('change', saveForm); });
-prepareSubjectChapters();
-
-// Guide toggle
-const toggleGuideBtn = document.getElementById('toggleGuide');
-const guideContent = document.getElementById('guideContent');
-if (toggleGuideBtn) {
-    toggleGuideBtn.addEventListener('click', () => {
-        guideContent.classList.toggle('hidden');
-        toggleGuideBtn.textContent = guideContent.classList.contains('hidden') ? 'Show Tips ▼' : 'Hide Tips ▲';
+    .catch(() => {
+      showError('Failed to copy to clipboard');
     });
 }
 
+// ==================== PDF DOWNLOAD ====================
+function downloadPDF() {
+  if (!pdfData) {
+    showError('No PDF available to download');
+    return;
+  }
+
+  try {
+    // Convert base64 to blob
+    const binaryString = atob(pdfData);
+    const bytes = new Uint8Array(binaryString.length);
+    for (let i = 0; i < binaryString.length; i++) {
+      bytes[i] = binaryString.charCodeAt(i);
+    }
+    const blob = new Blob([bytes], { type: 'application/pdf' });
+
+    // Create download link
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `exam_paper_${new Date().toISOString().slice(0, 10)}.pdf`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+
+    showSuccess('✅ PDF downloaded successfully!');
+  } catch (error) {
+    console.error('Download error:', error);
+    showError('Failed to download PDF. Please try again.');
+  }
+}
+
+// ==================== UI HELPERS ====================
+function setLoadingState(isLoading) {
+  if (isLoading) {
+    generateBtn.disabled = true;
+    generateBtn.innerHTML = '<span class="btn-spinner spinner active"></span><span class="btn-text">Generating...</span>';
+    loadingModal.classList.remove('hidden');
+  } else {
+    generateBtn.disabled = false;
+    generateBtn.innerHTML = '<span class="btn-icon">🚀</span><span class="btn-text">Generate Paper</span>';
+    loadingModal.classList.add('hidden');
+  }
+}
+
+function showMessage(message, type) {
+  hideMessages();
+
+  if (!message) return;
+
+  const box = type === 'error' ? errorBox : messageBox;
+  box.textContent = message;
+  box.classList.remove('hidden');
+
+  // Auto-hide success messages after 5 seconds
+  if (type === 'success') {
+    setTimeout(hideMessages, 5000);
+  }
+}
+
+function showSuccess(message) {
+  showMessage(message, 'success');
+}
+
+function showError(message) {
+  showMessage(message, 'error');
+}
+
+function hideMessages() {
+  messageBox.classList.add('hidden');
+  errorBox.classList.add('hidden');
+}
+
+// ==================== EXPORT FUNCTIONS ====================
+window.copyPaperToClipboard = copyPaperToClipboard;
+window.downloadPDF = downloadPDF;

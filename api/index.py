@@ -104,15 +104,21 @@ def create_pdf(text: str, data: Dict[str, Any], key: Optional[str] = None) -> by
     pdf.set_auto_page_break(auto=True, margin=15)
     pdf.add_page()
 
-    font_path = os.path.join(
-        os.path.dirname(__file__),
-        "../static/fonts/DejaVuSans.ttf"
-    )
+    # Try to use custom font, fallback to helvetica
+    font_name = "helvetica"
+    try:
+        font_path = os.path.join(
+            os.path.dirname(__file__),
+            "../static/fonts/DejaVuSans.ttf"
+        )
+        if os.path.exists(font_path):
+            pdf.add_font("DejaVu", "", font_path)
+            pdf.add_font("DejaVu", "B", font_path)
+            font_name = "DejaVu"
+    except Exception:
+        pass
 
-    pdf.add_font("DejaVu", "", font_path)
-    pdf.add_font("DejaVu", "B", font_path)
-
-    pdf.set_font("DejaVu", "B", 16)
+    pdf.set_font(font_name, "B", 16)
 
     # try to add a logo if one exists in static/images/logo.png
     logo_path = os.path.join(os.path.dirname(__file__), "../static/images/logo.png")
@@ -135,7 +141,7 @@ def create_pdf(text: str, data: Dict[str, Any], key: Optional[str] = None) -> by
         align="C"
     )
 
-    pdf.set_font("DejaVu", "", 12)
+    pdf.set_font(font_name, "", 12)
 
     pdf.cell(0, 8, f"Class: {data['class']}", new_x=XPos.LMARGIN, new_y=YPos.NEXT)
     pdf.cell(0, 8, f"Subject: {data['subject']}", new_x=XPos.LMARGIN, new_y=YPos.NEXT)
@@ -150,9 +156,9 @@ def create_pdf(text: str, data: Dict[str, Any], key: Optional[str] = None) -> by
     # append key on new page if provided
     if key:
         pdf.add_page()
-        pdf.set_font("DejaVu", "B", 14)
+        pdf.set_font(font_name, "B", 14)
         pdf.cell(0, 10, "Answer Key", new_x=XPos.LMARGIN, new_y=YPos.NEXT, align="C")
-        pdf.set_font("DejaVu", "", 12)
+        pdf.set_font(font_name, "", 12)
         pdf.ln(5)
         pdf.multi_cell(0, 7, key)
 

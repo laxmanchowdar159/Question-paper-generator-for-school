@@ -1,376 +1,240 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="ExamCraft - AI-powered exam question paper generator">
     <title>ExamCraft - AI Question Paper Generator</title>
-    <!-- Google font -->
+    
+    <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
-
-    <!-- external stylesheet; absolute path ensures proper loading on Vercel -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@600;700&display=swap" rel="stylesheet">
+    
+    <!-- CSS -->
     <link rel="stylesheet" href="/static/css/style.css">
-
-    <!-- inline fallback in case the external CSS isn't loaded -->
-    <style>
-        body {
-            margin: 0;
-            font-family: 'Poppins', system-ui, sans-serif;
-            background: #f4f6f8;
-            color: #1e293b;
-        }
-        .app {
-            max-width: 900px;
-            margin: auto;
-            padding: 20px;
-        }
-        .header {
-            position: relative;
-            text-align: center;
-            margin-bottom: 30px;
-        }
-        .theme-btn {
-            position: absolute;
-            top: 0;
-            right: 0;
-            background: transparent;
-            border: none;
-            font-size: 1.4rem;
-            cursor: pointer;
-        }
-        .card,
-        .form-card {
-            background: white;
-            padding: 30px;
-            border-radius: 12px;
-            margin-bottom: 20px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-        }
-        .grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 16px;
-        }
-        .form-group {
-            display: flex;
-            flex-direction: column;
-        }
-        .full-width {
-            grid-column: 1 / -1;
-        }
-        select, textarea, input[type="text"] {
-            width:100%;
-            padding:12px;
-            border-radius:8px;
-            border:1px solid #cbd5e1;
-            background:#ffffff;
-            color:#1e293b;
-        }
-        .form-group label {
-            display:block;
-            margin-bottom:4px;
-            font-size:0.9rem;
-            font-weight:600;
-        }
-        button {
-            background:#3b82f6;
-            border:none;
-            padding:12px 24px;
-            border-radius:8px;
-            color:white;
-            cursor:pointer;
-            font-size:1rem;
-            font-weight:600;
-        }
-        button:disabled,
-        button.disabled {
-            background:#6b7280;
-            cursor:not-allowed;
-        }
-        .spinner {
-            border:4px solid rgba(255,255,255,0.3);
-            border-top:4px solid white;
-            border-radius:50%;
-            width:20px;
-            height:20px;
-            animation:spin 1s linear infinite;
-            display:inline-block;
-            vertical-align:middle;
-            margin-left:8px;
-        }
-        .hidden { display:none; }
-        @keyframes spin { 0% { transform:rotate(0deg);} 100% { transform:rotate(360deg);} }
-        .message {
-            margin-bottom:10px;
-            min-height:1.2em;
-            font-weight:600;
-        }
-        .message.error { color:#ef4444; }
-        .message.success { color:#10b981; }
-        pre {
-            white-space:pre-wrap;
-            line-height:1.6;
-            background:#f9fafb;
-            padding:15px;
-            border-radius:8px;
-            overflow-x:auto;
-        }
-        .toolbar {
-            display:flex;
-            gap:10px;
-            margin-bottom:10px;
-        }
-        .tooltip {
-            font-size:0.9rem;
-            cursor:help;
-            margin-left:4px;
-        }
-        body.dark {
-            background:#1e293b;
-            color:#f1f5f9;
-        }
-        body.dark .card,
-        body.dark .form-card {
-            background:#334155;
-        }
-        body.dark input, body.dark select, body.dark textarea {
-            background:#475569;
-            color:#f1f5f9;
-            border:1px solid #64748b;
-        }
-        body.dark button {
-            background:#6366f1;
-        }
-        body.dark .message.success { color:#4ade80; }
-        body.dark .message.error { color:#f87171; }
-    </style>
 </head>
-
 <body>
-
-<main class="container">
-  <div class="header-section">
-    <h1>📝 ExamCraft</h1>
-    <p class="tagline">Craft Perfect Exam Papers with AI in Minutes</p>
-    <button id="themeToggle" class="theme-btn" title="Toggle light/dark">🌙</button>
-  </div>
-
-  <!-- Feature Highlights -->
-  <div class="features-showcase">
-    <div class="feature-card">
-      <div class="feature-icon">⚡</div>
-      <div class="feature-content">
-        <h3>AI-Powered</h3>
-        <p>Uses OpenAI GPT-4 to generate contextual, high-quality exam papers</p>
-      </div>
-    </div>
-    <div class="feature-card">
-      <div class="feature-icon">📋</div>
-      <div class="feature-content">
-        <h3>Answer Keys</h3>
-        <p>Generate answer keys on a separate page for easy grading</p>
-      </div>
-    </div>
-    <div class="feature-card">
-      <div class="feature-icon">🎯</div>
-      <div class="feature-content">
-        <h3>Difficulty Control</h3>
-        <p>Choose Easy, Medium, Hard, or Mixed difficulty levels</p>
-      </div>
-    </div>
-    <div class="feature-card">
-      <div class="feature-icon">🌙</div>
-      <div class="feature-content">
-        <h3>Dark Mode</h3>
-        <p>Eye-friendly dark theme for late-night paper creation</p>
-      </div>
-    </div>
-  </div>
-
-  <!-- How to Use Guide -->
-  <div class="guide-section">
-    <div class="guide-header">
-      <h2>📚 How to Use</h2>
-      <button id="toggleGuide" class="btn-guide">Show Tips ▼</button>
-    </div>
-    <div id="guideContent" class="guide-content hidden">
-      <div class="guide-step">
-        <div class="step-number">1</div>
-        <div class="step-content">
-          <h4>Enter Your Details</h4>
-          <p>Fill in your name and school name (optional but recommended for the PDF header)</p>
+    <!-- Navigation Bar -->
+    <nav class="navbar">
+        <div class="container">
+            <div class="navbar-content">
+                <div class="navbar-brand">
+                    <h1 class="app-title">📝 ExamCraft</h1>
+                    <p class="app-subtitle">AI-Powered Exam Generator</p>
+                </div>
+                <button id="themeToggle" class="theme-toggle" title="Toggle dark mode" aria-label="Toggle dark mode">🌙</button>
+            </div>
         </div>
-      </div>
-      <div class="guide-step">
-        <div class="step-number">2</div>
-        <div class="step-content">
-          <h4>Select Class & Board</h4>
-          <p>Choose your class (6-10) and board. <strong>Andhra Board</strong> is recommended for optimized content.</p>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="container">
+        <!-- Features Section -->
+        <section class="features-grid">
+            <div class="feature-item">
+                <div class="feature-icon">⚡</div>
+                <h3>Lightning Fast</h3>
+                <p>Generate exam papers in seconds using AI</p>
+            </div>
+            <div class="feature-item">
+                <div class="feature-icon">🎯</div>
+                <h3>Customizable</h3>
+                <p>Full control over difficulty, marks, and content</p>
+            </div>
+            <div class="feature-item">
+                <div class="feature-icon">📄</div>
+                <h3>Professional PDFs</h3>
+                <p>Download beautiful, formatted exam papers</p>
+            </div>
+            <div class="feature-item">
+                <div class="feature-icon">🔑</div>
+                <h3>Answer Keys</h3>
+                <p>Get answer keys on separate pages automatically</p>
+            </div>
+        </section>
+
+        <!-- Main Form Section -->
+        <section class="form-section">
+            <div class="section-header">
+                <h2>Create Your Exam Paper</h2>
+                <p>Fill in the details below and let AI generate a perfect exam paper for you</p>
+            </div>
+
+            <form id="paperForm" class="paper-form" novalidate>
+                <!-- Basic Info Row -->
+                <div class="form-row">
+                    <div class="form-field">
+                        <label for="user_name">Your Name</label>
+                        <input type="text" id="user_name" name="user_name" placeholder="e.g., Mrs. Rao">
+                    </div>
+                    <div class="form-field">
+                        <label for="school_name">School Name</label>
+                        <input type="text" id="school_name" name="school_name" placeholder="e.g., Sunrise High School">
+                    </div>
+                </div>
+
+                <!-- Curriculum Row -->
+                <div class="form-row">
+                    <div class="form-field">
+                        <label for="standard">Class</label>
+                        <select id="standard" name="standard" required>
+                            <option value="6">Class 6</option>
+                            <option value="7">Class 7</option>
+                            <option value="8">Class 8</option>
+                            <option value="9">Class 9</option>
+                            <option value="10" selected>Class 10</option>
+                        </select>
+                    </div>
+                    <div class="form-field">
+                        <label for="board">Board</label>
+                        <select id="board" name="board" required>
+                            <option value="Andhra Board" selected>Andhra Board</option>
+                            <option value="CBSE">CBSE</option>
+                            <option value="ICSE">ICSE</option>
+                            <option value="State Board">State Board</option>
+                            <option value="IB">IB</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Subject Row -->
+                <div class="form-row">
+                    <div class="form-field">
+                        <label for="subject">Subject</label>
+                        <select id="subject" name="subject" required>
+                            <option value="" disabled selected>Select a subject</option>
+                            <option value="Mathematics">Mathematics</option>
+                            <option value="Science">Science</option>
+                            <option value="English">English</option>
+                            <option value="Social Studies">Social Studies</option>
+                            <option value="Hindi">Hindi</option>
+                            <option value="Physics">Physics</option>
+                            <option value="Chemistry">Chemistry</option>
+                            <option value="Biology">Biology</option>
+                        </select>
+                    </div>
+                    <div class="form-field">
+                        <label for="chapter">Chapter</label>
+                        <select id="chapter" name="chapter" disabled>
+                            <option value="" disabled selected>Select chapter first</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Difficulty & Marks Row -->
+                <div class="form-row">
+                    <div class="form-field">
+                        <label>Difficulty Level</label>
+                        <div class="radio-group">
+                            <label class="radio-option">
+                                <input type="radio" name="difficulty" value="Easy">
+                                <span class="radio-text">Easy</span>
+                            </label>
+                            <label class="radio-option">
+                                <input type="radio" name="difficulty" value="Medium" checked>
+                                <span class="radio-text">Medium</span>
+                            </label>
+                            <label class="radio-option">
+                                <input type="radio" name="difficulty" value="Hard">
+                                <span class="radio-text">Hard</span>
+                            </label>
+                            <label class="radio-option">
+                                <input type="radio" name="difficulty" value="Mixed">
+                                <span class="radio-text">Mixed</span>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="form-field">
+                        <label for="marks">Total Marks</label>
+                        <select id="marks" name="marks" required>
+                            <option value="20">20 Marks</option>
+                            <option value="40">40 Marks</option>
+                            <option value="60">60 Marks</option>
+                            <option value="80">80 Marks</option>
+                            <option value="100" selected>100 Marks</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Instructions & Answer Key -->
+                <div class="form-row full-width">
+                    <div class="form-field">
+                        <label for="instructions">Additional Instructions (Optional)</label>
+                        <textarea id="instructions" name="instructions" placeholder="e.g., Focus on MCQs, Include case studies, Emphasize conceptual questions..." rows="3"></textarea>
+                    </div>
+                </div>
+
+                <!-- Checkbox -->
+                <div class="form-row">
+                    <label class="checkbox-wrapper">
+                        <input type="checkbox" id="include_key" name="include_key">
+                        <span class="checkbox-label">Include answer key in PDF</span>
+                        <span class="checkbox-hint">Answer key will appear on a separate page</span>
+                    </label>
+                </div>
+
+                <!-- Submit Button -->
+                <div class="form-actions">
+                    <button type="submit" id="generateBtn" class="btn btn-primary btn-large">
+                        <span class="btn-icon">🚀</span>
+                        <span class="btn-text">Generate Paper</span>
+                        <span class="btn-spinner spinner hidden"></span>
+                    </button>
+                </div>
+            </form>
+        </section>
+
+        <!-- Status Messages -->
+        <div id="messageBox" class="message-box hidden" role="alert"></div>
+        <div id="errorBox" class="error-box hidden" role="alert"></div>
+
+        <!-- Loading Modal -->
+        <div id="loadingModal" class="modal hidden" aria-hidden="true">
+            <div class="modal-backdrop"></div>
+            <div class="modal-content">
+                <div class="spinner large"></div>
+                <p class="modal-text">Generating your exam paper...</p>
+                <p class="modal-subtext">This usually takes 30-60 seconds</p>
+            </div>
         </div>
-      </div>
-      <div class="guide-step">
-        <div class="step-number">3</div>
-        <div class="step-content">
-          <h4>Pick Subject & Chapter</h4>
-          <p>Select subject (Math, Science, English, Social Studies) and the specific chapter to focus on</p>
-        </div>
-      </div>
-      <div class="guide-step">
-        <div class="step-number">4</div>
-        <div class="step-content">
-          <h4>Set Difficulty & Marks</h4>
-          <p>Choose difficulty level (Easy/Medium/Hard/Mixed) and total marks (20-100)</p>
-        </div>
-      </div>
-      <div class="guide-step">
-        <div class="step-number">5</div>
-        <div class="step-content">
-          <h4>Add Custom Instructions (Optional)</h4>
-          <p>Include special requirements like "Focus on MCQs" or "Include case studies"</p>
-        </div>
-      </div>
-      <div class="guide-step">
-        <div class="step-number">6</div>
-        <div class="step-content">
-          <h4>Enable Answer Key (Optional)</h4>
-          <p>Check "Include answer key" to generate answers on a separate page in the PDF</p>
-        </div>
-      </div>
-      <div class="guide-step">
-        <div class="step-number">7</div>
-        <div class="step-content">
-          <h4>Generate & Download</h4>
-          <p>Click "Generate Paper" and wait. PDF auto-downloads in 1-2 seconds. You can also copy the text preview!</p>
-        </div>
-      </div>
-    </div>
-  </div>
 
-  <form id="paperForm" novalidate>
-    <div class="form-grid">
-      <div class="card compact">
-        <label for="user_name">Your Name</label>
-        <input type="text" id="user_name" placeholder="Mrs. Rao">
-      </div>
-      <div class="card compact">
-        <label for="school_name">School Name</label>
-        <input type="text" id="school_name" placeholder="Sunrise High School">
-      </div>
-      <div class="card compact">
-        <label for="standard">Class</label>
-        <select id="standard">
-            <option>6</option>
-            <option>7</option>
-            <option>8</option>
-            <option>9</option>
-            <option selected>10</option>
-        </select>
-      </div>
-      <div class="card compact">
-        <label for="board">Board</label>
-        <select id="board">
-            <option>Andhra Board</option>
-            <option>CBSE</option>
-            <option>ICSE</option>
-            <option>State Board</option>
-            <option>IB</option>
-        </select>
-      </div>
-      <div class="card compact">
-        <label for="subject">Subject</label>
-        <select id="subject">
-            <option>Mathematics</option>
-            <option>Science</option>
-            <option>English</option>
-            <option>Social Studies</option>
-        </select>
-      </div>
-      <div class="card compact">
-        <label for="chapter">Chapter</label>
-        <select id="chapter" disabled>
-            <option value="" disabled selected>Choose chapter...</option>
-        </select>
-      </div>
-      <div class="card compact">
-        <label for="marks">Marks</label>
-        <select id="marks">
-            <option>20</option>
-            <option>40</option>
-            <option>60</option>
-            <option>80</option>
-            <option selected>100</option>
-        </select>
-      </div>
-      <div class="card compact difficulty-card">
-        <label>Difficulty</label>
-        <div class="difficulty-options">
-          <input type="radio" id="easy" name="difficulty" value="Easy">
-          <label for="easy" class="radio-label">Easy</label>
-          <input type="radio" id="medium" name="difficulty" value="Medium" checked>
-          <label for="medium" class="radio-label">Medium</label>
-          <input type="radio" id="hard" name="difficulty" value="Hard">
-          <label for="hard" class="radio-label">Hard</label>
-          <input type="radio" id="mixed" name="difficulty" value="Mixed">
-          <label for="mixed" class="radio-label">Mixed</label>
-        </div>
-      </div>
-      <div class="card suggestions-card">
-        <label for="instructions">Additional Instructions</label>
-        <textarea id="instructions" rows="3" placeholder="Custom instructions (optional)"></textarea>
-      </div>
-      <div class="card">
-        <label>
-            <input type="checkbox" id="include_key">
-            <span>Include answer key</span>
-            <span class="tooltip" title="Generates the answer key on a new page in the PDF">🛈</span>
-        </label>
-      </div>
-      <div class="button-container">
-        <button type="submit" id="generateBtn" class="btn-primary">
-          <span class="emoji">🚀</span> Generate Paper
-        </button>
-      </div>
-    </div>
-  </form>
+        <!-- Output Section -->
+        <section class="output-section hidden" id="outputSection">
+            <div class="section-header">
+                <h2>📄 Your Exam Paper</h2>
+                <div class="output-actions">
+                    <button type="button" id="copyBtn" class="btn btn-secondary" disabled title="Copy paper text">
+                        📋 Copy Text
+                    </button>
+                    <button type="button" id="downloadBtn" class="btn btn-primary" disabled title="Download as PDF">
+                        ⬇️ Download PDF
+                    </button>
+                </div>
+            </div>
+            <div class="paper-preview-container">
+                <pre id="output" class="paper-preview"></pre>
+            </div>
+        </section>
 
-  <div id="loadingModal" class="modal" aria-hidden="true">
-    <div class="modal-content">
-      <div>🚀 Generating your exam paper...</div>
-      <span class="spinner"></span>
-    </div>
-  </div>
+        <!-- Answer Key Section -->
+        <section class="output-section hidden" id="keySection">
+            <div class="section-header">
+                <h2>🔑 Answer Key</h2>
+            </div>
+            <div class="paper-preview-container">
+                <pre id="keyOutput" class="paper-preview"></pre>
+            </div>
+        </section>
 
-  <div id="errorMessage" class="error-message" role="alert" style="display:none;">
-    Something went wrong. Please try again.
-  </div>
+        <!-- Footer -->
+        <footer class="footer">
+            <p><strong>ExamCraft</strong> - Powered by OpenAI GPT-4 | Made with ❤️ for educators</p>
+            <p><small>Contact: <a href="mailto:laxmanchowdary159@gmail.com">laxmanchowdary159@gmail.com</a></small></p>
+        </footer>
+    </main>
 
-  <div class="message" id="message"></div>
-
-  <div class="output-section">
-    <div class="output-header">
-      <h3>📄 Question Paper Preview</h3>
-      <div class="output-actions">
-        <button onclick="copyPaper()" id="copyBtn" disabled class="btn-secondary">📋 Copy</button>
-      </div>
-    </div>
-    <pre id="output" class="paper-output">Your generated question paper will appear here.</pre>
-  </div>
-
-  <div class="output-section hidden" id="keySection">
-    <div class="output-header">
-      <h3>🔑 Answer Key</h3>
-    </div>
-    <pre id="keyOutput" class="paper-output">Answer key will appear here if included.</pre>
-  </div>
-
-  <div class="contact-info">
-      <strong>ExamCraft</strong> - Craft Perfect Exam Papers | <a href="mailto:laxmanchowdary159@gmail.com">Support</a><br>
-      Made with ❤️ by Laxman Nimmagadda
-  </div>
-</main>
-
-<script src="/static/js/app.js"></script>
-
+    <!-- Scripts -->
+    <script src="/static/js/app.js"></script>
 </body>
 </html>
