@@ -7,8 +7,8 @@ from fpdf import FPDF
 
 app = Flask(
     __name__,
-    template_folder=os.path.join(os.path.dirname(__file__), '..', 'templates'),
-    static_folder=os.path.join(os.path.dirname(__file__), '..', 'static'),
+    template_folder=os.path.join(os.path.dirname(__file__), 'templates'),
+    static_folder=os.path.join(os.path.dirname(__file__), 'static'),
     static_url_path='/static'
 )
 
@@ -19,7 +19,8 @@ client = OpenAI(api_key=api_key) if api_key else None
 
 
 def split_key(text: str):
-    parts = re.split(r'(?i)answer key[:]?\s*', text, maxsplit=1)
+    parts = re.split(r'(?i)answer key[:]?
+\s*', text, maxsplit=1)
     if len(parts) > 1:
         return parts[0].strip(), parts[1].strip()
     return text.strip(), None
@@ -29,7 +30,7 @@ def create_exam_pdf(text: str, subject: str, chapter: str) -> bytes:
     pdf = FPDF()
     pdf.add_page()
 
-    base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+    base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ''))
     font_path = os.path.join(base_dir, 'static', 'fonts', 'DejaVuSans.ttf')
     font_name = 'Helvetica'
     try:
@@ -164,4 +165,5 @@ def health():
 
 
 if __name__ == '__main__':
-    app.run(port=3000)
+    port = int(os.environ.get('PORT', 3000))
+    app.run(host='0.0.0.0', port=port)

@@ -66,7 +66,7 @@ export OPENAI_API_KEY=sk-your-key-here     # Mac/Linux
 pip install -r requirements.txt
 
 # Development (Flask CLI):
-export FLASK_APP=api.app
+export FLASK_APP=app
 flask run --host=0.0.0.0 --port=3000
 
 # Production-like (Gunicorn):

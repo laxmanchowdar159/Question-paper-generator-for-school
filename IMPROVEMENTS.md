@@ -148,7 +148,7 @@ export OPENAI_API_KEY="your-api-key-here"
 pip install -r requirements.txt
 
 # Dev (Flask CLI)
-export FLASK_APP=api.app
+export FLASK_APP=app
 flask run --host=0.0.0.0 --port=3000
 
 # Or (production-like) with Gunicorn
