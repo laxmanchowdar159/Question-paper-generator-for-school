@@ -42,11 +42,11 @@ To make high-quality exam paper creation **accessible, fast, and affordable** fo
 
 ## 📊 Key Statistics
 
-- **Generation Time**: 5-15 seconds per paper
+- **Generation Time**: 5-10 seconds per paper
 - **Boards Supported**: 5+ (Andhra, CBSE, ICSE, State, IB)
 - **Classes Supported**: 6-10 (expandable)
 - **Subjects**: 4+ (Math, Science, English, Social Studies)
-- **Cost per Paper**: $0.01-0.015
+- **Cost per Paper**: Free tier available (Gemini API)
 - **PDF Size**: 50-150 KB
 
 ---
@@ -56,7 +56,7 @@ To make high-quality exam paper creation **accessible, fast, and affordable** fo
 | Component | Technology |
 |-----------|----------|
 | **Backend** | Flask (Python) |
-| **AI/ML** | OpenAI GPT-4 mini |
+| **AI/ML** | Google Gemini 1.5 Flash |
 | **Frontend** | Vanilla JavaScript, HTML5, CSS3 |
 | **PDF Generation** | fpdf2 |
 | **Hosting** | Render (Managed Web Services) |
@@ -122,7 +122,7 @@ To make high-quality exam paper creation **accessible, fast, and affordable** fo
 1. **Speed** → Create papers in minutes, not hours
 2. **Quality** → AI-generated, curriculum-aligned questions
 3. **Flexibility** → Customize by difficulty, marks, board, subject
-4. **Affordability** → $0.01-0.015 per paper (vs. $5-10 traditionally)
+4. **Affordability** → Free tier + economical cost (vs. $5-10 traditionally)
 5. **Ease of Use** → No signup, no learning curve
 6. **Professional Output** → PDF-ready, print-quality
 
@@ -131,7 +131,7 @@ To make high-quality exam paper creation **accessible, fast, and affordable** fo
 ## 🔐 Privacy & Security
 
 - ✅ **No Data Storage**: Generated papers aren't retained on servers
-- ✅ **Direct API Calls**: Data flows directly to OpenAI, nowhere else
+- ✅ **Direct API Calls**: Data flows directly to Google Generative AI (Gemini), nowhere else
 - ✅ **Client-Side Processing**: Form state stays in browser
 - ✅ **HTTPS Only**: All connections encrypted
 - ✅ **No Tracking**: No analytics or user tracking
@@ -163,7 +163,7 @@ Please credit the author when using or deploying.
 
 ## 🙏 Credits
 
-- **AI Model**: OpenAI GPT-4 mini
+- **AI Model**: Google Generative AI (Gemini 1.5 Flash)
 - **PDF Library**: fpdf2
 - **Framework**: Flask
 - **Hosting**: Render

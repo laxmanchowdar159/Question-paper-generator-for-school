@@ -84,7 +84,7 @@ Your ExamCraft application has been completely rebuil with a modern, professiona
 - Improved font handling with fallback to helvetica
 - Better error handling in PDF generation
 - Proper encoding for all data types
-- Maintained OpenAI API integration
+- Google Gemini API integration
 - Kept all existing functionality
 
 ---
@@ -92,7 +92,7 @@ Your ExamCraft application has been completely rebuil with a modern, professiona
 ## 📋 **Features**
 
 ### **Core Functionality**
-✅ AI-powered exam paper generation via  OpenAI GPT-4o-mini  
+✅ AI-powered exam paper generation via Google Gemini 1.5 Flash
 ✅ Support for multiple boards (Andhra, CBSE, ICSE, State Board, IB)  
 ✅ Classes 6-10 support  
 ✅ Dynamic chapter selection based on curriculum  
@@ -138,9 +138,9 @@ Your ExamCraft application has been completely rebuil with a modern, professiona
 pip install -r requirements.txt
 ```
 
-### **2. Set OpenAI API Key**
+### **2. Set Gemini API Key**
 ```bash
-export OPENAI_API_KEY="your-api-key-here"
+export GEMINI_API_KEY="your-gemini-api-key-here"
 ```
 
 ### **3. Run Locally**
@@ -152,12 +152,12 @@ export FLASK_APP=app
 flask run --host=0.0.0.0 --port=3000
 
 # Or (production-like) with Gunicorn
-gunicorn api.app:app --bind 0.0.0.0:8000
+gunicorn app:app --bind 0.0.0.0:8000
 ```
 Then open `http://localhost:3000` (Flask) or `http://localhost:8000` (Gunicorn)
 
 ### **4. Deploy to Render**
-Use Render dashboard or the provided `render.yaml` to deploy. Ensure `OPENAI_API_KEY` is set in service Environment Variables.
+Use Render dashboard or the provided `render.yaml` to deploy. Ensure `GEMINI_API_KEY` is set in service Environment Variables.
 
 ---
 
@@ -165,8 +165,7 @@ Use Render dashboard or the provided `render.yaml` to deploy. Ensure `OPENAI_API
 
 ```
 /workspaces/Question-paper-generator-for-school/
-├── api/
-│   └── app.py                # Flask app (enhanced)
+├── app.py                    # Flask app (enhanced)
 ├── static/
 │   ├── css/
 │   │   └── style.css         # Modern stylesheet (750+ lines)
@@ -201,7 +200,7 @@ Use Render dashboard or the provided `render.yaml` to deploy. Ensure `OPENAI_API
 ## ✨ **Hidden Features**
 
 1. **Auto-save Form**: All form inputs are automatically saved to localStorage
-2. **Smart Chapter Loading**: Dynamically fetches chapters from OpenAI
+2. **Smart Chapter Loading**: Dynamically fetches chapters from Gemini curriculum
 3. **Answer Key Extraction**: Automatically splits content and answer key
 4. **PDF Optimization**: Beautiful PDF with proper formatting and margins
 5. **Error Recovery**: Graceful error handling with user-friendly messages

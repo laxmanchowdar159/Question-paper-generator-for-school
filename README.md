@@ -2,12 +2,12 @@
 
 **Craft Perfect Exam Papers with AI in Minutes**
 
-ExamCraft is a sophisticated AI-powered application that generates high-quality, customizable exam question papers instantly. Built with OpenAI's GPT-4 and optimized for Indian boards (Andhra Board, CBSE, ICSE, State Board, and IB).
+ExamCraft is a sophisticated AI-powered application that generates high-quality, customizable exam question papers instantly. Built with Google Gemini AI and optimized for Indian boards (Andhra Board, CBSE, ICSE, State Board, and IB).
 
 ## ✨ Features at a Glance
 
 ### 🤖 **AI-Powered Intelligence**
-- OpenAI GPT-4 mini model generates contextual, high-quality questions
+- Google Gemini 1.5 Flash model generates contextual, high-quality questions
 - Board-specific optimizations (Andhra Board, CBSE, ICSE, etc.)
 - Curriculum-aligned with educational standards
 
@@ -46,7 +46,7 @@ ExamCraft is a sophisticated AI-powered application that generates high-quality,
 
 ### Prerequisites
 - Python 3.8+
-- OpenAI API key (free trial available)
+- Google Generative AI (Gemini) API key (free tier available)
 
 ### Setup in 5 Minutes
 
@@ -59,8 +59,8 @@ cd Question-paper-generator-for-school
 pip install -r requirements.txt
 
 # 3. Configure API key
-set OPENAI_API_KEY=sk-your-key-here        # Windows
-export OPENAI_API_KEY=sk-your-key-here     # Mac/Linux
+set GEMINI_API_KEY=your-gemini-api-key-here        # Windows
+export GEMINI_API_KEY=your-gemini-api-key-here     # Mac/Linux
 
 # 4. Run
 pip install -r requirements.txt
@@ -80,8 +80,8 @@ gunicorn api.app:app --bind 0.0.0.0:8000
 
 1. Push to GitHub
 2. Create a new Web Service on Render and connect your repo
-3. Set `OPENAI_API_KEY` in the Render service Environment > Environment Variables
-4. Set the Start Command to `gunicorn api.app:app --bind 0.0.0.0:$PORT` (or use the provided `render.yaml`)
+3. Set `GEMINI_API_KEY` in the Render service Environment > Environment Variables
+4. Set the Start Command to `gunicorn app:app --bind 0.0.0.0:$PORT` (or use the provided `render.yaml`)
 5. Deploy!
 
 ---
@@ -100,15 +100,15 @@ gunicorn api.app:app --bind 0.0.0.0:8000
 
 ## 🏗️ Code Architecture (Detailed)
 
-### Backend: `api/app.py`
+### Backend: `app.py`
 
-**Role**: OpenAI integration, PDF generation, API endpoints
+**Role**: Google Gemini API integration, PDF generation, API endpoints
 
 #### Core Functions
 
 **1. `generate_question_paper(data: Dict) -> str`**
 ```python
-"""Calls OpenAI to generate question paper"""
+"""Calls Google Gemini API to generate question paper"""
 # Assembles prompt from form inputs
 # Adds board-specific instructions  
 # Returns generated paper text
@@ -137,7 +137,7 @@ gunicorn api.app:app --bind 0.0.0.0:8000
 - `POST /download` → Delivers PDF file
 
 #### Environment
-- `OPENAI_API_KEY` (required) → Your OpenAI secret
+- `GEMINI_API_KEY` (required) → Your Google Generative AI API key
 
 ### Frontend: `templates/index.html`
 
@@ -182,11 +182,11 @@ gunicorn api.app:app --bind 0.0.0.0:8000
 
 ---
 
-## 🔌 OpenAI Integration Details
+## 🔌 Google Gemini Integration Details
 
-### Model: `gpt-4o-mini`
-- **Speed**: 5-15 seconds per paper
-- **Cost**: ~$0.01-0.015 per generation
+### Model: `gemini-1.5-flash`
+- **Speed**: 5-10 seconds per paper
+- **Cost**: Free tier available, very economical at scale
 - **Quality**: Excellent educational content
 
 ### Prompt Engineering
@@ -269,7 +269,7 @@ Edit CSS variables in `:root`
 
 | Issue | Solution |
 |-------|----------|
-| API key error | Set `OPENAI_API_KEY` |
+| API key error | Set `GEMINI_API_KEY` environment variable |
 | Static 404 | Check `render.yaml` routing or static folder configuration |
 | No auto-download | Disable popup blocker |
 | Form lost | Enable localStorage |

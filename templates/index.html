@@ -16,26 +16,37 @@
       </div>
     </div>
     <nav class="sidebar-nav">
-      <div class="nav-item active">Generate</div>
+      <div class="nav-item active">✨ Generate</div>
     </nav>
     <div class="sidebar-footer">
-      <button id="themeToggle" class="theme-toggle">Toggle Theme</button>
+      <button id="themeToggle" class="theme-toggle">🌙 Theme</button>
     </div>
   </div>
 
   <div class="main-content">
     <div class="header-section">
       <h1><span class="emoji">📄</span> Model Paper Generator</h1>
-      <p class="tagline">Create a professional question paper quickly — less weeping, more marking. Choose class → subject → chapter, set difficulty, then download a PDF.</p>
-      <p class="microcopy">Tip: Pick a class first, the subjects will politely appear. No AI lab coats required.</p>
+      <p class="tagline">Craft professional question papers in seconds. Less grading pain, more teaching gain! Select your preferences and let AI do the heavy lifting.</p>
+      <p class="microcopy">💡 Pro tip: Start with a class, subjects load automatically. Then pick a subject, chapters appear like magic!</p>
     </div>
 
     <form id="paperForm" class="paper-form" novalidate>
       <div class="form-grid">
+        <div class="card" style="grid-column: 1 / -1;">
+          <label for="examType"><span class="emoji">📌</span> Paper Type</label>
+          <select id="examType" name="examType" aria-label="Choose exam type" required>
+            <option value="" disabled selected>What type of paper do you need?</option>
+            <option value="state-board">📘 State Board (CBSE/AP Board)</option>
+            <option value="competitive">🚀 Competitive Exam (JEE/NEET/CLAT)</option>
+          </select>
+          <div id="examTypeError" class="error-inline" style="display:none"></div>
+          <small class="hint-text">Choose your exam type to reveal options</small>
+        </div>
+
         <div class="card">
           <label for="class"><span class="emoji">🏫</span> Class</label>
-          <select id="class" name="class" aria-label="Class selection">
-            <option value="" disabled selected>Select class</option>
+          <select id="class" name="class" aria-label="Class selection" required>
+            <option value="" disabled selected>Select your class</option>
             <option value="10">Class 10</option>
             <option value="9">Class 9</option>
             <option value="8">Class 8</option>
@@ -43,84 +54,81 @@
             <option value="6">Class 6</option>
           </select>
           <div id="classError" class="error-inline" style="display:none"></div>
-          <small class="hint-text">Select class first to load subjects.</small>
+          <small class="hint-text">Pick your class or grade</small>
         </div>
 
-        <div class="card">
+        <div class="card" id="subjectCard" style="display:none;">
           <label for="subject"><span class="emoji">📚</span> Subject</label>
           <select name="subject" id="subject" required disabled aria-label="Subject selection">
-            <option value="" disabled selected>Select a subject</option>
+            <option value="" disabled selected>Pick a subject</option>
           </select>
           <div id="subjectError" class="error-inline" style="display:none"></div>
-          <small class="hint-text">Choose the subject after selecting class.</small>
+          <small class="hint-text">Science, Math, Languages, History, Civics & more</small>
+        </div>
+
+        <div class="card" id="chapterCard" style="display:none;">
+          <label for="chapter"><span class="emoji">📖</span> Chapter</label>
+          <select name="chapter" id="chapter" required disabled aria-label="Chapter selection">
+            <option value="" disabled selected>Select a chapter</option>
+          </select>
+          <div id="chapterError" class="error-inline" style="display:none"></div>
+          <small class="hint-text">Which topic are you covering?</small>
         </div>
 
         <div class="card">
-          <label for="chapter"><span class="emoji">📖</span> Chapter</label>
-          <select name="chapter" id="chapter" required disabled aria-label="Chapter selection">
-            <option value="" disabled selected>Choose a chapter...</option>
-          </select>
-          <div id="chapterError" class="error-inline" style="display:none"></div>
-          <small class="hint-text">Select the chapter based on class and subject.</small>
+          <label for="totalMarks"><span class="emoji">⭐</span> Total Marks</label>
+          <input type="number" id="totalMarks" name="marks" placeholder="e.g., 50, 100" min="10" max="500" value="100">
+          <small class="hint-text">Optional: default is 100</small>
         </div>
+
         <div class="card">
           <label><span class="emoji">🎯</span> Difficulty Level</label>
           <div class="difficulty-options">
             <input type="radio" id="easy" name="difficulty" value="Easy">
-            <label for="easy" class="radio-label">Easy</label>
+            <label for="easy" class="radio-label">🌱 Easy</label>
 
             <input type="radio" id="standard" name="difficulty" value="Medium" checked>
-            <label for="standard" class="radio-label">Standard</label>
+            <label for="standard" class="radio-label">⚡ Standard</label>
 
             <input type="radio" id="hard" name="difficulty" value="Hard">
-            <label for="hard" class="radio-label">Hard</label>
+            <label for="hard" class="radio-label">🔥 Hard</label>
           </div>
-          <small class="hint-text">Pick how tough you want the questions.</small>
+          <small class="hint-text">Choose difficulty level</small>
         </div>
 
         <div class="card suggestions-card">
-          <label for="suggestions"><span class="emoji">📝</span> Extra Requests (Optional)</label>
-          <textarea id="suggestions" name="suggestions" rows="4" placeholder="E.g., emphasize algebra, include 2 long questions, and be gentle on fractions..."></textarea>
-        </div>
-
-        <div class="card">
-          <label for="class"><span class="emoji">🏫</span> Class</label>
-          <select id="class" name="class">
-            <option value="10">Class 10</option>
-            <option value="9">Class 9</option>
-            <option value="8">Class 8</option>
-            <option value="7">Class 7</option>
-            <option value="6">Class 6</option>
-          </select>
+          <label for="suggestions"><span class="emoji">💭</span> Extra Requests (Optional)</label>
+          <textarea id="suggestions" name="suggestions" rows="4" placeholder="E.g., emphasize algebra, include 2 long answers, focus on applications..."></textarea>
+          <small class="hint-text">Any special instructions for AI? Leave blank for standard paper.</small>
         </div>
       </div>
 
       <div class="button-container">
-        <div style="display:flex;gap:12px;align-items:center;">
-          <button type="button" id="previewBtn" class="btn btn-action">👀 Preview</button>
+        <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
+          <button type="button" id="previewBtn" class="btn btn-action">👀 Preview Paper</button>
           <button type="submit" id="generateBtn" class="btn btn-generate">
-            <span>🚀</span> Generate & Download PDF
+            <span>⚡</span> Download PDF
           </button>
         </div>
       </div>
     </form>
 
     <section class="preview-section" aria-live="polite">
-      <h2>Preview</h2>
+      <h2>📋 Preview</h2>
       <div id="previewPane" class="preview-pane">
-        <p class="muted">Click "Preview" to generate a quick draft here before downloading — think of it as a cheat-sheet for your sanity.</p>
+        <p class="muted">👆 Click "Preview Paper" above to see a draft before downloading.</p>
       </div>
     </section>
 
     <div class="contact-info">
-      Trouble? <a href="mailto:laxmanchowdary159@gmail.com">Contact Support</a><br>
-      Made with ❤️ by ExamCraft
+      ❓ Issues? <a href="mailto:laxmanchowdary159@gmail.com">Get Help</a> | Made with 💙 by ExamCraft
     </div>
 
     <!-- Modal -->
     <div id="loadingModal" class="modal" aria-hidden="true">
       <div class="modal-content">
-        Generating your paper, please wait...
+        <div class="spinner-inline"></div>
+        <p>Generating your masterpiece...</p>
       </div>
     </div>
 
@@ -128,12 +136,11 @@
     <div id="errorMessage" class="error-message" role="alert" style="display:none;">
       Something went wrong. Please try again.
     </div>
-  </main>
 
     <!-- Loading Spinner -->
     <div id="loadingSpinner" class="loading-spinner hidden">
         <div class="spinner"></div>
-        <p>Generating your paper...</p>
+        <p>Generating...</p>
     </div>
 
     <!-- Notification Toast -->
