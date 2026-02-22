@@ -49,115 +49,149 @@ def generate():
         Create a professional question paper.
 
         Class: {cls}
-        Subject: {subject}
-        Chapter: {chapter}
-        Difficulty: {difficulty}
+        import os
+        import re
+        from flask import Flask, render_template, request, jsonify, make_response
+        from openai import OpenAI
+        from fpdf import FPDF
 
-        Structure into Sections A, B, C, D with appropriate marks and provide an answer key at the end.
-        Extra instructions: {suggestions}
-        """
-                else:
-                    data = request.get_json(force=True, silent=True) or {}
-                    cls = data.get('class') or ''
-                    subject = data.get('subject') or ''
-                    chapter = data.get('chapter') or ''
-                    difficulty = data.get('difficulty') or 'Medium'
-                    suggestions = data.get('suggestions') or ''
-                    prompt = f"""
-        Create a professional question paper.
-
-        Class: {cls}
-        Subject: {subject}
-        Chapter: {chapter}
-        Difficulty: {difficulty}
-
-        Structure into Sections A, B, C, D with appropriate marks and provide an answer key at the end.
-        Extra instructions: {suggestions}
-        """
-Generate a professional question paper.
-
-Class: {data.get("class")}
-Subject: {data.get("subject")}
-Board: {data.get("board")}
-Marks: {data.get("marks")}
-Difficulty: {data.get("difficulty")}
-
-Format with Sections A, B, C, D.
-"""
-
-        response = client.chat.completions.create(
-            model="gpt-4o-mini",
-                # If the request was a form POST, return a PDF for immediate download
-                if request.form:
-                    pdf_bytes = create_exam_pdf(text, subject or 'Paper', chapter or '')
-                    resp = make_response(pdf_bytes)
-                    resp.headers.set('Content-Type', 'application/pdf')
-                    filename = f"{subject or 'paper'}_{chapter or 'full'}.pdf"
-                    resp.headers.set('Content-Disposition', 'attachment', filename=filename)
-                    return resp
-
-            messages=[
-                {"role": "system", "content": "You are a professional exam paper generator."},
-                {"role": "user", "content": prompt}
-            ],
-            temperature=0.7,
-            max_tokens=3000
+        app = Flask(
+            __name__,
+            template_folder=os.path.join(os.path.dirname(__file__), '..', 'templates'),
+            static_folder=os.path.join(os.path.dirname(__file__), '..', 'static'),
+            static_url_path='/static'
         )
 
-        text = response.choices[0].message.content
+        # OpenAI client
+        api_key = os.environ.get('OPENAI_API_KEY')
+        client = OpenAI(api_key=api_key) if api_key else None
+
+
+        def split_key(text: str):
+            parts = re.split(r'(?i)answer key[:]?
+        \s*', text, maxsplit=1)
+            if len(parts) > 1:
+                return parts[0].strip(), parts[1].strip()
+            return text.strip(), None
+
+
         def create_exam_pdf(text: str, subject: str, chapter: str) -> bytes:
-            """Create a simple A4 PDF from the generated text. Falls back to Helvetica if DejaVu not available."""
             pdf = FPDF()
             pdf.add_page()
 
-            # Try to load DejaVu Unicode font if present
             base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
             font_path = os.path.join(base_dir, 'static', 'fonts', 'DejaVuSans.ttf')
+            font_name = 'Helvetica'
             try:
                 if os.path.isfile(font_path):
                     pdf.add_font('DejaVu', '', font_path, uni=True)
                     pdf.add_font('DejaVu', 'B', font_path, uni=True)
                     font_name = 'DejaVu'
-                else:
-                    font_name = 'Helvetica'
             except Exception:
                 font_name = 'Helvetica'
 
-            # Header
             pdf.set_font(font_name, 'B' if font_name != 'Helvetica' else '', 16)
-            header = f"Class {subject} - {chapter}" if chapter else f"{subject}"
+            header = f"{subject} - {chapter}" if chapter else f"{subject}"
             pdf.cell(0, 10, header, ln=1, align='C')
             pdf.ln(4)
 
-            # Body
             pdf.set_font(font_name, size=12)
-            lines = text.split('\n')
-            for line in lines:
+            for line in text.splitlines():
                 line = line.rstrip()
                 if not line:
                     pdf.ln(4)
                     continue
-                # Avoid extremely long unbroken lines
                 pdf.multi_cell(0, 7, line)
 
             out = pdf.output(dest='S')
-            # fpdf2 may return bytes or string depending on version
             if isinstance(out, str):
                 return out.encode('latin-1', 'replace')
             return out
-        paper, key = split_key(text)
 
-        return jsonify({
-            "success": True,
-            "paper": text
-        })
-        
-    except Exception as e:
-        return jsonify({"success": False, "error": str(e)})
 
-@app.route("/health")
-def health():
-    return {"status": "ok"}
+        @app.route('/')
+        def index():
+            return render_template('index.html')
 
-if __name__ == "__main__":
-    app.run(port=3000)
+
+        @app.route('/generate', methods=['POST'])
+        def generate():
+            try:
+                if not client:
+                    return jsonify({"success": False, "error": "API key not configured. Please set OPENAI_API_KEY environment variable."}), 500
+
+                is_form = bool(request.form)
+                if is_form:
+                    src = request.form
+                else:
+                    src = request.get_json(force=True, silent=True) or {}
+
+                cls = src.get('class') or src.get('grade') or ''
+                subject = src.get('subject') or ''
+                chapter = src.get('chapter') or ''
+                board = src.get('board') or ''
+                marks = src.get('marks') or ''
+                difficulty = src.get('difficulty') or 'Medium'
+                suggestions = src.get('suggestions') or ''
+
+                prompt = f"""
+        Create a professional question paper.
+
+        Class: {cls}
+        Subject: {subject}
+        Chapter: {chapter}
+        Board: {board}
+        Marks: {marks}
+        Difficulty: {difficulty}
+
+        Structure into Sections A, B, C, D with appropriate marks and provide an answer key at the end.
+        Extra instructions: {suggestions}
+        """
+
+                response = client.chat.completions.create(
+                    model='gpt-4o-mini',
+                    messages=[
+                        {"role": "system", "content": "You are a professional exam paper generator."},
+                        {"role": "user", "content": prompt}
+                    ],
+                    temperature=0.7,
+                    max_tokens=3000
+                )
+
+                # Extract text safely
+                text = ''
+                try:
+                    text = response.choices[0].message.content
+                except Exception:
+                    try:
+                        text = response.choices[0].text
+                    except Exception:
+                        text = str(response)
+
+                paper, key = split_key(text)
+
+                if is_form:
+                    pdf_bytes = create_exam_pdf(text, subject or 'Paper', chapter or '')
+                    resp = make_response(pdf_bytes)
+                    resp.headers.set('Content-Type', 'application/pdf')
+                    filename = f"{(subject or 'paper').replace(' ', '_')}_{(chapter or 'full').replace(' ', '_')}.pdf"
+                    resp.headers.set('Content-Disposition', 'attachment', filename=filename)
+                    return resp
+
+                return jsonify({
+                    'success': True,
+                    'paper': paper,
+                    'answer_key': key
+                })
+
+            except Exception as e:
+                return jsonify({'success': False, 'error': str(e)}), 500
+
+
+        @app.route('/health')
+        def health():
+            return {'status': 'ok'}
+
+
+        if __name__ == '__main__':
+            app.run(port=3000)
