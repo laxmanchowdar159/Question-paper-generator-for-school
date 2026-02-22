@@ -123,48 +123,309 @@ function attachEventListeners() {
   boardSelect.addEventListener('change', updateChaptersOnSubjectChange);
 }
 
-// ==================== CHAPTER LOADING ====================
-async function updateChaptersOnSubjectChange() {
+// ==================== HARDCODED CHAPTERS ====================
+const chaptersDB = {
+  'Mathematics': {
+    '6': [
+      'Knowing Our Numbers',
+      'Whole Numbers',
+      'Playing with Numbers',
+      'Basic Geometrical Ideas',
+      'Understanding Elementary Shapes',
+      'Integers',
+      'Fractions',
+      'Decimals',
+      'Data Handling',
+      'Mensuration',
+      'Algebra',
+      'Ratio and Proportion'
+    ],
+    '7': [
+      'Integers',
+      'Fractions and Decimals',
+      'Data Handling',
+      'Simple Equations',
+      'Lines and Angles',
+      'The Triangle and Its Properties',
+      'Congruence of Triangles',
+      'Comparing Quantities',
+      'Rational Numbers',
+      'Practical Geometry',
+      'Perimeter and Area',
+      'Algebraic Expressions',
+      'Exponents and Powers',
+      'Symmetry',
+      'Visualising Solid Shapes'
+    ],
+    '8': [
+      'Rational Numbers',
+      'Linear Equations in One Variable',
+      'Understanding Quadrilaterals',
+      'Practical Geometry',
+      'Data Handling',
+      'Squares and Square Roots',
+      'Cubes and Cube Roots',
+      'Comparing Quantities',
+      'Algebraic Expressions and Identities',
+      'Visualising Solid Shapes',
+      'Mensuration',
+      'Exponents and Powers',
+      'Direct and Inverse Proportions',
+      'Factorisation',
+      'Introduction to Graphs'
+    ],
+    '9': [
+      'Number Systems',
+      'Polynomials',
+      'Coordinate Geometry',
+      'Linear Equations in Two Variables',
+      'Introduction to Euclid Geometry',
+      'Lines and Angles',
+      'Triangles',
+      'Quadrilaterals',
+      'Areas of Parallelograms and Triangles',
+      'Circles',
+      'Constructions',
+      'Heron\'s Formula',
+      'Surface Areas and Volumes',
+      'Statistics',
+      'Probability'
+    ],
+    '10': [
+      'Real Numbers',
+      'Polynomials',
+      'Pair of Linear Equations in Two Variables',
+      'Quadratic Equations',
+      'Arithmetic Progressions',
+      'Triangles',
+      'Coordinate Geometry',
+      'Introduction to Trigonometry',
+      'Some Applications of Trigonometry',
+      'Circles',
+      'Constructions',
+      'Areas Related to Circles',
+      'Surface Areas and Volumes',
+      'Statistics',
+      'Probability'
+    ]
+  },
+  'Science': {
+    '6': [
+      'Food: Where Does It Come From?',
+      'Components of Food',
+      'Fiber to Fabric',
+      'Sorting Materials into Groups',
+      'Separation of Substances',
+      'Changes Around Us',
+      'Living Organisms and Their Surroundings',
+      'Motion and Measurement of Distances',
+      'Light, Shadows and Reflections',
+      'Electricity and Circuits',
+      'Fun with Magnets',
+      'Water'
+    ],
+    '7': [
+      'Nutrition in Plants',
+      'Nutrition in Animals',
+      'Fibre to Fabric',
+      'Heat',
+      'Acids, Bases and Salts',
+      'Physical and Chemical Changes',
+      'Weather, Climate and Adaptations of Animals',
+      'Winds, Storms and Cyclones',
+      'Soil',
+      'Respiration in Organisms',
+      'Transportation in Animals and Plants',
+      'Reproduction in Plants',
+      'Motion and Time',
+      'Electric Currents and Its Effects',
+      'Light'
+    ],
+    '8': [
+      'Crop Production and Management',
+      'Microorganisms: Friend and Foe',
+      'Synthetic Fibres and Plastics',
+      'Materials: Metals and Non-metals',
+      'Coal and Petroleum',
+      'Combustion and Flame',
+      'Conservation of Plants and Animals',
+      'Cell: Structure and Functions',
+      'Reproduction in Animals',
+      'Reaching the Age of Adolescence',
+      'Force and Pressure',
+      'Friction',
+      'Sound',
+      'Chemical Effects of Electric Current',
+      'Some Natural Phenomena',
+      'Light',
+      'Stars and The Solar System',
+      'Pollution of Air and Water'
+    ],
+    '9': [
+      'Matter in Our Surroundings',
+      'Is Matter Around Us Pure',
+      'Atoms and Molecules',
+      'Structure of the Atom',
+      'The Fundamental Unit of Life',
+      'Tissues',
+      'Diversity in Living Organisms',
+      'Motion',
+      'Force and Laws of Motion',
+      'Gravitation',
+      'Work and Energy',
+      'Sound',
+      'Why Do We Fall Ill',
+      'Natural Resources',
+      'Improvement in Food Resources'
+    ],
+    '10': [
+      'Chemical Reactions and Equations',
+      'Acids, Bases and Salts',
+      'Metals and Non-metals',
+      'Carbon and Its Compounds',
+      'Periodic Classification of Elements',
+      'Life Processes',
+      'Control and Coordination',
+      'How do Organisms Reproduce?',
+      'Heredity and Evolution',
+      'Light - Reflection and Refraction',
+      'The Human Eye and the Colourful World',
+      'Electricity',
+      'Magnetic Effects of Electric Current',
+      'Sources of Energy',
+      'Our Environment',
+      'Management of Natural Resources'
+    ]
+  },
+  'English': {
+    '6': ['First Flight', 'A Pact with the Sun'],
+    '7': ['Honeycomb', 'An Alien Hand'],
+    '8': ['Honeydew', 'It So Happened'],
+    '9': ['Beehive', 'Moments'],
+    '10': ['First Flight', 'Footprints Without Feet']
+  },
+  'Social Studies': {
+    '6': [
+      'The Earth in the Solar System',
+      'Globe: Latitudes and Longitudes',
+      'Motions of the Earth',
+      'Maps',
+      'Major Domains of the Earth',
+      'Major Landforms of the Earth',
+      'Our Country - India',
+      'India: Climate, Vegetation and Wildlife',
+      'Life in the Deserts',
+      'Life in the Forests',
+      'Life in the Grasslands',
+      'Rocks and Soil',
+      'Weather and Climate',
+      'Water',
+      'Air',
+      'Human Environment Settlement, Transport and Communication',
+      'Human Environment Interactions The Tropical and the Subtropical Region',
+      'Life in the Temperate Grasslands',
+      'Pollution',
+      'Natural Disasters and Man-made Disasters'
+    ],
+    '7': [
+      'Tracing Changes Through a Thousand Years',
+      'New Kings and Kingdoms',
+      'The Delhi Sultanate',
+      'The Mughal Empire',
+      'Rulers and Buildings',
+      'Town, Traders and Craftsmen',
+      'Tribal, Nomadic and Settled Communities',
+      'Devotional Paths to the Divine',
+      'The Making of Regional Cultures',
+      'Eighteenth-Century Political Formations',
+      'Environment',
+      'Inside Our Earth',
+      'Our Changing Earth',
+      'Air',
+      'Water',
+      'Natural Vegetation and Wildlife',
+      'Human Environment Settlement, Transport and Communication',
+      'Human-Environment Interactions The Tropical and the Subtropical Region',
+      'Life in the Temperate Grasslands',
+      'Life in the Deserts'
+    ],
+    '8': [
+      'How, When and Where',
+      'From Trade to Territory',
+      'Ruling the Countryside',
+      'Tribal Societies',
+      'Pastoralists in the Medieval World',
+      'Bhakti and Sufi Traditions',
+      'Changing Cultural Traditions',
+      'The Markets are Buzzing',
+      'The World of the Textiles',
+      'Livelihood, Economies and Societies',
+      'Resources',
+      'Land, Soil, Water, Natural Vegetation and Wildlife Resources',
+      'Mineral and Power Resources',
+      'Industries',
+      'Human Resources'
+    ],
+    '9': [
+      'The French Revolution',
+      'Socialism in Europe and the Russian Revolution',
+      'Nazism and the Rise of Hitler',
+      'Forest Society and Colonialism',
+      'Pastoralists in the Modern World',
+      'Peasants and Farmers',
+      'History and Sport: The Story of Cricket',
+      'Clothes: A Social History',
+      'India and the Contemporary World I',
+      'Geography: India - Size and Location',
+      'Physical Features of India',
+      'Drainage',
+      'Climate',
+      'Natural Vegetation and Wildlife',
+      'Population'
+    ],
+    '10': [
+      'The Rise of Nationalism in Europe',
+      'The Nationalist Movement in Indo-China',
+      'Nationalism in India',
+      'Global Concern during the Cold War Period',
+      'Towards Globalisation',
+      'Resources and Development',
+      'Forest and Wildlife Resources',
+      'Water Resources',
+      'Agriculture',
+      'Minerals and Energy Resources',
+      'Manufacturing Industries',
+      'Lifelines of National Economy'
+    ]
+  }
+};
+
+// ==================== INSTANT CHAPTER LOADING ====================
+function updateChaptersOnSubjectChange() {
   const subject = subjectSelect.value;
   const standard = standardSelect.value;
-  const board = boardSelect.value;
 
   if (!subject || !standard) {
-    chapterSelect.innerHTML = '<option value="" disabled selected>Select subject and class first</option>';
+    chapterSelect.innerHTML = '<option value="">Select subject and class first</option>';
     chapterSelect.disabled = true;
     return;
   }
 
-  try {
-    chapterSelect.innerHTML = '<option value="" disabled selected>Loading chapters...</option>';
-    chapterSelect.disabled = true;
-
-    const response = await fetch('/get-chapters', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ class: standard, subject, board }),
+  const chapters = chaptersDB[subject]?.[standard] || [];
+  
+  chapterSelect.innerHTML = '<option value="">All Chapters (Full Syllabus)</option>';
+  
+  if (chapters.length > 0) {
+    chapters.forEach(chapter => {
+      const option = document.createElement('option');
+      option.value = chapter;
+      option.textContent = chapter;
+      chapterSelect.appendChild(option);
     });
-
-    const data = await response.json();
-
-    if (data.success && data.chapters.length > 0) {
-      chapterSelect.innerHTML = '<option value="" disabled selected>Select a chapter</option>';
-      data.chapters.forEach(chapter => {
-        const option = document.createElement('option');
-        option.value = chapter;
-        option.textContent = chapter;
-        chapterSelect.appendChild(option);
-      });
-      chapterSelect.disabled = false;
-    } else {
-      chapterSelect.innerHTML = '<option value="" disabled selected>No chapters available</option>';
-      chapterSelect.disabled = true;
-    }
-  } catch (error) {
-    console.error('Failed to load chapters:', error);
-    chapterSelect.innerHTML = '<option value="" disabled selected>Error loading chapters</option>';
+    chapterSelect.disabled = false;
+  } else {
+    chapterSelect.innerHTML += '<option value="" disabled>No chapters available</option>';
     chapterSelect.disabled = true;
-    showError('Failed to load chapters. Please try again.');
   }
 }
 

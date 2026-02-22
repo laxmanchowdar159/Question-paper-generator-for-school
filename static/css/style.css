@@ -462,11 +462,12 @@ body.light .topbar {
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
+  max-width: 1400px;
 }
 
 .form-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
   gap: 1.5rem;
 }
 
@@ -1152,6 +1153,9 @@ textarea {
 @media (max-width: 1024px) {
   .form-grid { grid-template-columns: 1fr; }
   .form-card[data-card="3"] { grid-column: 1; }
+  .sidebar { width: 220px; }
+  .main-content { margin-left: 220px; }
+  #paperForm { padding: 1.5rem; }
 }
 
 @media (max-width: 768px) {
