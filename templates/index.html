@@ -1,31 +1,107 @@
-
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>ExamCraft</title>
-<link rel="stylesheet" href="/static/css/style.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ExamCraft - AI Question Paper Generator</title>
+    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/style.css">
 </head>
 <body>
+  <main class="container">
+    <div class="header-section">
+      <h1><span class="emoji">📄</span> Model Paper Generator</h1>
+      <p class="tagline">Create a professional question paper quickly. Choose subject, chapter and difficulty — then download a PDF.</p>
+    </div>
 
-<div class="container">
+    <form id="paperForm" class="paper-form" novalidate>
+      <div class="form-grid">
+        <div class="card">
+          <label for="subject"><span class="emoji">📚</span> Subject</label>
+          <select name="subject" id="subject" required>
+            <option value="" disabled selected>Select a subject</option>
+            <option value="Mathematics">Mathematics</option>
+            <option value="Science">Science</option>
+            <option value="Social">Social Studies</option>
+            <option value="English">English</option>
+          </select>
+          <small class="hint-text">Choose the subject you're creating the paper for.</small>
+        </div>
 
-<h1>ExamCraft AI</h1>
+        <div class="card">
+          <label for="chapter"><span class="emoji">📖</span> Chapter</label>
+          <select name="chapter" id="chapter" required disabled>
+            <option value="" disabled selected>Choose a chapter...</option>
+          </select>
+          <small class="hint-text">Select the chapter based on your subject.</small>
+        </div>
 
-Class <input id="class"><br><br>
-Subject <input id="subject"><br><br>
-Board <input id="board"><br><br>
-Marks <input id="marks"><br><br>
-Difficulty <input id="difficulty"><br><br>
+        <div class="card">
+          <label><span class="emoji">🎯</span> Difficulty Level</label>
+          <div class="difficulty-options">
+            <input type="radio" id="easy" name="difficulty" value="Easy">
+            <label for="easy" class="radio-label">Easy</label>
 
-<button onclick="generate()">Generate</button>
+            <input type="radio" id="standard" name="difficulty" value="Medium" checked>
+            <label for="standard" class="radio-label">Standard</label>
 
-<br><br>
+            <input type="radio" id="hard" name="difficulty" value="Hard">
+            <label for="hard" class="radio-label">Hard</label>
+          </div>
+          <small class="hint-text">Pick how tough you want the questions.</small>
+        </div>
 
-<textarea id="output"></textarea>
+        <div class="card suggestions-card">
+          <label for="suggestions"><span class="emoji">📝</span> Extra Requests (Optional)</label>
+          <textarea id="suggestions" name="suggestions" rows="4" placeholder="E.g., emphasize algebra or include more MCQs..."></textarea>
+        </div>
 
-</div>
+        <div class="card">
+          <label for="class"><span class="emoji">🏫</span> Class</label>
+          <select id="class" name="class">
+            <option value="10">Class 10</option>
+            <option value="9">Class 9</option>
+            <option value="8">Class 8</option>
+            <option value="7">Class 7</option>
+            <option value="6">Class 6</option>
+          </select>
+        </div>
+      </div>
 
-<script src="/static/js/app.js"></script>
+      <div class="button-container">
+        <button type="submit" id="generateBtn">
+          <span>🚀</span> Generate & Download PDF
+        </button>
+      </div>
+    </form>
 
+    <div class="contact-info">
+      Trouble? <a href="mailto:laxmanchowdary159@gmail.com">Contact Support</a><br>
+      Made with ❤️ by ExamCraft
+    </div>
+
+    <!-- Modal -->
+    <div id="loadingModal" class="modal" aria-hidden="true">
+      <div class="modal-content">
+        Generating your paper, please wait...
+      </div>
+    </div>
+
+    <!-- Error Box -->
+    <div id="errorMessage" class="error-message" role="alert" style="display:none;">
+      Something went wrong. Please try again.
+    </div>
+  </main>
+
+    <!-- Loading Spinner -->
+    <div id="loadingSpinner" class="loading-spinner hidden">
+        <div class="spinner"></div>
+        <p>Generating your paper...</p>
+    </div>
+
+    <!-- Notification Toast -->
+    <div id="notificationToast" class="notification-toast"></div>
+
+    <script src="/static/js/app.js"></script>
 </body>
 </html>

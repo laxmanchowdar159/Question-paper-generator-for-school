@@ -1,11 +1,13 @@
 {
   "version": 2,
-  "builds": [
-    {
-      "src": "api/index.py",
-      "use": "@vercel/python"
+  "buildCommand": "pip install -r requirements.txt",
+  "functions": {
+    "api/index.py": {
+      "memory": 1024,
+      "maxDuration": 120,
+      "runtime": "python3.11"
     }
-  ],
+  },
   "routes": [
     {
       "src": "/static/(.*)",
@@ -15,5 +17,8 @@
       "src": "/(.*)",
       "dest": "api/index.py"
     }
-  ]
+  ],
+  "env": {
+    "OPENAI_API_KEY": "@openai_api_key"
+  }
 }
