@@ -63,36 +63,174 @@ function applyTheme() {
     else document.documentElement.removeAttribute('data-theme');
 }
 
-// chapters list modeled after Perplexity project (trimmed)
-const chaptersBySubject = {
-    "Mathematics": [
-        "Real Numbers", "Polynomials", "Pair of Linear Equations in Two Variables", "Quadratic Equations",
-        "Arithmetic Progressions", "Triangles", "Coordinate Geometry", "Introduction to Trigonometry"
-    ],
-    "Science": [
-        "Chemical Reactions and Equations", "Acids, Bases, and Salts", "Metals and Non-Metals", "Light – Reflection and Refraction",
-        "Electricity", "Magnetic Effects of Electric Current"
-    ],
-    "Social": [
-        "Nationalism in India", "The Making of a Global World", "Resources and Development", "Water Resources"
-    ],
-    "English": [
-        "A Letter to God", "Nelson Mandela: Long Walk to Freedom", "Glimpses of India", "Fog"
-    ]
+// Curriculum mapping by class -> subject -> chapters (AP board trimmed examples)
+// AP Board curriculum mapping (Classes 6-10) - trimmed to common chapters
+const curriculum = {
+    "10": {
+        "Mathematics": [
+            "Real Numbers",
+            "Polynomials",
+            "Pair of Linear Equations in Two Variables",
+            "Quadratic Equations",
+            "Arithmetic Progressions",
+            "Triangles",
+            "Coordinate Geometry",
+            "Trigonometry"
+        ],
+        "Science": [
+            "Chemical Reactions and Equations",
+            "Acids, Bases and Salts",
+            "Metals and Non-metals",
+            "Carbon and its Compounds",
+            "Periodic Classification of Elements",
+            "Light – Reflection and Refraction",
+            "Human Eye and Colourful World",
+            "Electricity"
+        ],
+        "Social": [
+            "Nationalism in India",
+            "The Making of a Global World",
+            "Resources and Development",
+            "Water Resources",
+            "Forest and Wildlife Resources"
+        ],
+        "English": [
+            "First Flight - Chapters",
+            "Footprints Without Feet - Stories",
+            "Supplementary Reading"
+        ]
+    },
+    "9": {
+        "Mathematics": [
+            "Number Systems",
+            "Polynomials",
+            "Coordinate Geometry",
+            "Linear Equations",
+            "Triangles"
+        ],
+        "Science": [
+            "Matter - Its Nature and Behaviour",
+            "Atoms and Molecules",
+            "Structure of the Atom",
+            "Motion",
+            "Force and Laws of Motion",
+            "Gravitation"
+        ],
+        "Social": [
+            "The French Revolution",
+            "Social Changes",
+            "The Making of the Constitution"
+        ],
+        "English": [
+            "The Sound of Music",
+            "The Bond of Love",
+            "Notions of Prose and Poetry"
+        ]
+    },
+    "8": {
+        "Mathematics": [
+            "Rational Numbers",
+            "Linear Equations",
+            "Understanding Quadrilaterals",
+            "Data Handling"
+        ],
+        "Science": [
+            "Crop Production and Management",
+            "Microorganisms",
+            "Synthetic Fibres and Plastics",
+            "Conservation of Plants and Animals"
+        ],
+        "Social": [
+            "Resources and Development",
+            "Human Environment: Settlement, Transport and Communication"
+        ],
+        "English": [
+            "The Happy Prince",
+            "Gulliver's Travels",
+            "A Face in the Dark"
+        ]
+    },
+    "7": {
+        "Mathematics": [
+            "Integers",
+            "Fractions and Decimals",
+            "Algebraic Expressions",
+            "Lines and Angles"
+        ],
+        "Science": [
+            "Nutrition in Animals",
+            "Acids, Bases and Salts",
+            "Physical and Chemical Changes"
+        ],
+        "Social": [
+            "Environment and Resources",
+            "Weather, Climate and Adaptations of Animals"
+        ],
+        "English": [
+            "Three Questions",
+            "The Selfish Giant",
+            "The Treasure Within"
+        ]
+    },
+    "6": {
+        "Mathematics": [
+            "Knowing Our Numbers",
+            "Whole Numbers",
+            "Playing with Numbers",
+            "Basic Geometrical Concepts"
+        ],
+        "Science": [
+            "Food: Where Does It Come From?",
+            "Components of Food",
+            "Sorting Materials into Groups"
+        ],
+        "Social": [
+            "What, Where, How and When?",
+            "The Earth: Our Habitat",
+            "Maps and Mapping"
+        ],
+        "English": [
+            "The Fun They Had",
+            "The Sound of Music (short stories)",
+            "Poems and Short Tales"
+        ]
+    }
 };
 
+function updateSubjectsForClass() {
+    const classSel = document.getElementById('class').value;
+    const subjectSelect = document.getElementById('subject');
+    subjectSelect.innerHTML = '<option value="" disabled selected>Select a subject</option>';
+    const subjects = curriculum[classSel] ? Object.keys(curriculum[classSel]) : [];
+    subjects.forEach(s => {
+        const opt = document.createElement('option');
+        opt.value = s;
+        opt.textContent = s;
+        subjectSelect.appendChild(opt);
+    });
+    // reset chapter
+    const chapterSelect = document.getElementById('chapter');
+    chapterSelect.innerHTML = '<option value="" disabled selected>Choose a chapter...</option>';
+    chapterSelect.disabled = true;
+    // enable subject selector only when subjects are available
+    subjectSelect.disabled = subjects.length === 0;
+}
+
 function updateChapters() {
+    const classVal = document.getElementById('class').value;
     const subject = document.getElementById('subject').value;
     const chapterSelect = document.getElementById('chapter');
     chapterSelect.innerHTML = '<option value="" disabled selected>Choose a chapter...</option>';
-    if (chaptersBySubject[subject]) {
-        chaptersBySubject[subject].forEach(chap => {
+    if (curriculum[classVal] && curriculum[classVal][subject]) {
+        curriculum[classVal][subject].forEach(chap => {
             const option = document.createElement('option');
             option.value = chap;
             option.textContent = chap;
             chapterSelect.appendChild(option);
         });
         chapterSelect.disabled = false;
+        // focus chapter for faster workflow
+        chapterSelect.focus();
     } else {
         chapterSelect.disabled = true;
     }
@@ -102,6 +240,22 @@ function updateChapters() {
 document.addEventListener('DOMContentLoaded', () => {
     const subjectSelect = document.getElementById('subject');
     if (subjectSelect) subjectSelect.addEventListener('change', updateChapters);
+    const classSelect = document.getElementById('class');
+    if (classSelect) {
+        // If no class selected, default to first available class so users immediately see subjects
+        if (!classSelect.value) {
+            const firstOpt = classSelect.querySelector('option:not([disabled])');
+            if (firstOpt) classSelect.value = firstOpt.value;
+        }
+
+        classSelect.addEventListener('change', () => {
+            updateSubjectsForClass();
+            // after populating subjects, focus the subject select for quick selection
+            setTimeout(() => document.getElementById('subject')?.focus(), 50);
+        });
+        // populate subjects for initial class
+        updateSubjectsForClass();
+    }
 
     const form = document.getElementById('paperForm');
     const button = document.getElementById('generateBtn');
@@ -160,6 +314,44 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     }
+
+    // Preview button -> use JSON API to get paper text and show in preview pane
+    const previewBtn = document.getElementById('previewBtn');
+    if (previewBtn) previewBtn.addEventListener('click', async (e) => {
+        e.preventDefault();
+        clearFieldErrors();
+        const valid = validateForm();
+        if (!valid) return showToast('Please fix highlighted fields first');
+        // collect payload
+        const payload = {
+            class: document.getElementById('class').value,
+            subject: document.getElementById('subject').value,
+            chapter: document.getElementById('chapter').value,
+            difficulty: Array.from(document.getElementsByName('difficulty')).find(r => r.checked)?.value || 'Medium',
+            suggestions: document.getElementById('suggestions').value || ''
+        };
+        const previewPane = document.getElementById('previewPane');
+        previewPane.textContent = 'Generating preview...';
+        try {
+            const res = await fetch('/generate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const json = await res.json();
+            if (!json.success) {
+                previewPane.innerHTML = `<div class="error-inline">${escapeHtml(json.error || 'Generation failed')}</div>`;
+                showToast('There was a hiccup generating the preview — see note above.');
+                return;
+            }
+            const paperText = json.paper || '';
+            // render formatted preview (basic)
+            previewPane.innerHTML = `<pre class="preview-text">${escapeHtml(paperText)}</pre>`;
+            showToast('Preview generated — looks good? 😄');
+        } catch (err) {
+            previewPane.innerHTML = `<div class="error-inline">${escapeHtml(err.message || 'Network error')}</div>`;
+        }
+    });
 });
 
 async function generatePaper() {
@@ -203,9 +395,43 @@ async function generatePaper() {
 
 function showToast(msg) {
     const t = document.getElementById('notificationToast');
-    t.textContent = msg;
+    // small friendly variations
+    const variants = ['Nice!', 'All set!', 'Heads up!', 'Ta-da!'];
+    const prefix = variants[Math.floor(Math.random() * variants.length)];
+    t.textContent = `${prefix} — ${msg}`;
     t.classList.add('show');
-    setTimeout(() => t.classList.remove('show'), 4000);
+    setTimeout(() => t.classList.remove('show'), 4200);
+}
+
+function escapeHtml(unsafe) {
+    return unsafe
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
+
+// --- Validation helpers ---
+function showFieldError(fieldId, msg) {
+    const el = document.getElementById(fieldId + 'Error');
+    if (el) { el.textContent = msg; el.style.display = 'block'; }
+}
+
+function clearFieldErrors() {
+    document.querySelectorAll('.error-inline').forEach(e => { e.textContent = ''; e.style.display = 'none'; });
+}
+
+function validateForm() {
+    clearFieldErrors();
+    let ok = true;
+    const cls = document.getElementById('class').value;
+    const subj = document.getElementById('subject').value;
+    const chap = document.getElementById('chapter').value;
+    if (!cls) { showFieldError('class', 'Please select a class'); ok = false; }
+    if (!subj) { showFieldError('subject', 'Please select a subject'); ok = false; }
+    if (!chap) { showFieldError('chapter', 'Please select a chapter'); ok = false; }
+    return ok;
 }
 
 function copyToClipboard() {

@@ -8,34 +8,61 @@
     <link rel="stylesheet" href="/static/css/style.css">
 </head>
 <body>
-  <main class="container">
+  <div class="sidebar">
+    <div class="sidebar-header">
+      <div class="logo">
+        <span class="logo-icon">📝</span>
+        <div class="logo-text">ExamCraft</div>
+      </div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-item active">Generate</div>
+    </nav>
+    <div class="sidebar-footer">
+      <button id="themeToggle" class="theme-toggle">Toggle Theme</button>
+    </div>
+  </div>
+
+  <div class="main-content">
     <div class="header-section">
       <h1><span class="emoji">📄</span> Model Paper Generator</h1>
-      <p class="tagline">Create a professional question paper quickly. Choose subject, chapter and difficulty — then download a PDF.</p>
+      <p class="tagline">Create a professional question paper quickly — less weeping, more marking. Choose class → subject → chapter, set difficulty, then download a PDF.</p>
+      <p class="microcopy">Tip: Pick a class first, the subjects will politely appear. No AI lab coats required.</p>
     </div>
 
     <form id="paperForm" class="paper-form" novalidate>
       <div class="form-grid">
         <div class="card">
-          <label for="subject"><span class="emoji">📚</span> Subject</label>
-          <select name="subject" id="subject" required>
-            <option value="" disabled selected>Select a subject</option>
-            <option value="Mathematics">Mathematics</option>
-            <option value="Science">Science</option>
-            <option value="Social">Social Studies</option>
-            <option value="English">English</option>
+          <label for="class"><span class="emoji">🏫</span> Class</label>
+          <select id="class" name="class" aria-label="Class selection">
+            <option value="" disabled selected>Select class</option>
+            <option value="10">Class 10</option>
+            <option value="9">Class 9</option>
+            <option value="8">Class 8</option>
+            <option value="7">Class 7</option>
+            <option value="6">Class 6</option>
           </select>
-          <small class="hint-text">Choose the subject you're creating the paper for.</small>
+          <div id="classError" class="error-inline" style="display:none"></div>
+          <small class="hint-text">Select class first to load subjects.</small>
+        </div>
+
+        <div class="card">
+          <label for="subject"><span class="emoji">📚</span> Subject</label>
+          <select name="subject" id="subject" required disabled aria-label="Subject selection">
+            <option value="" disabled selected>Select a subject</option>
+          </select>
+          <div id="subjectError" class="error-inline" style="display:none"></div>
+          <small class="hint-text">Choose the subject after selecting class.</small>
         </div>
 
         <div class="card">
           <label for="chapter"><span class="emoji">📖</span> Chapter</label>
-          <select name="chapter" id="chapter" required disabled>
+          <select name="chapter" id="chapter" required disabled aria-label="Chapter selection">
             <option value="" disabled selected>Choose a chapter...</option>
           </select>
-          <small class="hint-text">Select the chapter based on your subject.</small>
+          <div id="chapterError" class="error-inline" style="display:none"></div>
+          <small class="hint-text">Select the chapter based on class and subject.</small>
         </div>
-
         <div class="card">
           <label><span class="emoji">🎯</span> Difficulty Level</label>
           <div class="difficulty-options">
@@ -53,7 +80,7 @@
 
         <div class="card suggestions-card">
           <label for="suggestions"><span class="emoji">📝</span> Extra Requests (Optional)</label>
-          <textarea id="suggestions" name="suggestions" rows="4" placeholder="E.g., emphasize algebra or include more MCQs..."></textarea>
+          <textarea id="suggestions" name="suggestions" rows="4" placeholder="E.g., emphasize algebra, include 2 long questions, and be gentle on fractions..."></textarea>
         </div>
 
         <div class="card">
@@ -69,11 +96,21 @@
       </div>
 
       <div class="button-container">
-        <button type="submit" id="generateBtn">
-          <span>🚀</span> Generate & Download PDF
-        </button>
+        <div style="display:flex;gap:12px;align-items:center;">
+          <button type="button" id="previewBtn" class="btn btn-action">👀 Preview</button>
+          <button type="submit" id="generateBtn" class="btn btn-generate">
+            <span>🚀</span> Generate & Download PDF
+          </button>
+        </div>
       </div>
     </form>
+
+    <section class="preview-section" aria-live="polite">
+      <h2>Preview</h2>
+      <div id="previewPane" class="preview-pane">
+        <p class="muted">Click "Preview" to generate a quick draft here before downloading — think of it as a cheat-sheet for your sanity.</p>
+      </div>
+    </section>
 
     <div class="contact-info">
       Trouble? <a href="mailto:laxmanchowdary159@gmail.com">Contact Support</a><br>
