@@ -1,7 +1,9 @@
 // ============================================================
 // EXAMCRAFT - AI QUESTION PAPER GENERATOR
-// Modern, Improved JavaScript with Enhanced Functionality
+// Modern JavaScript with Full Functionality
 // ============================================================
+
+'use strict';
 
 // ==================== STATE MANAGEMENT ====================
 let pdfData = null;
