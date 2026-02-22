@@ -19,8 +19,7 @@ client = OpenAI(api_key=api_key) if api_key else None
 
 
 def split_key(text: str):
-    parts = re.split(r'(?i)answer key[:]?
-\s*', text, maxsplit=1)
+    parts = re.split(r'(?i)answer key[:]?\s*', text, maxsplit=1)
     if len(parts) > 1:
         return parts[0].strip(), parts[1].strip()
     return text.strip(), None
