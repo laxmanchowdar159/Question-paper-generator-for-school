@@ -89,10 +89,10 @@ ExamCraft/
 │   └── js/
 │       └── app.js         ✅ Updated with ExamCraft header
 ├── api/
-│   └── index.py           ✅ Updated with ExamCraft comments
+│   └── app.py             ✅ Updated with ExamCraft comments
 ├── README.md              ✅ Comprehensive ExamCraft documentation
 ├── ABOUT_EXAMCRAFT.md     ✅ NEW - Project identity document
-├── vercel.json            (No changes needed)
+├── render.yaml            (Render service descriptor)
 ├── requirements.txt       (No changes needed)
 └── .gitignore            (No changes needed)
 ```
@@ -110,7 +110,7 @@ If you want to complete the rebranding further:
 
 2. **Domain & Deployment**
    - Domain: `examcraft.io` or `examcraft.app`
-   - Vercel project name: "examcraft"
+   - Render project name: "examcraft"
 
 3. **Analytics & Tracking**
    - Update Google Analytics property name

@@ -63,18 +63,26 @@ set OPENAI_API_KEY=sk-your-key-here        # Windows
 export OPENAI_API_KEY=sk-your-key-here     # Mac/Linux
 
 # 4. Run
-python api/index.py
+pip install -r requirements.txt
+
+# Development (Flask CLI):
+export FLASK_APP=api.app
+flask run --host=0.0.0.0 --port=3000
+
+# Production-like (Gunicorn):
+gunicorn api.app:app --bind 0.0.0.0:8000
 
 # 5. Open browser
-# Navigate to http://localhost:3000
+# Navigate to http://localhost:3000 (Flask) or http://localhost:8000 (Gunicorn)
 ```
 
-### Deploy to Vercel
+### Deploy to Render
 
 1. Push to GitHub
-2. Import project on Vercel dashboard
-3. Add `OPENAI_API_KEY` environment variable
-4. Deploy!
+2. Create a new Web Service on Render and connect your repo
+3. Set `OPENAI_API_KEY` in the Render service Environment > Environment Variables
+4. Set the Start Command to `gunicorn api.app:app --bind 0.0.0.0:$PORT` (or use the provided `render.yaml`)
+5. Deploy!
 
 ---
 
@@ -92,7 +100,7 @@ python api/index.py
 
 ## 🏗️ Code Architecture (Detailed)
 
-### Backend: `api/index.py`
+### Backend: `api/app.py`
 
 **Role**: OpenAI integration, PDF generation, API endpoints
 
@@ -262,7 +270,7 @@ Edit CSS variables in `:root`
 | Issue | Solution |
 |-------|----------|
 | API key error | Set `OPENAI_API_KEY` |
-| Static 404 | Check `vercel.json` routing |
+| Static 404 | Check `render.yaml` routing or static folder configuration |
 | No auto-download | Disable popup blocker |
 | Form lost | Enable localStorage |
 | Generation fails | Verify API key + connection |
@@ -297,4 +305,4 @@ Chrome 90+ | Firefox 88+ | Safari 14+ | Edge 90+ | Mobile browsers ✅
 
 **Project Repository**: https://github.com/laxmanchowdar159/ExamCraft
 
-**Live Demo**: Deploy to Vercel for instant access
+**Live Demo**: Deploy to Render for instant access

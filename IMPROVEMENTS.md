@@ -145,14 +145,19 @@ export OPENAI_API_KEY="your-api-key-here"
 
 ### **3. Run Locally**
 ```bash
-python api/index.py
-```
-Then open `http://localhost:3000`
+pip install -r requirements.txt
 
-### **4. Deploy to Vercel**
-```bash
-vercel
+# Dev (Flask CLI)
+export FLASK_APP=api.app
+flask run --host=0.0.0.0 --port=3000
+
+# Or (production-like) with Gunicorn
+gunicorn api.app:app --bind 0.0.0.0:8000
 ```
+Then open `http://localhost:3000` (Flask) or `http://localhost:8000` (Gunicorn)
+
+### **4. Deploy to Render**
+Use Render dashboard or the provided `render.yaml` to deploy. Ensure `OPENAI_API_KEY` is set in service Environment Variables.
 
 ---
 
@@ -161,7 +166,7 @@ vercel
 ```
 /workspaces/Question-paper-generator-for-school/
 ├── api/
-│   └── index.py              # Flask app (enhanced)
+│   └── app.py                # Flask app (enhanced)
 ├── static/
 │   ├── css/
 │   │   └── style.css         # Modern stylesheet (750+ lines)

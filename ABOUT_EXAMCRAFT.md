@@ -59,7 +59,7 @@ To make high-quality exam paper creation **accessible, fast, and affordable** fo
 | **AI/ML** | OpenAI GPT-4 mini |
 | **Frontend** | Vanilla JavaScript, HTML5, CSS3 |
 | **PDF Generation** | fpdf2 |
-| **Hosting** | Vercel (Serverless) |
+| **Hosting** | Render (Managed Web Services) |
 | **Database** | Client-side (localStorage) |
 | **API** | REST (Flask) |
 
@@ -166,7 +166,7 @@ Please credit the author when using or deploying.
 - **AI Model**: OpenAI GPT-4 mini
 - **PDF Library**: fpdf2
 - **Framework**: Flask
-- **Hosting**: Vercel
+- **Hosting**: Render
 - **Design Inspiration**: Modern EdTech platforms
 
 ---
