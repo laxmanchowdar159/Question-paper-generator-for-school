@@ -1,12 +1,20 @@
 {
   "version": 2,
-  "env": {
-    "OPENAI_API_KEY": "@openai_api_key"
-  },
-  "functions": {
-    "api/index.py": {
-      "memory": 1024,
-      "maxDuration": 60
+  "builds": [
+    {
+      "src": "api/index.py",
+      "use": "@vercel/python"
     }
-  }
+  ],
+  "routes": [
+    {
+      "src": "/static/(.*)",
+      "headers": {"cache-control": "public, max-age=31536000, immutable"},
+      "dest": "/static/$1"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "api/index.py"
+    }
+  ]
 }
