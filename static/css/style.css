@@ -86,9 +86,7 @@ body {
    ============================================ */
 
 body {
-    display: grid;
-    grid-template-columns: 280px 1fr;
-    height: 100vh;
+    display: block;
 }
 
 .sidebar {
@@ -1855,5 +1853,34 @@ button#generateBtn:disabled { background-color: #9ca3af; cursor: not-allowed; }
     border-bottom: 1px solid var(--border-color);
 
     margin-bottom: 20px;
+
+}
+
+/* ============================================
+   FIX MAIN CONTENT OFFSET (CRITICAL)
+   ============================================ */
+
+.main-content {
+
+    margin-left: 320px;   /* same as sidebar width */
+
+    width: calc(100% - 320px);
+
+    min-height: 100vh;
+
+}
+
+
+/* Fix for smaller screens */
+
+@media (max-width: 1024px) {
+
+    .main-content {
+
+        margin-left: 0;
+
+        width: 100%;
+
+    }
 
 }
