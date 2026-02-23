@@ -3,29 +3,29 @@
    ============================================ */
 
 :root {
-    /* Light Mode - Vibrant & Modern */
-    --bg-primary: #ffffff;
-    --bg-secondary: #f8fafc;
-    --bg-tertiary: #f1f5fa;
+    /* Light Mode - New Cool Palette */
+    --bg-primary: #fbfdff;
+    --bg-secondary: #f1f8f9;
+    --bg-tertiary: #eef6f6;
     
-    --text-primary: #1a202c;
-    --text-secondary: #4a5568;
-    --text-tertiary: #a0aec0;
+    --text-primary: #0f1724;
+    --text-secondary: #24403a;
+    --text-tertiary: #6b7c79;
     
-    --border-color: #e2e8f0;
-    --border-light: #f7fafc;
+    --border-color: #e6f0ef;
+    --border-light: #ffffff;
     
-    /* Vibrant Gradients & Colors */
-    --accent-primary: #6366f1;
-    --accent-primary-hover: #4f46e5;
-    --accent-secondary: #ec4899;
-    --accent-tertiary: #14b8a6;
+    /* Calming Teal & Warm Accent */
+    --accent-primary: #0ea5a4;
+    --accent-primary-hover: #0b9a98;
+    --accent-secondary: #ff7a59;
+    --accent-tertiary: #7dd3fc;
     --accent-success: #10b981;
     --accent-warning: #f59e0b;
     --accent-danger: #ef4444;
     
-    --gradient-primary: linear-gradient(135deg, #6366f1, #ec4899);
-    --gradient-secondary: linear-gradient(135deg, #14b8a6, #06b6d4);
+    --gradient-primary: linear-gradient(135deg, #0ea5a4, #7dd3fc);
+    --gradient-secondary: linear-gradient(135deg, #ff7a59, #fbbf24);
     
     --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
     --shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
@@ -94,7 +94,7 @@ body {
 }
 
 .sidebar {
-    background: var(--gradient-primary);
+    background: linear-gradient(180deg, rgba(14,165,164,0.95), rgba(125,211,252,0.95));
     border-right: none;
     display: flex;
     flex-direction: column;
@@ -102,7 +102,7 @@ body {
     position: fixed;
     left: 0;
     top: 0;
-    width: 280px;
+    width: 320px;
     height: 100vh;
     overflow-y: auto;
     z-index: 100;
@@ -138,6 +138,13 @@ body {
     color: white;
     font-weight: 800;
     letter-spacing: -0.5px;
+}
+
+.logo-sub {
+    margin-top: 8px;
+    font-size: 13px;
+    color: rgba(255,255,255,0.9);
+    font-weight: 600;
 }
 
 /* Navigation */
@@ -1643,4 +1650,55 @@ button#generateBtn:disabled { background-color: #9ca3af; cursor: not-allowed; }
 .error-message { background-color: #fee2e2; color: #b91c1c; padding: 1rem 1.2rem; border-radius: 8px; text-align: center; margin-top: 1rem; font-weight: 600; border: 1px solid #fca5a5; display: none; }
 
 .contact-info { text-align: center; margin-top: 2rem; font-size: 0.95rem; color: var(--text-tertiary); }
+
+
+/* ===== CTA / Button Refinements (final override) ===== */
+.btn {
+    border-radius: 14px;
+    transition: transform 0.18s ease, box-shadow 0.18s ease, opacity 0.18s ease;
+}
+
+.btn-generate {
+    background: linear-gradient(90deg, var(--accent-secondary), var(--accent-primary));
+    color: white;
+    padding: 14px 36px;
+    font-size: 16px;
+    font-weight: 800;
+    letter-spacing: 0.2px;
+    box-shadow: 0 14px 36px rgba(14,165,164,0.14);
+    border: none;
+    min-width: 320px;
+}
+
+.btn-generate:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 22px 48px rgba(14,165,164,0.18);
+}
+
+.btn-generate:active { transform: translateY(-1px); }
+
+.btn-action {
+    background: transparent;
+    color: var(--accent-primary);
+    border: 2px solid rgba(15,23,36,0.06);
+    padding: 10px 18px;
+    font-weight: 700;
+    box-shadow: none;
+}
+
+.btn-action:hover {
+    background: rgba(14,165,164,0.06);
+    color: var(--accent-primary-hover);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(14,165,164,0.06);
+}
+
+.btn:focus {
+    outline: 3px solid rgba(14,165,164,0.12);
+    outline-offset: 2px;
+}
+
+@media (max-width: 480px) {
+    .btn-generate { min-width: 100%; padding: 12px 18px; font-size: 15px; }
+}
 

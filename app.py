@@ -73,18 +73,46 @@ def create_exam_pdf(text: str, subject: str, chapter: str) -> bytes:
     except Exception:
         font_name = 'Helvetica'
 
+    # set margins and fonts
+    pdf.set_auto_page_break(auto=True, margin=18)
+    pdf.set_left_margin(16)
+    pdf.set_right_margin(16)
     pdf.set_font(font_name, 'B' if font_name != 'Helvetica' else '', 16)
     header = f"{subject} - {chapter}" if chapter else f"{subject}"
-    pdf.cell(0, 10, header, ln=1, align='C')
-    pdf.ln(4)
+    # write header centered
+    pdf.cell(0, 10, header, align='C')
+    pdf.ln(6)
 
     pdf.set_font(font_name, size=12)
+
+    def _sanitize_long_tokens(s: str, maxlen: int = 80) -> str:
+        # break very long non-space sequences so FPDF can wrap them
+        parts = re.split(r'(\s+)', s)
+        out = []
+        for p in parts:
+            if p and not p.isspace() and len(p) > maxlen:
+                # insert spaces every maxlen chars
+                chunks = [p[i:i+maxlen] for i in range(0, len(p), maxlen)]
+                out.append(' '.join(chunks))
+            else:
+                out.append(p)
+        return ''.join(out)
+
     for line in text.splitlines():
         line = line.rstrip()
         if not line:
             pdf.ln(4)
             continue
-        pdf.multi_cell(0, 7, line)
+        safe_line = _sanitize_long_tokens(line, maxlen=80)
+        try:
+            pdf.set_x(pdf.l_margin)
+            pdf.multi_cell(0, 7, safe_line)
+        except Exception:
+            # Fallback: chunk the line into smaller pieces
+            chunk_size = 120
+            for i in range(0, len(safe_line), chunk_size):
+                pdf.set_x(pdf.l_margin)
+                pdf.multi_cell(0, 7, safe_line[i:i+chunk_size])
 
     out = pdf.output(dest='S')
     if isinstance(out, str):
@@ -163,6 +191,9 @@ def generate():
         # If client provided already-generated paper and requested PDF, return it directly
         if not is_form and src.get('pdf_only') and src.get('paper'):
             paper_text = src.get('paper')
+            # if client asked to include solutions and provided answer_key separately, append it
+            if (src.get('includeSolutions') or src.get('include_solutions')) and src.get('answer_key'):
+                paper_text = paper_text + "\n\n" + src.get('answer_key')
             pdf_bytes = create_exam_pdf(paper_text, subject or 'Paper', chapter or '')
             resp = make_response(pdf_bytes)
             resp.headers.set('Content-Type', 'application/pdf')
@@ -259,7 +290,18 @@ Extra instructions: {suggestions}
         paper, key = split_key(text)
 
         if is_form:
-            pdf_bytes = create_exam_pdf(text, subject or 'Paper', chapter or '')
+            # If include_solutions is requested, append the key explicitly to the paper text
+            pdf_text = text
+            if include_solutions:
+                if key:
+                    # If key not already in the text, append it
+                    if key.strip() not in pdf_text:
+                        pdf_text = paper + "\n\n" + key
+                else:
+                    # no extracted key, but ensure paper is used
+                    pdf_text = paper
+
+            pdf_bytes = create_exam_pdf(pdf_text, subject or 'Paper', chapter or '')
             resp = make_response(pdf_bytes)
             resp.headers.set('Content-Type', 'application/pdf')
             filename = f"{(subject or 'paper').replace(' ', '_')}_{(chapter or 'full').replace(' ', '_')}.pdf"
