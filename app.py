@@ -1,6 +1,6 @@
 import os
 import re
-from flask import Flask, render_template, request, jsonify, make_response
+from flask import Flask, render_template, request, jsonify, make_response, send_file
 try:
     import google.generativeai as genai
 except Exception:
@@ -10,6 +10,7 @@ import uuid
 import json
 import time
 from pathlib import Path
+from io import BytesIO
 
 
 app = Flask(
@@ -173,8 +174,11 @@ def create_exam_pdf(text: str, subject: str, chapter: str) -> bytes:
 
     out = pdf.output(dest='S')
     if isinstance(out, str):
-        return out.encode('latin-1', 'replace')
-    return out
+        return out.encode('utf-8')
+    elif isinstance(out, bytes):
+        return out
+    else:
+        return str(out).encode('utf-8')
 
 
 def choose_model_name():
@@ -220,11 +224,9 @@ def generate():
             if (src.get('includeSolutions') or src.get('include_solutions')) and src.get('answer_key'):
                 paper_text = paper_text + "\n\n" + src.get('answer_key')
             pdf_bytes = create_exam_pdf(paper_text, subject or 'Paper', chapter or '')
-            resp = make_response(pdf_bytes)
-            resp.headers.set('Content-Type', 'application/pdf')
+            pdf_buffer = BytesIO(pdf_bytes)
             filename = f"{(subject or 'paper').replace(' ', '_')}_{(chapter or 'full').replace(' ', '_')}.pdf"
-            resp.headers.set('Content-Disposition', 'attachment', filename=filename)
-            return resp
+            return send_file(pdf_buffer, as_attachment=True, download_name=filename, mimetype='application/pdf')
 
         # Try to use AI if available, otherwise fall back to local generator
         response = None
@@ -299,11 +301,9 @@ Extra instructions: {suggestions}
             paper, key = split_key(paper_text)
             if is_form:
                 pdf_bytes = create_exam_pdf(paper_text, subject or 'Paper', chapter or '')
-                resp = make_response(pdf_bytes)
-                resp.headers.set('Content-Type', 'application/pdf')
+                pdf_buffer = BytesIO(pdf_bytes)
                 filename = f"{(subject or 'paper').replace(' ', '_')}_{(chapter or 'full').replace(' ', '_')}.pdf"
-                resp.headers.set('Content-Disposition', 'attachment', filename=filename)
-                return resp
+                return send_file(pdf_buffer, as_attachment=True, download_name=filename, mimetype='application/pdf')
 
             return jsonify({'success': True, 'paper': paper, 'answer_key': key, 'fallback': True, 'api_error': api_error}), 200
 
@@ -329,11 +329,9 @@ Extra instructions: {suggestions}
                     pdf_text = paper
 
             pdf_bytes = create_exam_pdf(pdf_text, subject or 'Paper', chapter or '')
-            resp = make_response(pdf_bytes)
-            resp.headers.set('Content-Type', 'application/pdf')
+            pdf_buffer = BytesIO(pdf_bytes)
             filename = f"{(subject or 'paper').replace(' ', '_')}_{(chapter or 'full').replace(' ', '_')}.pdf"
-            resp.headers.set('Content-Disposition', 'attachment', filename=filename)
-            return resp
+            return send_file(pdf_buffer, as_attachment=True, download_name=filename, mimetype='application/pdf')
 
         return jsonify({
             'success': True,
@@ -347,7 +345,7 @@ Extra instructions: {suggestions}
 
 @app.route('/health')
 def health():
-    return {'status': 'ok'}
+    return jsonify({'status': 'ok'})
 
 
 @app.route('/chapters')
