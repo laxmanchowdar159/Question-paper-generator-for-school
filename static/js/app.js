@@ -418,19 +418,34 @@ function updateSubjectsForClass() {
     const classSel = document.getElementById('class').value;
     const subjectSelect = document.getElementById('subject');
     subjectSelect.innerHTML = '<option value="" disabled selected>Select a subject</option>';
-    const subjects = curriculum[classSel] ? Object.keys(curriculum[classSel]) : [];
-    subjects.forEach(s => {
-        const opt = document.createElement('option');
-        opt.value = s;
-        opt.textContent = s;
-        subjectSelect.appendChild(opt);
+    // try server-side chapters first, then fall back to local curriculum
+    fetchChaptersFromServer(classSel).then(serverData => {
+        const subjects = serverData ? Object.keys(serverData) : (curriculum[classSel] ? Object.keys(curriculum[classSel]) : []);
+        subjects.forEach(s => {
+            const opt = document.createElement('option');
+            opt.value = s;
+            opt.textContent = s;
+            subjectSelect.appendChild(opt);
+        });
+        // reset chapter
+        const chapterSelect = document.getElementById('chapter');
+        chapterSelect.innerHTML = '<option value="" disabled selected>Choose a chapter...</option>';
+        chapterSelect.disabled = true;
+        // enable subject selector only when subjects are available
+        subjectSelect.disabled = subjects.length === 0;
+    }).catch(() => {
+        const subjects = curriculum[classSel] ? Object.keys(curriculum[classSel]) : [];
+        subjects.forEach(s => {
+            const opt = document.createElement('option');
+            opt.value = s;
+            opt.textContent = s;
+            subjectSelect.appendChild(opt);
+        });
+        const chapterSelect = document.getElementById('chapter');
+        chapterSelect.innerHTML = '<option value="" disabled selected>Choose a chapter...</option>';
+        chapterSelect.disabled = true;
+        subjectSelect.disabled = subjects.length === 0;
     });
-    // reset chapter
-    const chapterSelect = document.getElementById('chapter');
-    chapterSelect.innerHTML = '<option value="" disabled selected>Choose a chapter...</option>';
-    chapterSelect.disabled = true;
-    // enable subject selector only when subjects are available
-    subjectSelect.disabled = subjects.length === 0;
 }
 
 function updateChapters() {
@@ -438,19 +453,36 @@ function updateChapters() {
     const subject = document.getElementById('subject').value;
     const chapterSelect = document.getElementById('chapter');
     chapterSelect.innerHTML = '<option value="" disabled selected>Choose a chapter...</option>';
-    if (curriculum[classVal] && curriculum[classVal][subject]) {
-        curriculum[classVal][subject].forEach(chap => {
-            const option = document.createElement('option');
-            option.value = chap;
-            option.textContent = chap;
-            chapterSelect.appendChild(option);
-        });
-        chapterSelect.disabled = false;
-        // focus chapter for faster workflow
-        chapterSelect.focus();
-    } else {
-        chapterSelect.disabled = true;
-    }
+    // try server data first
+    fetchChaptersFromServer(classVal).then(serverData => {
+        const list = serverData && serverData[subject] ? serverData[subject] : (curriculum[classVal] && curriculum[classVal][subject] ? curriculum[classVal][subject] : []);
+        if (list && list.length) {
+            list.forEach(chap => {
+                const option = document.createElement('option');
+                option.value = chap;
+                option.textContent = chap;
+                chapterSelect.appendChild(option);
+            });
+            chapterSelect.disabled = false;
+            chapterSelect.focus();
+        } else {
+            chapterSelect.disabled = true;
+        }
+    }).catch(() => {
+        const list = curriculum[classVal] && curriculum[classVal][subject] ? curriculum[classVal][subject] : [];
+        if (list && list.length) {
+            list.forEach(chap => {
+                const option = document.createElement('option');
+                option.value = chap;
+                option.textContent = chap;
+                chapterSelect.appendChild(option);
+            });
+            chapterSelect.disabled = false;
+            chapterSelect.focus();
+        } else {
+            chapterSelect.disabled = true;
+        }
+    });
 }
 
 // Global cache for preview paper/key so PDF gen can reuse without second API hit
@@ -462,6 +494,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const examTypeSelect = document.getElementById('examType');
     const subjectSelect = document.getElementById('subject');
     const classSelect = document.getElementById('class');
+    const marksSelect = document.getElementById('totalMarks');
+    const marksCustom = document.getElementById('totalMarksCustom');
+    const includeSolutionsCheckbox = document.getElementById('includeSolutions');
     
     // Handle exam type selection
     if (examTypeSelect) {
@@ -512,6 +547,19 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         // populate subjects for initial class
         updateSubjectsForClass();
+    }
+
+    // Marks preset/select handler: show custom input when 'other' selected
+    if (marksSelect) {
+        marksSelect.addEventListener('change', (e) => {
+            if (e.target.value === 'other') {
+                marksCustom.style.display = '';
+                marksCustom.focus();
+            } else {
+                marksCustom.style.display = 'none';
+                marksCustom.value = '';
+            }
+        });
     }
 
     const form = document.getElementById('paperForm');
@@ -637,12 +685,16 @@ document.addEventListener('DOMContentLoaded', () => {
         const valid = validateForm();
         if (!valid) return showToast('Please fix highlighted fields first');
         // collect payload
+        const selectedMarks = marksSelect?.value || document.getElementById('totalMarks')?.value || '100';
+        const marksValue = selectedMarks === 'other' ? (marksCustom?.value || '100') : selectedMarks;
         const payload = {
             class: document.getElementById('class').value,
             subject: document.getElementById('subject').value,
             chapter: document.getElementById('chapter').value,
             difficulty: Array.from(document.getElementsByName('difficulty')).find(r => r.checked)?.value || 'Medium',
-            suggestions: document.getElementById('suggestions').value || ''
+            suggestions: document.getElementById('suggestions').value || '',
+            marks: marksValue,
+            includeSolutions: includeSolutionsCheckbox?.checked ? '1' : ''
         };
         const previewPane = document.getElementById('previewPane');
         previewPane.textContent = 'Generating preview...';
@@ -667,6 +719,34 @@ document.addEventListener('DOMContentLoaded', () => {
             const paperText = json.paper || '';
             // render formatted preview (basic)
             previewPane.innerHTML = `<pre class="preview-text">${escapeHtml(paperText)}</pre>`;
+                    // If user requested solutions, show a View Solutions button that stores the content server-side
+                    const existingBtn = document.getElementById('viewSolutionsBtn');
+                    if (existingBtn) existingBtn.remove();
+                    if (includeSolutionsCheckbox && includeSolutionsCheckbox.checked) {
+                        const btn = document.createElement('button');
+                        btn.id = 'viewSolutionsBtn';
+                        btn.className = 'btn btn-action';
+                        btn.textContent = '🔍 View Solutions';
+                        btn.style.marginTop = '12px';
+                        btn.addEventListener('click', async () => {
+                            try {
+                                const res = await fetch('/store_solution', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ paper: previewCache.paper, answer_key: previewCache.answer_key })
+                                });
+                                const json = await res.json();
+                                if (json.success && json.url) {
+                                    window.open(json.url, '_blank');
+                                } else {
+                                    showToast('Could not store solutions server-side');
+                                }
+                            } catch (err) {
+                                showToast('Network error storing solutions');
+                            }
+                        });
+                        previewPane.appendChild(btn);
+                    }
             showToast('✅ Preview ready! Click "Generate & Download" to create PDF.');
         } catch (err) {
             previewPane.innerHTML = `<div class="error-inline">${escapeHtml(err.message || 'Network error')}</div>`;
@@ -731,6 +811,57 @@ function escapeHtml(unsafe) {
         .replace(/>/g, '&gt;')
         .replace(/"/g, '&quot;')
         .replace(/'/g, '&#039;');
+}
+
+// Open a new window and render the paper + solutions in a printable format
+function openSolutionsWindow(cache) {
+        const paper = cache?.paper || '';
+        const answers = cache?.answer_key || '';
+        const win = window.open('', '_blank');
+        if (!win) return showToast('Popup blocked: allow popups for this site to view solutions');
+        const html = `
+            <!doctype html>
+            <html>
+            <head>
+                <meta charset="utf-8">
+                <title>Solutions — ExamCraft</title>
+                <meta name="viewport" content="width=device-width,initial-scale=1">
+                <style>
+                    body{font-family:Inter, Sora, Arial, sans-serif;padding:28px;color:#1f2937}
+                    h1{background:linear-gradient(90deg,#6366f1,#ec4899);-webkit-background-clip:text;color:transparent}
+                    pre{white-space:pre-wrap;font-family:inherit;font-size:15px;line-height:1.6;background:#f8fafc;padding:18px;border-radius:10px;border:1px solid #e6eef9}
+                    .answers{margin-top:20px;padding:18px;background:#fff9f2;border-radius:10px;border:1px solid #fde3bf}
+                </style>
+            </head>
+            <body>
+                <h1>ExamCraft — Paper & Solutions</h1>
+                <section>
+                    <h2>Paper</h2>
+                    <pre>${escapeHtml(paper)}</pre>
+                </section>
+                <section class="answers">
+                    <h2>Solutions & Explanations</h2>
+                    <pre>${escapeHtml(answers || 'No solutions were returned with this preview.')}</pre>
+                </section>
+                <p style="margin-top:18px;color:#6b7280">Tip: Print this page or save as PDF from your browser.</p>
+            </body>
+            </html>
+        `;
+        win.document.open();
+        win.document.write(html);
+        win.document.close();
+}
+
+// Try to fetch chapters from server endpoint and fall back to local curriculum
+async function fetchChaptersFromServer(classVal) {
+    try {
+        const res = await fetch(`/chapters?class=${encodeURIComponent(classVal)}`);
+        const json = await res.json();
+        if (json && json.success && json.data) return json.data;
+    } catch (err) {
+        // ignore
+    }
+    return null;
 }
 
 // --- Validation helpers ---

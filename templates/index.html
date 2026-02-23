@@ -11,13 +11,28 @@
   <div class="sidebar">
     <div class="sidebar-header">
       <div class="logo">
-        <span class="logo-icon">📝</span>
+        <svg class="logo-icon" width="40" height="40" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <rect width="24" height="24" rx="6" fill="url(#g)" />
+          <path d="M7 8h10v2H7zM7 11h7v2H7zM7 14h5v2H7z" fill="#fff" opacity="0.95"/>
+          <defs>
+            <linearGradient id="g" x1="0" x2="1">
+              <stop offset="0" stop-color="#6366f1"/>
+              <stop offset="1" stop-color="#ec4899"/>
+            </linearGradient>
+          </defs>
+        </svg>
         <div class="logo-text">ExamCraft</div>
       </div>
+      <div class="logo-sub">Smart papers • Clear marking • Fast prep</div>
     </div>
+
     <nav class="sidebar-nav">
-      <div class="nav-item active">✨ Generate</div>
+      <div class="nav-item active">Quick Tips</div>
+      <div class="nav-item" title="Study smart: break chapters into goals">• Break chapters into 3 learning goals</div>
+      <div class="nav-item" title="Mix question types for balance">• Mix MCQ, short, long and application tasks</div>
+      <div class="nav-item" title="Use time allocation">• Allocate time per section when setting marks</div>
     </nav>
+
     <div class="sidebar-footer">
       <button id="themeToggle" class="theme-toggle">🌙 Theme</button>
     </div>
@@ -26,8 +41,8 @@
   <div class="main-content">
     <div class="header-section">
       <h1><span class="emoji">📄</span> Model Paper Generator</h1>
-      <p class="tagline">Craft professional question papers in seconds. Less grading pain, more teaching gain! Select your preferences and let AI do the heavy lifting.</p>
-      <p class="microcopy">💡 Pro tip: Start with a class, subjects load automatically. Then pick a subject, chapters appear like magic!</p>
+      <p class="tagline">Design polished, balanced question papers in moments — clarity for learners, ease for teachers.</p>
+      <p class="microcopy">💡 Tip: Choose a class to load subjects and chapters instantly. Preview the draft, then download or view worked solutions.</p>
     </div>
 
     <form id="paperForm" class="paper-form" novalidate>
@@ -77,8 +92,17 @@
 
         <div class="card">
           <label for="totalMarks"><span class="emoji">⭐</span> Total Marks</label>
-          <input type="number" id="totalMarks" name="marks" placeholder="e.g., 50, 100" min="10" max="500" value="100">
-          <small class="hint-text">Optional: default is 100</small>
+          <select id="totalMarks" name="marks" aria-label="Total marks">
+            <option value="100">100 marks</option>
+            <option value="89">89 marks</option>
+            <option value="75">75 marks</option>
+            <option value="60">60 marks</option>
+            <option value="50">50 marks</option>
+            <option value="20">20 marks</option>
+            <option value="other">Other...</option>
+          </select>
+          <input type="number" id="totalMarksCustom" name="marks_custom" placeholder="Enter custom total" min="10" max="500" style="display:none;margin-top:8px;" />
+          <small class="hint-text">Pick a common exam total or choose other</small>
         </div>
 
         <div class="card">
@@ -103,7 +127,15 @@
         </div>
       </div>
 
-      <div class="button-container">
+        <div class="card">
+          <label for="includeSolutions"><span class="emoji">🛠️</span> Include Solutions</label>
+          <div class="checkbox-group">
+            <label class="checkbox-label"><input type="checkbox" id="includeSolutions" name="includeSolutions"> Add solutions & explanations at the end (opens in new page)</label>
+          </div>
+          <small class="hint-text">Select to attach worked solutions with each answer.</small>
+        </div>
+
+        <div class="button-container">
         <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
           <button type="button" id="previewBtn" class="btn btn-action">👀 Preview Paper</button>
           <button type="submit" id="generateBtn" class="btn btn-generate">
@@ -116,12 +148,12 @@
     <section class="preview-section" aria-live="polite">
       <h2>📋 Preview</h2>
       <div id="previewPane" class="preview-pane">
-        <p class="muted">👆 Click "Preview Paper" above to see a draft before downloading.</p>
+        <p class="muted">👆 Click "Preview Paper" above to see a draft before downloading. If you checked "Include Solutions", use the "View Solutions" button shown after preview.</p>
       </div>
     </section>
 
     <div class="contact-info">
-      ❓ Issues? <a href="mailto:laxmanchowdary159@gmail.com">Get Help</a> | Made with 💙 by ExamCraft
+      ❓ Issues? <a href="mailto:laxmanchowdary159@gmail.com">Get Help</a> | Visit <a href="https://examkraft.com" target="_blank" rel="noopener">ExamKraft</a> — Made with 💙 by ExamCraft
     </div>
 
     <!-- Modal -->
