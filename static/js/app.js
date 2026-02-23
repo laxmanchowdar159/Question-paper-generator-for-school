@@ -5,6 +5,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function initUI() {
+    console.log('initUI called');
     // Navigation
     document.querySelectorAll('.nav-item').forEach(el => {
         el.addEventListener('click', (e) => {
@@ -485,8 +486,6 @@ function updateChapters() {
     });
 }
 
-// Global cache for preview paper/key so PDF gen can reuse without second API hit
-let previewCache = null;
 let currentExamType = null;
 
 // Wire subject -> chapter updates and form submission
@@ -525,7 +524,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 examTypeSelect.classList.add('disabled-field');
             }
             
-            previewCache = null;
             clearFieldErrors();
         });
     }
@@ -542,7 +540,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
         classSelect.addEventListener('change', () => {
             updateSubjectsForClass();
-            previewCache = null;
             setTimeout(() => document.getElementById('subject')?.focus(), 50);
         });
         // populate subjects for initial class
@@ -568,77 +565,43 @@ document.addEventListener('DOMContentLoaded', () => {
     const errorBox = document.getElementById('errorMessage');
 
     if (form) {
+        console.log('Form found, attaching event listener');
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
+            console.log('Form submitted');
             errorBox.style.display = 'none';
             clearFieldErrors();
             if (!validateForm()) {
+                console.log('Form validation failed');
                 showToast('Please fill in all required fields');
                 return;
             }
 
-            // if preview cache exists (user clicked preview first), reuse it
-            if (previewCache) {
-                try {
-                    if (modal) { modal.setAttribute('aria-hidden', 'false'); modal.style.display = 'flex'; }
-                    if (button) { button.disabled = true; button.setAttribute('aria-busy', 'true'); }
-
-                    const subject = document.getElementById('subject').value;
-                    const chapter = document.getElementById('chapter').value;
-                    const paperText = previewCache.paper + '\n\n' + (previewCache.answer_key || '');
-
-                    // Create PDF server-side by sending full text
-                    const pdfRes = await fetch('/generate', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            paper: paperText,
-                            subject: subject,
-                            chapter: chapter,
-                            pdf_only: true
-                        })
-                    });
-
-                    if (pdfRes.ok) {
-                        const contentType = pdfRes.headers.get('Content-Type') || '';
-                        if (contentType.includes('application/pdf')) {
-                            const blob = await pdfRes.blob();
-                            const url = window.URL.createObjectURL(blob);
-                            const a = document.createElement('a');
-                            const disposition = pdfRes.headers.get('Content-Disposition') || '';
-                            let filename = 'model_paper.pdf';
-                            const m = disposition.match(/filename *= *"?([^";]+)"?/);
-                            if (m) filename = m[1].replace(/['"]/g, '');
-                            a.href = url;
-                            a.download = filename;
-                            document.body.appendChild(a);
-                            a.click();
-                            a.remove();
-                            window.URL.revokeObjectURL(url);
-                            showToast('📥 PDF downloaded from cache!');
-                        }
-                    }
-                } catch (err) {
-                    showToast('Error downloading cached PDF, generating fresh...');
-                    previewCache = null;  // fallback to full generation
-                } finally {
-                    if (modal) { modal.setAttribute('aria-hidden', 'true'); modal.style.display = 'none'; }
-                    if (button) { button.disabled = false; button.setAttribute('aria-busy', 'false'); }
-                }
-                return;
-            }
-
-            // No cache: full generation
+            console.log('Form validation passed, generating PDF');
             if (modal) { modal.setAttribute('aria-hidden', 'false'); modal.style.display = 'flex'; }
             if (button) { button.disabled = true; button.setAttribute('aria-busy', 'true'); }
 
             try {
                 const formData = new FormData(form);
+                console.log('Sending request to /generate');
                 const response = await fetch('/generate', { method: 'POST', body: formData });
+                console.log('Response received:', response.status, response.headers.get('Content-Type'));
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
 
                 const contentType = response.headers.get('Content-Type') || '';
                 if (contentType.includes('application/pdf')) {
-                    const blob = await response.blob();
+                    console.log('Processing PDF response');
+                    let blob;
+                    try {
+                        blob = await response.blob();
+                        console.log('Blob created, size:', blob.size);
+                    } catch (blobErr) {
+                        console.error('Error creating blob:', blobErr);
+                        throw blobErr;
+                    }
                     const url = window.URL.createObjectURL(blob);
                     const a = document.createElement('a');
                     const disposition = response.headers.get('Content-Disposition') || '';
@@ -648,6 +611,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     a.href = url;
                     a.download = filename;
                     document.body.appendChild(a);
+                    console.log('Triggering download for:', filename);
                     a.click();
                     a.remove();
                     window.URL.revokeObjectURL(url);
@@ -657,17 +621,20 @@ document.addEventListener('DOMContentLoaded', () => {
                     try {
                         const json = JSON.parse(text);
                         if (json.success && json.paper) {
-                            showToast('Paper generated — check the preview section');
+                            showToast('Paper generated successfully!');
                         } else {
                             errorBox.textContent = json.error || 'Generation failed';
                             errorBox.style.display = 'block';
+                            showToast('Generation failed — please try again');
                         }
                     } catch (err) {
                         errorBox.textContent = 'Unexpected response format';
                         errorBox.style.display = 'block';
+                        showToast('Unexpected error occurred');
                     }
                 }
             } catch (err) {
+                console.error('Error during generation:', err);
                 errorBox.textContent = err.message || 'Network error';
                 errorBox.style.display = 'block';
             } finally {
@@ -677,82 +644,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Preview button -> use JSON API to get paper text and show in preview pane, cache for PDF gen
-    const previewBtn = document.getElementById('previewBtn');
-    if (previewBtn) previewBtn.addEventListener('click', async (e) => {
-        e.preventDefault();
-        clearFieldErrors();
-        const valid = validateForm();
-        if (!valid) return showToast('Please fix highlighted fields first');
-        // collect payload
-        const selectedMarks = marksSelect?.value || document.getElementById('totalMarks')?.value || '100';
-        const marksValue = selectedMarks === 'other' ? (marksCustom?.value || '100') : selectedMarks;
-        const payload = {
-            class: document.getElementById('class').value,
-            subject: document.getElementById('subject').value,
-            chapter: document.getElementById('chapter').value,
-            difficulty: Array.from(document.getElementsByName('difficulty')).find(r => r.checked)?.value || 'Medium',
-            suggestions: document.getElementById('suggestions').value || '',
-            marks: marksValue,
-            includeSolutions: includeSolutionsCheckbox?.checked ? '1' : ''
-        };
-        const previewPane = document.getElementById('previewPane');
-        previewPane.textContent = 'Generating preview...';
-        try {
-            const res = await fetch('/generate', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
-            const json = await res.json();
-            if (!json.success) {
-                previewPane.innerHTML = `<div class="error-inline">${escapeHtml(json.error || 'Generation failed')}</div>`;
-                showToast('There was a hiccup generating the preview — see note above.');
-                previewCache = null;
-                return;
-            }
-            // Cache the paper and answer key for PDF generation
-            previewCache = {
-                paper: json.paper || '',
-                answer_key: json.answer_key || ''
-            };
-            const paperText = json.paper || '';
-            // render formatted preview (basic)
-            previewPane.innerHTML = `<pre class="preview-text">${escapeHtml(paperText)}</pre>`;
-                    // If user requested solutions, show a View Solutions button that stores the content server-side
-                    const existingBtn = document.getElementById('viewSolutionsBtn');
-                    if (existingBtn) existingBtn.remove();
-                    if (includeSolutionsCheckbox && includeSolutionsCheckbox.checked) {
-                        const btn = document.createElement('button');
-                        btn.id = 'viewSolutionsBtn';
-                        btn.className = 'btn btn-action';
-                        btn.textContent = '🔍 View Solutions';
-                        btn.style.marginTop = '12px';
-                        btn.addEventListener('click', async () => {
-                            try {
-                                const res = await fetch('/store_solution', {
-                                    method: 'POST',
-                                    headers: { 'Content-Type': 'application/json' },
-                                    body: JSON.stringify({ paper: previewCache.paper, answer_key: previewCache.answer_key })
-                                });
-                                const json = await res.json();
-                                if (json.success && json.url) {
-                                    window.open(json.url, '_blank');
-                                } else {
-                                    showToast('Could not store solutions server-side');
-                                }
-                            } catch (err) {
-                                showToast('Network error storing solutions');
-                            }
-                        });
-                        previewPane.appendChild(btn);
-                    }
-            showToast('✅ Preview ready! Click "Generate & Download" to create PDF.');
-        } catch (err) {
-            previewPane.innerHTML = `<div class="error-inline">${escapeHtml(err.message || 'Network error')}</div>`;
-            previewCache = null;
-        }
-    });
+    // Preview functionality removed
 });
 
 async function generatePaper() {

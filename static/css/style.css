@@ -490,86 +490,6 @@ body {
 }
 
 /* ============================================
-   PREVIEW SECTION
-   ============================================ */
-
-.preview-section {
-    margin-top: 40px;
-    animation: fadeIn 0.5s ease-out;
-}
-
-.preview-section h2 {
-    font-size: 22px;
-    font-weight: 800;
-    margin-bottom: 16px;
-    color: var(--text-primary);
-}
-
-.preview-pane {
-    background: var(--bg-primary);
-    border: 2px solid var(--border-color);
-    border-radius: var(--radius-lg);
-    padding: 28px;
-    min-height: 180px;
-    max-height: 500px;
-    overflow-y: auto;
-    transition: var(--transition);
-    box-shadow: var(--shadow);
-    position: relative;
-}
-
-.preview-pane:hover {
-    border-color: var(--accent-primary);
-    box-shadow: var(--shadow-lg);
-}
-
-.preview-pane::before {
-    content: '📋';
-    position: absolute;
-    top: 12px;
-    right: 16px;
-    font-size: 24px;
-    opacity: 0.2;
-}
-
-.preview-pane .muted {
-    color: var(--text-tertiary);
-    font-size: 14px;
-    font-style: italic;
-    text-align: center;
-    padding: 40px 20px;
-}
-
-.preview-text {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 13px;
-    line-height: 1.8;
-    color: var(--text-secondary);
-    white-space: pre-wrap;
-    word-wrap: break-word;
-    letter-spacing: 0.3px;
-}
-
-/* Scrollbar styling for preview */
-.preview-pane::-webkit-scrollbar {
-    width: 8px;
-}
-
-.preview-pane::-webkit-scrollbar-track {
-    background: var(--bg-tertiary);
-    border-radius: 4px;
-}
-
-.preview-pane::-webkit-scrollbar-thumb {
-    background: var(--accent-primary);
-    border-radius: 4px;
-}
-
-.preview-pane::-webkit-scrollbar-thumb:hover {
-    background: var(--accent-secondary);
-}
-
-/* ============================================
    NOTIFICATION TOAST
    ============================================ */
 
@@ -1040,17 +960,6 @@ body {
     font-size: 13px;
     margin-top: 6px;
 }
-.preview-section {
-    margin-top: 20px;
-}
-.preview-pane {
-    background: var(--bg-secondary);
-    border: 1px dashed var(--border-color);
-    padding: 16px;
-    border-radius: var(--radius);
-    min-height: 120px;
-    white-space: pre-wrap;
-}
 .microcopy {
     color: var(--text-secondary);
     margin-top: 8px;
@@ -1087,10 +996,6 @@ body {
 .contact-info {
     margin-top: 28px;
     color: var(--text-secondary);
-}
-.preview-text {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 14px;
 }
 .muted {
     color: var(--text-tertiary);

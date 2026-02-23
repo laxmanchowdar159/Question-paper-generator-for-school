@@ -177,19 +177,6 @@ def create_exam_pdf(text: str, subject: str, chapter: str) -> bytes:
     return out
 
 
-# Simple in-memory store for generated papers/solutions (id -> {paper, answer_key, ts})
-SOLUTIONS_STORE = {}
-SOLUTIONS_TTL = 60 * 60 * 6  # 6 hours
-
-
-def cleanup_solutions_store():
-    now = time.time()
-    keys = list(SOLUTIONS_STORE.keys())
-    for k in keys:
-        if now - SOLUTIONS_STORE[k].get('ts', 0) > SOLUTIONS_TTL:
-            del SOLUTIONS_STORE[k]
-
-
 def choose_model_name():
     """Try to choose a supported model name from the client library, falling back to a preferred list."""
     if genai is None or not api_key:
@@ -361,31 +348,6 @@ Extra instructions: {suggestions}
 @app.route('/health')
 def health():
     return {'status': 'ok'}
-
-
-@app.route('/store_solution', methods=['POST'])
-def store_solution():
-    try:
-        data = request.get_json(force=True)
-        paper = data.get('paper') or ''
-        answer_key = data.get('answer_key') or ''
-        if not paper and not answer_key:
-            return jsonify({'success': False, 'error': 'No content provided'}), 400
-        cleanup_solutions_store()
-        uid = uuid.uuid4().hex
-        SOLUTIONS_STORE[uid] = {'paper': paper, 'answer_key': answer_key, 'ts': time.time()}
-        return jsonify({'success': True, 'id': uid, 'url': f'/solutions/{uid}'}), 200
-    except Exception as e:
-        return jsonify({'success': False, 'error': str(e)}), 500
-
-
-@app.route('/solutions/<key>')
-def solutions_page(key):
-    cleanup_solutions_store()
-    entry = SOLUTIONS_STORE.get(key)
-    if not entry:
-        return "Not found or expired", 404
-    return render_template('solutions.html', paper=entry['paper'], answer_key=entry['answer_key'])
 
 
 @app.route('/chapters')
