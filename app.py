@@ -73,12 +73,69 @@ def create_exam_pdf(text: str, subject: str, chapter: str) -> bytes:
     except Exception:
         font_name = 'Helvetica'
 
+    # Sanitize text to replace Unicode characters not supported by Helvetica
+    def _sanitize_unicode(text: str) -> str:
+        replacements = {
+            '→': '->',
+            '←': '<-',
+            '↑': '^',
+            '↓': 'v',
+            '⇒': '=>',
+            '⇐': '<=',
+            '⇔': '<=>',
+            '≥': '>=',
+            '≤': '<=',
+            '≠': '!=',
+            '≈': '~=',
+            '∞': 'inf',
+            '∑': 'sum',
+            '∏': 'prod',
+            '∫': 'int',
+            '∂': 'd',
+            '∇': 'grad',
+            '√': 'sqrt',
+            'π': 'pi',
+            'α': 'alpha',
+            'β': 'beta',
+            'γ': 'gamma',
+            'δ': 'delta',
+            'λ': 'lambda',
+            'μ': 'mu',
+            'σ': 'sigma',
+            'τ': 'tau',
+            'ω': 'omega',
+            '°': 'deg',
+            '′': "'",
+            '″': '"',
+            '…': '...',
+            '–': '-',
+            '—': '-',
+            '‘': "'",
+            '’': "'",
+            '“': '"',
+            '”': '"',
+            '•': '-',
+            '©': '(c)',
+            '®': '(r)',
+            '™': '(tm)',
+            '€': 'EUR',
+            '£': 'GBP',
+            '¥': 'JPY',
+            '¢': 'cent',
+        }
+        for unicode_char, ascii_equiv in replacements.items():
+            text = text.replace(unicode_char, ascii_equiv)
+        return text
+
+    text = _sanitize_unicode(text)
+
     # set margins and fonts
     pdf.set_auto_page_break(auto=True, margin=18)
     pdf.set_left_margin(16)
     pdf.set_right_margin(16)
     pdf.set_font(font_name, 'B' if font_name != 'Helvetica' else '', 16)
     header = f"{subject} - {chapter}" if chapter else f"{subject}"
+    header = _sanitize_unicode(header)  # Sanitize header too
     # write header centered
     pdf.cell(0, 10, header, align='C')
     pdf.ln(6)
