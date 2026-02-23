@@ -1620,3 +1620,240 @@ button#generateBtn:disabled { background-color: #9ca3af; cursor: not-allowed; }
     .btn-generate { min-width: 100%; padding: 12px 18px; font-size: 15px; }
 }
 
+/* ============================================
+   SMART SIDEBAR UPGRADE (ExamCraft Assistant)
+   ============================================ */
+
+.sidebar {
+
+    background:
+        linear-gradient(
+            180deg,
+            var(--bg-secondary),
+            var(--bg-primary)
+        );
+
+    backdrop-filter: blur(10px);
+
+}
+
+
+/* Sidebar Cards */
+
+.sidebar-card {
+
+    background:
+        linear-gradient(
+            180deg,
+            rgba(255,255,255,0.6),
+            rgba(255,255,255,0.2)
+        );
+
+    border: 1px solid var(--border-color);
+
+    border-radius: 14px;
+
+    padding: 16px;
+
+    margin-bottom: 16px;
+
+    transition: var(--transition);
+
+}
+
+
+[data-theme="dark"] .sidebar-card {
+
+    background:
+        linear-gradient(
+            180deg,
+            rgba(30,41,59,0.6),
+            rgba(30,41,59,0.2)
+        );
+
+}
+
+
+.sidebar-card:hover {
+
+    transform: translateY(-3px);
+
+    box-shadow: var(--shadow-lg);
+
+    border-color: var(--accent-primary);
+
+}
+
+
+/* Sidebar Titles */
+
+.sidebar-title {
+
+    font-size: 13px;
+
+    font-weight: 700;
+
+    text-transform: uppercase;
+
+    letter-spacing: 0.6px;
+
+    margin-bottom: 10px;
+
+    color: var(--text-tertiary);
+
+}
+
+
+/* Sidebar Info Rows */
+
+.sidebar-row {
+
+    font-size: 14px;
+
+    margin-bottom: 6px;
+
+    display: flex;
+
+    justify-content: space-between;
+
+    color: var(--text-secondary);
+
+}
+
+
+.sidebar-row span {
+
+    font-weight: 700;
+
+    color: var(--text-primary);
+
+}
+
+
+/* Sidebar Buttons */
+
+.sidebar-btn {
+
+    width: 100%;
+
+    padding: 10px;
+
+    border-radius: 10px;
+
+    border: 1px solid var(--border-color);
+
+    background: var(--bg-primary);
+
+    color: var(--text-primary);
+
+    font-weight: 600;
+
+    margin-top: 6px;
+
+    cursor: pointer;
+
+    transition: var(--transition);
+
+}
+
+
+.sidebar-btn:hover {
+
+    background: var(--accent-primary);
+
+    color: white;
+
+    transform: translateY(-2px);
+
+    box-shadow: var(--shadow);
+
+}
+
+
+.sidebar-btn.primary {
+
+    background: var(--gradient-primary);
+
+    color: white;
+
+    border: none;
+
+}
+
+
+.sidebar-btn.primary:hover {
+
+    transform: translateY(-3px);
+
+    box-shadow: var(--shadow-lg);
+
+}
+
+
+/* Sidebar Tips */
+
+.sidebar-tips {
+
+    list-style: none;
+
+    padding-left: 0;
+
+}
+
+
+.sidebar-tips li {
+
+    font-size: 13px;
+
+    padding: 6px 0;
+
+    color: var(--text-secondary);
+
+    position: relative;
+
+    padding-left: 18px;
+
+}
+
+
+.sidebar-tips li::before {
+
+    content: "•";
+
+    position: absolute;
+
+    left: 0;
+
+    color: var(--accent-primary);
+
+}
+
+
+/* Sidebar Scrollbar */
+
+.sidebar::-webkit-scrollbar {
+
+    width: 6px;
+
+}
+
+.sidebar::-webkit-scrollbar-thumb {
+
+    background: var(--accent-primary);
+
+    border-radius: 999px;
+
+}
+
+
+/* Sidebar Header Enhancement */
+
+.sidebar-header {
+
+    padding-bottom: 14px;
+
+    border-bottom: 1px solid var(--border-color);
+
+    margin-bottom: 20px;
+
+}

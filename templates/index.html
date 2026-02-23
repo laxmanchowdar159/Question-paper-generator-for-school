@@ -1,177 +1,424 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ExamCraft - AI Question Paper Generator</title>
-    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/static/css/style.css">
+
+<meta charset="UTF-8">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>ExamCraft — AI Question Paper Generator</title>
+
+
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="/static/css/style.css">
+
 </head>
+
+
 <body>
-  <div class="sidebar">
-    <div class="sidebar-header">
-      <div class="logo">
-        <svg class="logo-icon" width="40" height="40" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-          <rect width="24" height="24" rx="6" fill="url(#logoGradient)" />
-          <path d="M7 9h10v2H7zM7 12h7v2H7zM7 15h5v2H7z" fill="white"/>
-          <circle cx="18" cy="16" r="2" fill="white"/>
-          <defs>
-            <linearGradient id="logoGradient" x1="0" x2="1" y1="0" y2="1">
-              <stop offset="0" stop-color="#3b82f6"/>
-              <stop offset="1" stop-color="#06b6d4"/>
-            </linearGradient>
-          </defs>
-        </svg>
-        <div class="logo-text">ExamCraft</div>
-      </div>
-      <div class="logo-sub">Smart papers • Clear marking • Fast prep</div>
-    </div>
 
-    <nav class="sidebar-nav">
-      <div class="nav-item active">Quick Tips</div>
-      <div class="nav-item" title="Study smart: break chapters into goals">• Break chapters into 3 learning goals</div>
-      <div class="nav-item" title="Mix question types for balance">• Mix MCQ, short, long and application tasks</div>
-      <div class="nav-item" title="Use time allocation">• Allocate time per section when setting marks</div>
-    </nav>
 
-    <div class="sidebar-footer">
-      <button id="themeToggle" class="theme-toggle">🌙 Theme</button>
-    </div>
-  </div>
+<!-- ========================= -->
+<!-- SIDEBAR -->
+<!-- ========================= -->
 
-  <div class="main-content">
-    <div class="header-section">
-      <h1><span class="emoji">📄</span> Model Paper Generator</h1>
-      <p class="tagline">Design polished, balanced question papers in moments — clarity for learners, ease for teachers.</p>
-      <p class="microcopy">💡 Tip: Choose a class to load subjects and chapters instantly. Fill in your preferences and download the PDF directly.</p>
-    </div>
+<aside class="sidebar">
 
-    <form id="paperForm" class="paper-form" novalidate>
-      <div class="form-grid">
-        <div class="card" style="grid-column: 1 / -1;">
-          <label for="examType"><span class="emoji">📌</span> Paper Type</label>
-          <select id="examType" name="examType" aria-label="Choose exam type" required>
-            <option value="" disabled selected>What type of paper do you need?</option>
-            <option value="state-board">📘 State Board (CBSE/AP Board)</option>
-            <option value="competitive">🚀 Competitive Exam (JEE/NEET/CLAT)</option>
-          </select>
-          <div id="examTypeError" class="error-inline" style="display:none"></div>
-          <small class="hint-text">Choose your exam type to reveal options</small>
-        </div>
 
-        <div class="card">
-          <label for="class"><span class="emoji">🏫</span> Class</label>
-          <select id="class" name="class" aria-label="Class selection" required>
-            <option value="" disabled selected>Select your class</option>
-            <option value="10">Class 10</option>
-            <option value="9">Class 9</option>
-            <option value="8">Class 8</option>
-            <option value="7">Class 7</option>
-            <option value="6">Class 6</option>
-          </select>
-          <div id="classError" class="error-inline" style="display:none"></div>
-          <small class="hint-text">Pick your class or grade</small>
-        </div>
+<div class="sidebar-header">
 
-        <div class="card" id="subjectCard" style="display:none;">
-          <label for="subject"><span class="emoji">📚</span> Subject</label>
-          <select name="subject" id="subject" required disabled aria-label="Subject selection">
-            <option value="" disabled selected>Pick a subject</option>
-          </select>
-          <div id="subjectError" class="error-inline" style="display:none"></div>
-          <small class="hint-text">Science, Math, Languages, History, Civics & more</small>
-        </div>
+<div class="logo">
 
-        <div class="card" id="chapterCard" style="display:none;">
-          <label for="chapter"><span class="emoji">📖</span> Chapter</label>
-          <select name="chapter" id="chapter" required disabled aria-label="Chapter selection">
-            <option value="" disabled selected>Select a chapter</option>
-          </select>
-          <div id="chapterError" class="error-inline" style="display:none"></div>
-          <small class="hint-text">Which topic are you covering?</small>
-        </div>
+<div class="logo-icon">📘</div>
 
-        <div class="card">
-          <label for="totalMarks"><span class="emoji">⭐</span> Total Marks</label>
-          <select id="totalMarks" name="marks" aria-label="Total marks">
-            <option value="100">100 marks</option>
-            <option value="89">80 marks</option>
-            <option value="75">75 marks</option>
-            <option value="60">60 marks</option>
-            <option value="50">50 marks</option>
-            <option value="25">25 marks</option>
-            <option value="20">20 marks</option>
-            <option value="other">Other...</option>
-          </select>
-          <input type="number" id="totalMarksCustom" name="marks_custom" placeholder="Enter custom total" min="10" max="500" style="display:none;margin-top:8px;" />
-          <small class="hint-text">Pick a common exam total or choose other</small>
-        </div>
+<div class="logo-text">ExamCraft</div>
 
-        <div class="card">
-          <label><span class="emoji">🎯</span> Difficulty Level</label>
-          <div class="difficulty-options">
-            <input type="radio" id="easy" name="difficulty" value="Easy">
-            <label for="easy" class="radio-label">🌱 Easy</label>
+</div>
 
-            <input type="radio" id="standard" name="difficulty" value="Medium" checked>
-            <label for="standard" class="radio-label">⚡ Standard</label>
+<div class="logo-sub">
 
-            <input type="radio" id="hard" name="difficulty" value="Hard">
-            <label for="hard" class="radio-label">🔥 Hard</label>
-          </div>
-          <small class="hint-text">Choose difficulty level</small>
-        </div>
+AI Question Paper Generator
 
-        <div class="card suggestions-card">
-          <label for="suggestions"><span class="emoji">💭</span> Extra Requests (Optional)</label>
-          <textarea id="suggestions" name="suggestions" rows="4" placeholder="E.g., emphasize algebra, include 2 long answers, focus on applications..."></textarea>
-          <small class="hint-text">Any special instructions for AI? Leave blank for standard paper.</small>
-        </div>
-      </div>
+</div>
 
-        <div class="card">
-          <label for="includeSolutions"><span class="emoji">🛠️</span> Include Solutions</label>
-          <div class="checkbox-group">
-            <label class="checkbox-label"><input type="checkbox" id="includeSolutions" name="includeSolutions"> Add solutions & explanations at the end (opens in new page)</label>
-          </div>
-          <small class="hint-text">Select to attach worked solutions with each answer.</small>
-        </div>
+</div>
 
-        <div class="button-container">
-        <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
-          <button type="submit" id="generateBtn" class="btn btn-generate">
-            <span>⚡</span> Download PDF
-          </button>
-        </div>
-      </div>
-    </form>
 
-    <div class="contact-info">
-      ❓ Issues? <a href="mailto:laxmanchowdary159@gmail.com">Get Help</a> | Visit <a href="https://examkraft.com" target="_blank" rel="noopener">ExamKraft</a> — Made with 💙 by ExamCraft
-    </div>
 
-    <!-- Modal -->
-    <div id="loadingModal" class="modal" aria-hidden="true">
-      <div class="modal-content">
-        <div class="spinner-inline"></div>
-        <p>Generating your masterpiece...</p>
-      </div>
-    </div>
+<!-- Current Paper Info -->
 
-    <!-- Error Box -->
-    <div id="errorMessage" class="error-message" role="alert" style="display:none;">
-      Something went wrong. Please try again.
-    </div>
+<div class="sidebar-card">
 
-    <!-- Loading Spinner -->
-    <div id="loadingSpinner" class="loading-spinner hidden">
-        <div class="spinner"></div>
-        <p>Generating...</p>
-    </div>
+<div class="sidebar-title">
 
-    <!-- Notification Toast -->
-    <div id="notificationToast" class="notification-toast"></div>
+Current Paper
 
-    <script src="/static/js/app.js"></script>
+</div>
+
+
+<div class="sidebar-row">
+
+Class: <span id="sb-class">—</span>
+
+</div>
+
+
+<div class="sidebar-row">
+
+Subject: <span id="sb-subject">—</span>
+
+</div>
+
+
+<div class="sidebar-row">
+
+Chapter: <span id="sb-chapter">—</span>
+
+</div>
+
+
+<div class="sidebar-row">
+
+Marks: <span id="sb-marks">—</span>
+
+</div>
+
+
+</div>
+
+
+
+<!-- Quick Actions -->
+
+<div class="sidebar-card">
+
+<div class="sidebar-title">
+
+Quick Actions
+
+</div>
+
+
+<button onclick="generatePaper()" class="sidebar-btn primary">
+
+⚡ Generate Paper
+
+</button>
+
+
+<button onclick="downloadPDF()" class="sidebar-btn">
+
+📄 Download PDF
+
+</button>
+
+
+<button onclick="copyPaper()" class="sidebar-btn">
+
+📋 Copy Paper
+
+</button>
+
+
+</div>
+
+
+
+<!-- AI Tips -->
+
+<div class="sidebar-card">
+
+<div class="sidebar-title">
+
+AI Tips
+
+</div>
+
+
+<ul class="sidebar-tips">
+
+<li>Include diagrams for science</li>
+
+<li>Include numericals for math</li>
+
+<li>Balance marks per section</li>
+
+<li>Use real exam pattern</li>
+
+</ul>
+
+</div>
+
+
+
+<!-- Theme -->
+
+<div class="sidebar-footer">
+
+<button id="themeToggle" class="sidebar-btn">
+
+🌙 Toggle Theme
+
+</button>
+
+</div>
+
+
+</aside>
+
+
+
+<!-- ========================= -->
+<!-- MAIN CONTENT -->
+<!-- ========================= -->
+
+<main class="main">
+
+
+<header class="header">
+
+<h1>
+
+AI Model Paper Generator
+
+</h1>
+
+
+<p>
+
+Generate professional exam papers instantly
+
+</p>
+
+
+</header>
+
+
+
+<form id="paperForm" class="form">
+
+
+
+<!-- Exam Type -->
+
+<div class="card">
+
+<label>
+
+Paper Type
+
+</label>
+
+
+<select id="examType" name="examType" required>
+
+<option value="">Select paper type</option>
+
+<option value="state-board">State Board</option>
+
+<option value="competitive">Competitive Exam</option>
+
+</select>
+
+</div>
+
+
+
+<!-- Class -->
+
+<div class="card">
+
+<label>
+
+Class
+
+</label>
+
+
+<select id="class" name="class" required>
+
+<option value="">Select class</option>
+
+<option value="10">Class 10</option>
+
+<option value="9">Class 9</option>
+
+<option value="8">Class 8</option>
+
+<option value="7">Class 7</option>
+
+<option value="6">Class 6</option>
+
+</select>
+
+</div>
+
+
+
+<!-- Subject -->
+
+<div class="card">
+
+<label>
+
+Subject
+
+</label>
+
+
+<select id="subject" name="subject">
+
+<option value="">Select subject</option>
+
+</select>
+
+</div>
+
+
+
+<!-- Chapter -->
+
+<div class="card">
+
+<label>
+
+Chapter
+
+</label>
+
+
+<select id="chapter" name="chapter">
+
+<option value="">Select chapter</option>
+
+</select>
+
+</div>
+
+
+
+<!-- Marks -->
+
+<div class="card">
+
+<label>
+
+Total Marks
+
+</label>
+
+
+<select id="marks" name="marks">
+
+<option value="100">100</option>
+
+<option value="80">80</option>
+
+<option value="60">60</option>
+
+<option value="50">50</option>
+
+<option value="25">25</option>
+
+</select>
+
+</div>
+
+
+
+<!-- Difficulty -->
+
+<div class="card">
+
+<label>
+
+Difficulty
+
+</label>
+
+
+<select name="difficulty">
+
+<option value="Easy">Easy</option>
+
+<option value="Medium">Medium</option>
+
+<option value="Hard">Hard</option>
+
+</select>
+
+</div>
+
+
+
+<!-- Suggestions -->
+
+<div class="card full">
+
+<label>
+
+Extra Instructions
+
+</label>
+
+
+<textarea
+
+id="suggestions"
+
+name="suggestions"
+
+rows="4"
+
+placeholder="Example: Include diagrams, formulas, and HOTS questions"
+
+></textarea>
+
+
+</div>
+
+
+
+<!-- Button -->
+
+<div class="card full center">
+
+<button
+
+type="submit"
+
+class="btn-primary"
+
+>
+
+Generate & Download PDF
+
+</button>
+
+</div>
+
+
+</form>
+
+
+
+<footer class="footer">
+
+ExamCraft © 2026
+
+</footer>
+
+
+</main>
+
+
+
+<script src="/static/js/app.js"></script>
+
+
+
 </body>
+
 </html>
