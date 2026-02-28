@@ -7,9 +7,10 @@ ExamCraft is a sophisticated AI-powered application that generates high-quality,
 ## ✨ Features at a Glance
 
 ### 🤖 **AI-Powered Intelligence**
-- Google Gemini 1.5 Flash model generates contextual, high-quality questions
+- Google Gemini AI generates contextual, high-quality questions (auto-selects latest available model: Gemini 2.0 Flash, 1.5 Flash, or Gemini Pro)
 - Board-specific optimizations (Andhra Board, CBSE, ICSE, etc.)
 - Curriculum-aligned with educational standards
+- **Fallback Generator**: If API key is missing or unavailable, generates template-based papers locally
 
 ### 📋 **Flexible Customization**
 - Multiple boards, classes (6-10), subjects, and chapters
@@ -46,7 +47,8 @@ ExamCraft is a sophisticated AI-powered application that generates high-quality,
 
 ### Prerequisites
 - Python 3.8+
-- Google Generative AI (Gemini) API key (free tier available)
+- Google Generative AI (Gemini) API key (free tier available at [Google AI Studio](https://aistudio.google.com/app/apikey))
+- **Note**: App works without API key using built-in fallback generator
 
 ### Setup in 5 Minutes
 
@@ -58,19 +60,18 @@ cd Question-paper-generator-for-school
 # 2. Install
 pip install -r requirements.txt
 
-# 3. Configure API key
-set GEMINI_API_KEY=your-gemini-api-key-here        # Windows
+# 3. [OPTIONAL] Configure API key for AI-powered generation
+# Get free key: https://aistudio.google.com/app/apikey
 export GEMINI_API_KEY=your-gemini-api-key-here     # Mac/Linux
+set GEMINI_API_KEY=your-gemini-api-key-here        # Windows
 
 # 4. Run
-pip install -r requirements.txt
-
 # Development (Flask CLI):
 export FLASK_APP=app
 flask run --host=0.0.0.0 --port=3000
 
 # Production-like (Gunicorn):
-gunicorn api.app:app --bind 0.0.0.0:8000
+gunicorn app:app --bind 0.0.0.0:8000
 
 # 5. Open browser
 # Navigate to http://localhost:3000 (Flask) or http://localhost:8000 (Gunicorn)
@@ -184,19 +185,37 @@ gunicorn api.app:app --bind 0.0.0.0:8000
 
 ## 🔌 Google Gemini Integration Details
 
-### Model: `gemini-1.5-flash`
+### Model Selection Strategy
+The app uses intelligent model fallback to ensure compatibility with Google's latest Gemini API:
+
+**Primary Model Chain** (tried in order):
+1. `gemini-2.0-flash` (Latest, recommended)
+2. `gemini-1.5-flash` (Stable alternative)
+3. `gemini-pro` (Legacy fallback)
+
+**Why This Approach?**
+- Google regularly updates their AI models
+- Each model has different performance & cost characteristics
+- Fallback chain ensures app never breaks due to API updates
+- Automatic model selection on startup
+
+### Performance
 - **Speed**: 5-10 seconds per paper
 - **Cost**: Free tier available, very economical at scale
 - **Quality**: Excellent educational content
+- **Fallback**: Template-based papers if no API key (instant generation)
 
 ### Prompt Engineering
 - Role: Expert exam setter
 - Context: Class, subject, chapter
-- Structure: MCQ + Short Answer + Long Answer
-- Constraints: Difficulty, marks, format
+- Structure: MCQ + Short Answer + Long Answer + Case Study
+- Constraints: Difficulty, marks, format, custom instructions
 
 ### Error Handling
-- Missing key → Startup failure
+- Missing API key → Uses fallback generator (template-based papers)
+- API unavailable → Returns local question bank
+- Bad request → Returns helpful error message
+- Empty response → Triggers fallback generator
 - Invalid key → 401 error
 - Rate limit → 429 retry
 - Network → User feedback
