@@ -83,19 +83,7 @@ Chapter: <span id="sb-chapter">—</span>
 
 Marks: <span id="sb-marks">—</span>
 
-</div>
 
-<div class="sidebar-row">
-
-Paper Type: <span id="sb-type">—</span>
-
-</div>
-
-<div class="sidebar-row">
-
-Board/Exam: <span id="sb-board">—</span>
-
-</div>
 <div class="sidebar-row">
 
 Paper Type: <span id="sb-type">—</span>
@@ -166,39 +154,18 @@ AI Tips
 
 <main class="main-content">
 
+  <div class="form-wrapper">
+    <header class="header-section">
+      <h1>AI Model Paper Generator</h1>
+      <p>Generate professional exam papers instantly</p>
+    </header>
 
-<header class="header-section">
-
-<h1>
-
-AI Model Paper Generator
-
-</h1>
-
-
-<p>
-
-Generate professional exam papers instantly
-
-</p>
-
-
-</header>
-
-
-
-
-</div>
 
 <!-- Exam Type -->
 
 <div class="card">
 
-<label>
-
-Paper Type
-
-</label>
+<label data-icon="📋">Paper Type</label>
 
 
 <select id="examType" name="examType" required>
@@ -219,11 +186,7 @@ Paper Type
 
 <div id="stateCard" class="card" style="display:none">
 
-<label>
-
-Select State Board
-
-</label>
+<label data-icon="🗂️">Select State Board</label>
 
 <select id="stateSelect" name="state">
 
@@ -253,11 +216,7 @@ Select State Board
 
 <div id="competitiveCard" class="card" style="display:none">
 
-<label>
-
-Select Competitive Exam
-
-</label>
+<label data-icon="🏆">Select Competitive Exam</label>
 
 <select id="competitiveExam" name="competitiveExam">
 
@@ -277,17 +236,23 @@ Select Competitive Exam
 
 </div>
 
+<!-- Conditional: Scope for competitive exams (single vs all chapters) -->
+
+<div id="scopeCard" class="card" style="display:none">
+  <label data-icon="🔖">Paper Scope</label>
+  <select id="scopeSelect" name="scope">
+    <option value="single">Single Chapter</option>
+    <option value="all">All Chapters</option>
+  </select>
+</div>
+
 
 
 <!-- Class -->
 
 <div class="card">
 
-<label>
-
-Class
-
-</label>
+<label data-icon="📚">Class</label>
 
 
 <select id="class" name="class" required>
@@ -314,11 +279,7 @@ Class
 
 <div class="card">
 
-<label>
-
-Subject
-
-</label>
+<label data-icon="🎓">Subject</label>
 
 
 <select id="subject" name="subject">
@@ -335,11 +296,7 @@ Subject
 
 <div class="card">
 
-<label>
-
-Chapter
-
-</label>
+<label data-icon="📖">Chapter</label>
 
 
 <select id="chapter" name="chapter">
@@ -356,11 +313,7 @@ Chapter
 
 <div class="card">
 
-<label>
-
-Total Marks
-
-</label>
+<label data-icon="✏️">Total Marks</label>
 
 
 <select id="totalMarks" name="marks">
@@ -385,11 +338,7 @@ Total Marks
 
 <div class="card">
 
-<label>
-
-Difficulty
-
-</label>
+<label data-icon="⚡">Difficulty</label>
 
 
 <select name="difficulty">
@@ -473,11 +422,22 @@ ExamCraft © 2026
 </footer>
 
 
+  </div>  <!-- end form-wrapper -->
 </main>
 
 
 
 <script src="/static/js/app.js"></script>
+
+<!-- loading and notification elements -->
+<div id="loadingModal" class="modal">
+  <div class="modal-content">
+    <div class="spinner-inline"></div>
+    <p>Generating paper...</p>
+  </div>
+</div>
+
+<div id="notificationToast" class="notification-toast"></div>
 
 
 

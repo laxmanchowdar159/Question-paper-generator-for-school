@@ -199,7 +199,7 @@ body {
 /* Main Content */
 .main-content {
     grid-column: 2;
-    padding: 48px;
+    padding: 48px 60px;
     overflow-y: auto;
     background: 
         radial-gradient(circle at 25% 25%, rgba(59, 130, 246, 0.02) 0%, transparent 50%),
@@ -212,9 +212,21 @@ body {
    HEADER SECTION
    ============================================ */
 
+/* new wrapper styling */
+.form-wrapper {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 24px 0;
+}
+
 .header-section {
     margin-bottom: 48px;
     animation: slideInUp 0.6s ease-out;
+    background: var(--gradient-primary);
+    color: #fff;
+    padding: 40px 24px;
+    border-radius: var(--radius-lg);
+    text-align: center;
 }
 
 @keyframes slideInUp {
@@ -232,10 +244,18 @@ body {
     font-size: 32px;
     font-weight: 800;
     margin-bottom: 12px;
+    /* keep gradient text effect */
     background: var(--gradient-primary);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
+}
+
+/* add icon before each label when data-icon attr provided */
+.card label::before {
+    content: attr(data-icon) " ";
+    font-size: 18px;
+    margin-right: 4px;
 }
 
 .emoji {
@@ -873,9 +893,9 @@ body {
    ============================================ */
 
 body {
-    display: grid;
-    grid-template-columns: 280px 1fr;
-    height: 100vh;
+    display: block;
+    padding-left: 320px; /* leave space for fixed sidebar */
+    height: auto;
 }
 
 .sidebar {
@@ -887,7 +907,7 @@ body {
     position: fixed;
     left: 0;
     top: 0;
-    width: 280px;
+    width: 320px;
     height: 100vh;
     overflow-y: auto;
     z-index: 100;
@@ -1899,14 +1919,10 @@ button#generateBtn:disabled { background-color: #9ca3af; cursor: not-allowed; }
    FIX MAIN CONTENT OFFSET (CRITICAL)
    ============================================ */
 
+/* offset now handled by body padding */
 .main-content {
-
-    margin-left: 320px;   /* same as sidebar width */
-
-    width: calc(100% - 320px);
-
+    width: 100%;
     min-height: 100vh;
-
 }
 
 

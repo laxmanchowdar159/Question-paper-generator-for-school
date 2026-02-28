@@ -11,7 +11,6 @@ from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.lib.enums import TA_CENTER
 from reportlab.lib.colors import black, grey
-from io import BytesIO
 from flask import Flask, render_template, request, jsonify, send_file
 
 try:
@@ -19,7 +18,6 @@ try:
 except Exception:
     genai = None
 
-from fpdf import FPDF
 
 
 # ==========================================
@@ -59,7 +57,12 @@ def split_key(text: str):
 # PDF GENERATOR (FULLY FIXED)
 # ==========================================
 
-def create_exam_pdf(text, subject, chapter):
+def create_exam_pdf(text, subject, chapter, answer_key=None, include_key=False):
+    """Return bytes of a PDF containing *text* (the paper).
+
+    If *include_key* is True and *answer_key* is provided, append an
+    answer-key page after the main paper.
+    """
 
     buffer = BytesIO()
 
@@ -158,6 +161,14 @@ def create_exam_pdf(text, subject, chapter):
 
     doc.build(elements)
 
+    # optionally append answer key
+    if include_key and answer_key:
+        elements.append(PageBreak())
+        elements.append(Paragraph("Answer Key", styles['ExamTitle']))
+        for line in answer_key.split("\n"):
+            if line.strip():
+                elements.append(Paragraph(line.replace(" ", "&nbsp;"), styles['ExamBody']))
+
     pdf_bytes = buffer.getvalue()
     buffer.close()
 
@@ -222,12 +233,21 @@ def generate():
         data = request.form if is_form else request.get_json(force=True)
 
         # Core fields
-        cls = data.get("class", "")
+        class_name = data.get("class", "")
         subject = data.get("subject", "")
         chapter = data.get("chapter", "")
         marks = data.get("marks", "100")
         difficulty = data.get("difficulty", "Medium")
-        board = data.get("board", "Standard Curriculum")
+        # determine board/exam information from form
+        state = data.get("state", "")
+        competitive_exam = data.get("competitiveExam", "")
+        exam_type = data.get("examType", "")
+        if state:
+            board = f"{state} State Board"
+        elif competitive_exam:
+            board = competitive_exam
+        else:
+            board = data.get("board", "Standard Curriculum")
         suggestions = data.get("suggestions", "")
 
         generated_text = None
@@ -274,12 +294,13 @@ EXTRA INSTRUCTIONS:
 EXAM DETAILS
 ═══════════════════════════════════════
 
-Class: {cls}
+Class: {class_name}
 Subject: {subject}
 Chapter: {chapter or "Full syllabus"}
-Board: {board}
-Total Marks: {marks}
+Board/Exam: {board}
+Exam Type: {exam_type or "Standard"}
 Difficulty: {difficulty}
+Total Marks: {marks}
 
 ═══════════════════════════════════════
 MANDATORY OUTPUT STRUCTURE
@@ -378,18 +399,29 @@ Generate complete paper now.
 
 
         # ==========================================
-        # FALLBACK GENERATOR
+        # FALLBACK GENERATOR (only used when expressly allowed)
         # ==========================================
 
+        # In production we prefer failing loudly rather than returning a
+        # meaningless dummy paper.  If the caller passed the flag
+        # `use_fallback` we will generate a simple template; otherwise we
+        # propagate the API error.
         if not generated_text:
-
-            generated_text = build_local_paper(
-                cls,
-                subject,
-                chapter,
-                marks,
-                difficulty
-            )
+            if data.get("use_fallback"):
+                generated_text = build_local_paper(
+                    class_name,
+                    subject,
+                    chapter,
+                    marks,
+                    difficulty
+                )
+            else:
+                # bail out with error message
+                return jsonify({
+                    "success": False,
+                    "error": "AI generation failed",
+                    "api_error": api_error
+                }), 502
 
 
         # ==========================================
@@ -405,13 +437,25 @@ Generate complete paper now.
 
         if data.get("pdf_only"):
 
-            # If the client has supplied the already-generated paper, use it.
-            text_for_pdf = data.get("paper") or generated_text or ""
+            # generate the text (we already ran model above) then render
+            text_for_pdf = generated_text
+
+            if not text_for_pdf:
+                # early return so client sees error instead of an empty 200
+                return jsonify({
+                    "success": False,
+                    "error": "No paper content available for PDF"
+                }), 400
+
+            include_key_flag = bool(data.get("includeKey"))
+            answer_text = data.get("answer_key") or ""
 
             pdf_bytes = create_exam_pdf(
                 text_for_pdf,
                 subject or "Question Paper",
-                chapter or ""
+                chapter or "",
+                answer_key=answer_text,
+                include_key=include_key_flag
             )
 
             filename = f"{subject or 'Exam'}_{chapter or ''}_Question_Paper.pdf".replace(" ", "_")
