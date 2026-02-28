@@ -242,7 +242,19 @@ def generate():
 
             try:
 
-                model = genai.GenerativeModel("gemini-1.5-flash")
+                # Try latest model first, fallback to older versions if needed
+                model_names = ["gemini-2.0-flash", "gemini-1.5-flash", "gemini-pro"]
+                model = None
+                
+                for model_name in model_names:
+                    try:
+                        model = genai.GenerativeModel(model_name)
+                        break
+                    except Exception:
+                        continue
+                
+                if not model:
+                    raise Exception("No compatible Gemini models available")
 
                 prompt = f"""
 You are a senior official examination authority responsible for creating real board-level exam papers.
