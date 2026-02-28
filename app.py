@@ -393,13 +393,16 @@ Generate complete paper now.
 
         if data.get("pdf_only"):
 
+            # If the client has supplied the already-generated paper, use it.
+            text_for_pdf = data.get("paper") or generated_text or ""
+
             pdf_bytes = create_exam_pdf(
-                generated_text,
+                text_for_pdf,
                 subject or "Question Paper",
                 chapter or ""
             )
 
-            filename = f"{subject}_{chapter}_Question_Paper.pdf".replace(" ", "_")
+            filename = f"{subject or 'Exam'}_{chapter or ''}_Question_Paper.pdf".replace(" ", "_")
 
             return send_file(
                 BytesIO(pdf_bytes),
@@ -462,6 +465,16 @@ def chapters():
         with open(data_path, encoding="utf-8") as f:
             data = json.load(f)
 
+        # If a class query param is provided, return only that class's subjects
+        cls = request.args.get("class") or request.args.get("cls")
+
+        if cls and cls in data:
+            return jsonify({
+                "success": True,
+                "data": data[cls]
+            })
+
+        # Otherwise return full dataset
         return jsonify({
             "success": True,
             "data": data

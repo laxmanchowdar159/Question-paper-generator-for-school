@@ -1,0 +1,22 @@
+{
+  "standard_boards": [
+    "State Board - Andhra Pradesh",
+    "State Board - Telangana",
+    "CBSE",
+    "ICSE",
+    "IB",
+    "State Board - Maharashtra",
+    "State Board - Karnataka",
+    "State Board - Tamil Nadu",
+    "State Board - Kerala",
+    "State Board - Uttar Pradesh"
+  ],
+  "competitive_exams": [
+    "NTSE",
+    "KVPY",
+    "NSO",
+    "IMO",
+    "IJSO",
+    "Other School Olympiads"
+  ]
+}

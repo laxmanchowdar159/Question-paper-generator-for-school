@@ -57,6 +57,45 @@ function initUI() {
     document.getElementById("suggestions")
         ?.addEventListener("input", updateSidebar);
 
+    // Show/hide conditional fields based on paper type
+    document.getElementById("examType")
+        ?.addEventListener("change", (e) => {
+
+            const val = e.target.value;
+
+            const stateCard = document.getElementById("stateCard");
+            const compCard = document.getElementById("competitiveCard");
+
+            if (val === "state-board") {
+                if (stateCard) stateCard.style.display = "block";
+                if (compCard) compCard.style.display = "none";
+            }
+            else if (val === "competitive") {
+                if (stateCard) stateCard.style.display = "none";
+                if (compCard) compCard.style.display = "block";
+            }
+            else {
+                if (stateCard) stateCard.style.display = "none";
+                if (compCard) compCard.style.display = "none";
+            }
+
+            updateSidebar();
+
+        });
+
+    document.getElementById("stateSelect")
+        ?.addEventListener("change", updateSidebar);
+
+    document.getElementById("competitiveExam")
+        ?.addEventListener("change", updateSidebar);
+
+    // Prevent form default submit and use JS generation
+    document.getElementById("paperForm")
+        ?.addEventListener("submit", (e) => {
+            e.preventDefault();
+            generatePaper();
+        });
+
 }
 
 
@@ -85,6 +124,18 @@ function updateSidebar() {
     const marks =
         document.getElementById("totalMarks")?.value || "—";
 
+    // Get paper type, board/exam info
+    const examType =
+        document.getElementById("examType")?.value || "—";
+
+    let boardExam = "—";
+    if (examType === "state-board") {
+        boardExam = document.getElementById("stateSelect")?.value || "State —";
+    } else if (examType === "competitive") {
+        boardExam = document.getElementById("competitiveExam")?.value || "Exam —";
+    } else if (examType) {
+        boardExam = examType;
+    }
 
     setSidebarValue("sb-class", cls);
 
@@ -93,6 +144,10 @@ function updateSidebar() {
     setSidebarValue("sb-chapter", chapter);
 
     setSidebarValue("sb-marks", marks);
+
+    setSidebarValue("sb-type", examType === "state-board" ? "State Board" : (examType === "competitive" ? "Competitive" : "—"));
+
+    setSidebarValue("sb-board", boardExam);
 
 }
 
@@ -286,6 +341,17 @@ async function generatePaper() {
 
     };
 
+    // Include paper type info
+    payload.examType = document.getElementById("examType")?.value || "";
+
+    // If state board selected include state
+    const state = document.getElementById("stateSelect")?.value;
+    if (state) payload.state = state;
+
+    // If competitive selected include exam
+    const comp = document.getElementById("competitiveExam")?.value;
+    if (comp) payload.competitiveExam = comp;
+
 
     showLoading(true);
 
@@ -384,6 +450,15 @@ async function downloadPDF() {
             })
 
         });
+    // Also include exam type and conditional fields by sending them as query metadata
+    const meta = {
+        examType: document.getElementById("examType")?.value || "",
+        state: document.getElementById("stateSelect")?.value || "",
+        competitiveExam: document.getElementById("competitiveExam")?.value || ""
+    };
+
+    // If server needs these for logging/filename etc. we can send a quick notify (optional)
+    // Currently PDF generation prefers the supplied `paper` text so metadata is informational.
 
 
     const blob =
@@ -473,5 +548,25 @@ function showToast(msg) {
         toast.classList.remove("show");
 
     }, 3000);
+
+}
+
+
+// =====================================================
+// THEME TOGGLE
+// =====================================================
+
+function toggleTheme() {
+
+    const html = document.documentElement;
+    const isDark = html.getAttribute("data-theme") === "dark";
+    
+    if (isDark) {
+        html.removeAttribute("data-theme");
+        localStorage.setItem("theme", "light");
+    } else {
+        html.setAttribute("data-theme", "dark");
+        localStorage.setItem("theme", "dark");
+    }
 
 }

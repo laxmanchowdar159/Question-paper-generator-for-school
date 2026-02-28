@@ -344,5 +344,39 @@
       "Sunita in the Sky",
       "The Wonder Called Sleep"
     ]
+  },
+  "11": {
+    "Physics": ["Physical World", "Units and Measurements", "Motion in a Straight Line", "Motion in a Plane", "Laws of Motion", "Work, Energy and Power", "System of Particles and Rotational Motion", "Gravitation", "Mechanical Properties of Solids", "Mechanical Properties of Fluids", "Thermal Properties of Matter", "Thermodynamics", "Kinetic Theory"],
+    "Chemistry": ["Some Basic Concepts of Chemistry", "Structure of Atom", "Classification of Elements and Periodicity in Properties", "Chemical Bonding and Molecular Structure", "States of Matter: Gases and Liquids", "Solid State", "Equilibrium", "Redox Reactions", "Hydrogen", "S-Block Elements", "Some P-Block Elements", "Organic Chemistry: Some Basic Principles and Techniques", "Hydrocarbons"],
+    "Biology": ["The Living World", "Biological Classification", "Plant Kingdom", "Animal Kingdom", "Morphology of Flowering Plants", "Anatomy of Flowering Plants", "Structural Organisation in Animals", "Cell: The Unit of Life", "Biomolecules", "Cell Cycle and Cell Division"],
+    "Maths": ["Sets", "Relations and Functions", "Trigonometric Functions", "Complex Numbers and Quadratic Equations", "Linear Inequalities", "Permutations and Combinations", "Binomial Theorem", "Sequences and Series", "Straight Lines", "Conic Sections", "Introduction to Three-dimensional Geometry", "Limits and Derivatives", "Mathematical Reasoning", "Statistics", "Probability"]
+  },
+  "12": {
+    "Physics": ["Electric Charges and Fields", "Electrostatic Potential and Capacitance", "Current Electricity", "Moving Charges and Magnetism", "Magnetism and Matter", "Electromagnetic Induction", "Alternating Current", "Electromagnetic Waves", "Ray Optics and Optical Instruments", "Wave Optics", "Dual Nature of Radiation and Matter", "Atoms", "Nuclei", "Semiconductor Electronics"],
+    "Chemistry": ["Solutions", "Electrochemistry", "Chemical Kinetics", "Surface Chemistry", "General Principles and Processes of Isolation of Elements", "The P-Block Elements", "The D- and F-Block Elements", "Coordination Compounds", "Haloalkanes and Haloarenes", "Alcohols, Phenols and Ethers", "Aldehydes, Ketones and Carboxylic Acids", "Amines", "Biomolecules", "Polymers", "Chemistry in Everyday Life"],
+    "Biology": ["Reproduction in Organisms", "Sexual Reproduction in Flowering Plants", "Human Reproduction", "Reproductive Health", "Principles of Inheritance and Variation", "Molecular Basis of Inheritance", "Evolution", "Human Health and Disease", "Strategies for Enhancement in Food Production", "Microbes in Human Welfare", "Biotechnology: Principles and Processes", "Biotechnology and its Applications", "Organisms and Populations", "Ecosystem", "Biodiversity and Conservation", "Environmental Issues"],
+    "Maths": ["Relations and Functions", "Inverse Trigonometric Functions", "Matrices", "Determinants", "Continuity and Differentiability", "Application of Derivatives", "Integrals", "Application of Integrals", "Differential Equations", "Vector Algebra", "Three Dimensional Geometry", "Linear Programming", "Probability"]
+  },
+  "NTSE": {
+    "Mental Ability": ["Analogy", "Classification", "Series", "Pattern Recognition", "Coding-Decoding", "Blood Relations", "Direction and Distance", "Ranking and Ordering", "Problem Solving"],
+    "Science": ["Physical World", "Matter and Energy", "Force and Motion", "Heat and Temperature", "Waves and Sound", "Electricity and Magnetism", "Light and Optics", "Atomic Structure", "Chemical Reactions", "Periodic Table", "Acids and Bases", "Biology Basics", "Human Body", "Environment and Ecology"],
+    "Mathematics": ["Number System", "Algebra", "Geometry", "Trigonometry", "Statistics and Probability", "Mensuration"]
+  },
+  "KVPY": {
+    "Physics": ["Mechanics", "Thermodynamics", "Waves", "Optics", "Electromagnetism", "Modern Physics", "Nuclear Physics"],
+    "Chemistry": ["Atomic Structure", "Bonding", "Periodicity", "Chemical Reactions", "Organic Chemistry", "Thermochemistry", "Kinetics"],
+    "Biology": ["Cell Biology", "Genetics", "Evolution", "Ecology", "Human Physiology", "Botany"]
+  },
+  "NSO": {
+    "Science": ["Physics Concepts", "Chemistry Concepts", "Biology Concepts", "Environmental Science", "Scientific Method", "Data Analysis"],
+    "Logical Reasoning": ["Pattern Recognition", "Problem Solving", "Analytical Skills"]
+  },
+  "IMO": {
+    "Mathematics": ["Arithmetic", "Geometry", "Number Theory", "Algebra", "Combinatorics", "Logic and Proof"]
+  },
+  "IJSO": {
+    "Biology": ["Botany", "Zoology", "Ecology", "Genetics", "Physiology"],
+    "Chemistry": ["General Chemistry", "Organic Chemistry", "Inorganic Chemistry"],
+    "Physics": ["Mechanics", "Heat and Thermodynamics", "Waves and Sound", "Electricity and Magnetism", "Light and Optics"]
   }
 }

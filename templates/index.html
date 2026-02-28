@@ -85,44 +85,34 @@ Marks: <span id="sb-marks">—</span>
 
 </div>
 
+<div class="sidebar-row">
+
+Paper Type: <span id="sb-type">—</span>
+
+</div>
+
+<div class="sidebar-row">
+
+Board/Exam: <span id="sb-board">—</span>
+
+</div>
+<div class="sidebar-row">
+
+Paper Type: <span id="sb-type">—</span>
+
+</div>
+
+<div class="sidebar-row">
+
+Board/Exam: <span id="sb-board">—</span>
+
+</div>
 
 </div>
 
 
 
-<!-- Quick Actions -->
-
-<div class="sidebar-card">
-
-<div class="sidebar-title">
-
-Quick Actions
-
-</div>
-
-
-<button onclick="generatePaper()" class="sidebar-btn primary">
-
-⚡ Generate Paper
-
-</button>
-
-
-<button onclick="downloadPDF()" class="sidebar-btn">
-
-📄 Download PDF
-
-</button>
-
-
-<button onclick="copyPaper()" class="sidebar-btn">
-
-📋 Copy Paper
-
-</button>
-
-
-</div>
+<!-- Removed: Quick Actions moved to form submission -->
 
 
 
@@ -157,7 +147,7 @@ AI Tips
 
 <div class="sidebar-footer">
 
-<button id="themeToggle" class="sidebar-btn">
+<button id="themeToggle" class="sidebar-btn" onclick="toggleTheme()">
 
 🌙 Toggle Theme
 
@@ -174,10 +164,10 @@ AI Tips
 <!-- MAIN CONTENT -->
 <!-- ========================= -->
 
-<main class="main">
+<main class="main-content">
 
 
-<header class="header">
+<header class="header-section">
 
 <h1>
 
@@ -197,9 +187,8 @@ Generate professional exam papers instantly
 
 
 
-<form id="paperForm" class="form">
 
-
+</div>
 
 <!-- Exam Type -->
 
@@ -219,6 +208,70 @@ Paper Type
 <option value="state-board">State Board</option>
 
 <option value="competitive">Competitive Exam</option>
+
+</select>
+
+</div>
+
+
+
+<!-- Conditional: State selection -->
+
+<div id="stateCard" class="card" style="display:none">
+
+<label>
+
+Select State Board
+
+</label>
+
+<select id="stateSelect" name="state">
+
+<option value="">Select state</option>
+
+<option value="Andhra Pradesh">Andhra Pradesh</option>
+
+<option value="Telangana">Telangana</option>
+
+<option value="Maharashtra">Maharashtra</option>
+
+<option value="Karnataka">Karnataka</option>
+
+<option value="Tamil Nadu">Tamil Nadu</option>
+
+<option value="Kerala">Kerala</option>
+
+<option value="Uttar Pradesh">Uttar Pradesh</option>
+
+</select>
+
+</div>
+
+
+
+<!-- Conditional: Competitive exam selection -->
+
+<div id="competitiveCard" class="card" style="display:none">
+
+<label>
+
+Select Competitive Exam
+
+</label>
+
+<select id="competitiveExam" name="competitiveExam">
+
+<option value="">Select exam</option>
+
+<option value="NTSE">NTSE</option>
+
+<option value="KVPY">KVPY</option>
+
+<option value="NSO">NSO</option>
+
+<option value="IMO">IMO</option>
+
+<option value="IJSO">IJSO</option>
 
 </select>
 
@@ -310,7 +363,7 @@ Total Marks
 </label>
 
 
-<select id="marks" name="marks">
+<select id="totalMarks" name="marks">
 
 <option value="100">100</option>
 
@@ -349,20 +402,22 @@ Difficulty
 
 </select>
 
-</div>
 
+<form id="paperForm" class="form-grid">
 
+<!-- PRIORITY: Custom Instructions (Overrides & Additional Data) -->
 
-<!-- Suggestions -->
+<div class="card full" style="background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(6, 182, 212, 0.1) 100%); border: 2px solid #3b82f6;">
 
-<div class="card full">
+<label style="font-weight: 800; color: #3b82f6; font-size: 16px;">
 
-<label>
-
-Extra Instructions
+✨ Custom Instructions (Override/Additional Data)
 
 </label>
 
+<p style="font-size: 13px; color: #475569; margin-bottom: 10px; font-style: italic;">
+Use this field to provide missing information, override defaults, or add specific requirements (diagrams, formulas, exam patterns, etc.)
+</p>
 
 <textarea
 
@@ -370,12 +425,13 @@ id="suggestions"
 
 name="suggestions"
 
-rows="4"
+rows="5"
 
-placeholder="Example: Include diagrams, formulas, and HOTS questions"
+placeholder="Example: Include detailed solutions, limit to 3 questions per section, add diagram labels, specific board pattern, etc."
+
+style="border: 2px solid #3b82f6; font-weight: 500;"
 
 ></textarea>
-
 
 </div>
 
@@ -391,9 +447,11 @@ type="submit"
 
 class="btn-primary"
 
+style="font-size: 16px; padding: 14px 32px;"
+
 >
 
-Generate & Download PDF
+⚡ Generate & Download PDF
 
 </button>
 
@@ -405,6 +463,10 @@ Generate & Download PDF
 
 
 <footer class="footer">
+
+<div style="margin-bottom: 10px; color: #475569; font-size: 13px;">
+Support & Maintenance: <strong>Laxman Nimmagadda</strong>
+</div>
 
 ExamCraft © 2026
 
