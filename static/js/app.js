@@ -380,11 +380,18 @@ async function downloadPDF(withKey) {
                      : withKey === false ? false
                      : (document.getElementById('includeKey')?.checked || false);
 
+    // Build board name for filename
+    const examType = document.getElementById('examType')?.value || '';
+    let boardName = '';
+    if (examType === 'state-board') boardName = document.getElementById('stateSelect')?.value || '';
+    else if (examType === 'competitive') boardName = document.getElementById('competitiveExam')?.value || '';
+
     const payload = {
         paper:      currentPaper,
         answer_key: currentAnswerKey || '',
         subject,
         chapter,
+        board:      boardName,
         includeKey
     };
 
@@ -414,9 +421,10 @@ async function downloadPDF(withKey) {
 
         const url  = URL.createObjectURL(blob);
         const a    = document.createElement('a');
-        const safe = (subject + '_' + (chapter || 'Paper')).replace(/\s+/g, '_').replace(/[\/\\]/g, '-');
+        const parts = [boardName, subject, chapter || 'Paper'].filter(Boolean);
+        const safe = parts.join('_').replace(/\s+/g, '_').replace(/[\/\\:*?"<>|]/g, '-');
         a.href     = url;
-        a.download = safe + '_Question_Paper.pdf';
+        a.download = safe + '.pdf';
         document.body.appendChild(a);
         a.click();
         a.remove();

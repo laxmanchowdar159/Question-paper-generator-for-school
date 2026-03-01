@@ -309,14 +309,14 @@ body {
 }
 
 .page-wrap {
-  max-width: 780px;
+  max-width: 1000px;
   margin: 0 auto;
-  padding: 44px 36px 64px;
+  padding: 28px 32px 48px;
 }
 
 /* ── HERO ─────────────────────────────────────────────────────── */
 .hero {
-  padding: 16px 0 40px;
+  padding: 10px 0 22px;
   animation: fadeUp .7s var(--ease) both;
 }
 @keyframes fadeUp {
@@ -348,12 +348,12 @@ body {
 
 .hero-heading {
   font-family: 'Cormorant Garamond', Georgia, serif;
-  font-size: clamp(36px, 5.5vw, 58px);
+  font-size: clamp(28px, 4vw, 44px);
   font-weight: 700;
-  line-height: 1.05;
+  line-height: 1.1;
   color: var(--text-a);
   letter-spacing: -.01em;
-  margin-bottom: 16px;
+  margin-bottom: 10px;
 }
 .hero-heading em {
   font-style: italic;
@@ -361,17 +361,26 @@ body {
 }
 
 .hero-body {
-  font-size: 15.5px;
+  font-size: 14.5px;
   color: var(--text-b);
-  max-width: 500px;
-  line-height: 1.7;
-  margin-bottom: 24px;
+  max-width: 480px;
+  line-height: 1.6;
+  margin-bottom: 0;
 }
 
+.hero-top-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+}
+.hero-top-row > div:first-child { flex: 1; }
 .hero-pills {
   display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
+  flex-direction: column;
+  gap: 6px;
+  align-items: flex-end;
+  padding-top: 28px;
 }
 .h-pill {
   font-size: 12px;
@@ -404,8 +413,8 @@ body {
   background: var(--surface-0);
   border: 1px solid var(--border);
   border-radius: var(--r-xl);
-  padding: 24px 26px;
-  margin-bottom: 14px;
+  padding: 18px 22px;
+  margin-bottom: 10px;
   transition: border-color .2s var(--ease), box-shadow .2s var(--ease);
   animation: fadeUp .5s var(--ease) both;
   box-shadow: 0 2px 16px rgba(0,0,0,.25);
@@ -437,7 +446,7 @@ body {
   display: flex;
   align-items: center;
   gap: 12px;
-  margin-bottom: 18px;
+  margin-bottom: 12px;
 }
 .block-num {
   width: 26px; height: 26px;

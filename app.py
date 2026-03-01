@@ -269,8 +269,8 @@ def create_exam_pdf(
     # ---- Document ----
     doc = SimpleDocTemplate(
         buffer, pagesize=A4,
-        rightMargin=50, leftMargin=50,
-        topMargin=50, bottomMargin=50,
+        rightMargin=40, leftMargin=40,
+        topMargin=36, bottomMargin=36,
     )
 
     ACCENT  = HexColor("#1a237e")
@@ -284,27 +284,33 @@ def create_exam_pdf(
             styles.add(ParagraphStyle(name=name, **kw))
 
     add_style("ExamTitle",
-        fontName=bold_font, fontSize=16, alignment=TA_CENTER,
-        textColor=ACCENT, spaceAfter=4)
+        fontName=bold_font, fontSize=15, alignment=TA_CENTER,
+        textColor=ACCENT, spaceAfter=2)
     add_style("ExamSubtitle",
-        fontName="DejaVu", fontSize=11, alignment=TA_CENTER,
-        textColor=HexColor("#444444"), spaceAfter=14)
+        fontName="DejaVu", fontSize=10, alignment=TA_CENTER,
+        textColor=HexColor("#444444"), spaceAfter=8)
     add_style("SectionHeader",
-        fontName=bold_font, fontSize=12, textColor=ACCENT,
-        spaceBefore=14, spaceAfter=6)
+        fontName=bold_font, fontSize=11, textColor=ACCENT,
+        spaceBefore=10, spaceAfter=4)
     add_style("ExamBody",
-        fontName="DejaVu", fontSize=10.5,
-        leading=16, spaceAfter=4, alignment=TA_JUSTIFY)
+        fontName="DejaVu", fontSize=10,
+        leading=14, spaceAfter=2, alignment=TA_JUSTIFY)
     add_style("DiagramBox",
-        fontName="DejaVu", fontSize=10, leading=14, spaceAfter=8,
+        fontName="DejaVu", fontSize=9.5, leading=13, spaceAfter=5,
         textColor=HexColor("#555555"),
         borderColor=HexColor("#aaaaaa"), borderWidth=1,
-        borderPad=6, backColor=HexColor("#f5f5f5"))
+        borderPad=5, backColor=HexColor("#f5f5f5"))
     add_style("KeyTitle",
-        fontName=bold_font, fontSize=14, alignment=TA_CENTER,
-        textColor=KEY_RED, spaceAfter=10)
+        fontName=bold_font, fontSize=13, alignment=TA_CENTER,
+        textColor=KEY_RED, spaceAfter=6)
+    add_style("KeySectionHeader",
+        fontName=bold_font, fontSize=11, textColor=KEY_RED,
+        spaceBefore=8, spaceAfter=3)
     add_style("KeyBody",
-        fontName="DejaVu", fontSize=10, leading=15, spaceAfter=3)
+        fontName="DejaVu", fontSize=9.5, leading=13, spaceAfter=2)
+    add_style("KeyBodyIndent",
+        fontName="DejaVu", fontSize=9.5, leading=13, spaceAfter=2,
+        leftIndent=16)
 
     # ---- Elements ----
     elements = []
@@ -361,7 +367,7 @@ def create_exam_pdf(
 
         # ---- Blank ----
         if not raw.strip():
-            elements.append(Spacer(1, 6))
+            elements.append(Spacer(1, 3))
             continue
 
         # ---- HR ----
@@ -396,17 +402,29 @@ def create_exam_pdf(
     # ---- Answer Key page ----
     if include_key and answer_key and answer_key.strip():
         elements.append(PageBreak())
-        elements.append(HRFlowable(width="100%", thickness=2, color=KEY_RED, spaceAfter=10))
+        elements.append(HRFlowable(width="100%", thickness=2, color=KEY_RED, spaceAfter=8))
         elements.append(Paragraph("ANSWER KEY", styles["KeyTitle"]))
-        elements.append(HRFlowable(width="100%", thickness=1, color=KEY_RED, spaceAfter=10))
+        elements.append(HRFlowable(width="100%", thickness=1, color=KEY_RED, spaceAfter=8))
         for ln in answer_key.split("\n"):
             raw = ln.rstrip()
             if not raw.strip():
-                elements.append(Spacer(1, 4))
+                elements.append(Spacer(1, 3))
                 continue
             safe = sanitize_line(raw)
             safe = re.sub(r'\*\*(.+?)\*\*', r'<b>\1</b>', safe)
-            elements.append(Paragraph(safe, styles["KeyBody"]))
+            # Section headers in answer key (Section A:, Q1., 1., etc.)
+            stripped = raw.strip()
+            if re.match(r'^(Section|SECTION)\s+[A-D]:?', stripped) or re.match(r'^(Part|PART)\s+[A-D]:?', stripped):
+                elements.append(Spacer(1, 4))
+                elements.append(Paragraph(f"<b>{safe}</b>", styles["KeySectionHeader"]))
+            elif re.match(r'^Q?\d+[\.\)]', stripped):
+                # Question answer line - bold the question number
+                safe = re.sub(r'^(Q?\d+[\.\)]\s*)', r'<b>\1</b>', safe)
+                elements.append(Paragraph(safe, styles["KeyBody"]))
+            elif stripped.startswith(('Ans', 'Answer', 'Sol', 'Solution', '=', ':')) or stripped.startswith(('a)', 'b)', 'c)', 'd)')):
+                elements.append(Paragraph(safe, styles["KeyBodyIndent"]))
+            else:
+                elements.append(Paragraph(safe, styles["KeyBody"]))
 
     # ---- BUILD ONCE — critical fix (original built too early) ----
     doc.build(elements)
@@ -816,6 +834,7 @@ def download_pdf():
         answer_key  = data.get("answer_key", "")
         subject     = (data.get("subject") or "Question Paper").strip()
         chapter     = (data.get("chapter") or "").strip()
+        board       = (data.get("board") or "").strip()
         include_key = str(data.get("includeKey", "false")).lower() == "true"
 
         if not paper_text.strip():
@@ -826,7 +845,8 @@ def download_pdf():
             answer_key=answer_key,
             include_key=include_key,
         )
-        filename = f"{subject}_{chapter}_Paper.pdf".replace(" ", "_").replace("/", "-")
+        parts = [p for p in [board, subject, chapter] if p]
+        filename = ("_".join(parts) + ".pdf").replace(" ", "_").replace("/", "-").replace("\\", "-")
         return send_file(
             BytesIO(pdf_bytes),
             as_attachment=True,
