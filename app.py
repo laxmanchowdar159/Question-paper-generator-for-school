@@ -2,14 +2,14 @@ import os
 import re
 import json
 import time
-import base64
+import xml.etree.ElementTree as ET
 from pathlib import Path
 from io import BytesIO
 
 # ── PDF ──────────────────────────────────────────────────────────────
 from reportlab.platypus import (
     SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle,
-    PageBreak, HRFlowable, KeepTogether, Image as RLImage
+    PageBreak, HRFlowable, KeepTogether
 )
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.pagesizes import A4
@@ -637,19 +637,19 @@ def create_exam_pdf(text, subject, chapter, board="",
             desc  = re.sub(r'^DIAGRAM:\s*', '', label, flags=re.I).strip()
             elems.append(Paragraph(f'<i>{label}</i>', st["DiagLabel"]))
 
-            # Try to use pre-generated SVG image
-            img = None
+            # Try to use pre-generated SVG drawing
+            drawing = None
             if diagrams:
                 for d_key, d_svg in diagrams.items():
                     if d_svg and (d_key.lower() in desc.lower() or desc.lower() in d_key.lower()):
-                        img = svg_to_rl_image(d_svg, width_mm=130)
+                        drawing = svg_to_rl_image(d_svg, width_pt=PW * 0.85)
                         break
-                if img is None and desc in diagrams:
-                    img = svg_to_rl_image(diagrams[desc], width_mm=130)
+                if drawing is None and desc in diagrams:
+                    drawing = svg_to_rl_image(diagrams[desc], width_pt=PW * 0.85)
 
-            if img is not None:
-                elems.append(Spacer(1, 4))
-                elems.append(img)
+            if drawing is not None:
+                elems.append(Spacer(1, 3))
+                elems.append(drawing)
             else:
                 box = Table([['']],  colWidths=[PW], rowHeights=[60])
                 box.setStyle(TableStyle([
@@ -1034,62 +1034,247 @@ STRICT RULES:
 1. Output ONLY the SVG code. No markdown, no explanation, no code fences.
 2. SVG must start with <svg and end with </svg>.
 3. Use: <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 260" width="400" height="260">
-4. Use ONLY black (#111111) and dark grey (#555555) for strokes. White (#ffffff) or light grey (#f0f0f0) fills only.
-5. stroke-width 2 for main lines, 1 for detail lines.
-6. Add clear text labels, font-size="12" font-family="Arial,sans-serif" fill="#111111".
-7. Geometrically accurate. Include all key parts a student needs to see.
-8. No external resources, no JavaScript, no CSS classes — pure SVG primitives only.
-9. Keep it clean and suitable for a printed exam paper.
+4. Use ONLY black (#111111) and dark grey (#555555) for strokes. White (#ffffff) or very light grey (#f2f2f2) fills only.
+5. stroke-width="2" for main lines, stroke-width="1" for detail lines.
+6. Add clear text labels: font-size="12" font-family="Arial,sans-serif" fill="#111111"
+7. Geometrically accurate. Include all key parts a student needs.
+8. NO external resources, NO JavaScript, NO CSS, NO defs/filters — only basic SVG elements: line, circle, rect, polygon, polyline, path, text, g.
+9. Every text element must have explicit x, y, font-size, font-family, fill attributes.
+10. Keep it clean and suitable for a printed exam paper (black on white).
 
-Output the SVG now:"""
+Output only the SVG:"""
 
     text, err = call_gemini(prompt)
     if not text:
         return None
-
-    # Extract SVG from response
     svg_match = re.search(r'<svg[\s\S]*?</svg>', text, re.IGNORECASE)
-    if svg_match:
-        return svg_match.group(0)
-    return None
+    return svg_match.group(0) if svg_match else None
+
+
+# ── Pure-Python SVG → ReportLab renderer ──────────────────────────────
+# No Cairo, no pycairo, no svglib — uses xml.etree + ReportLab graphics only.
+
+def _svg_color(val, default=(0, 0, 0)):
+    """Parse a colour value to (r, g, b) floats 0–1."""
+    if not val or val in ('none', 'transparent'):
+        return None
+    val = val.strip()
+    named = {
+        'black': (0,0,0), 'white': (1,1,1), 'red': (1,0,0),
+        'blue': (0,0,1), 'green': (0,.5,0), 'grey': (.5,.5,.5),
+        'gray': (.5,.5,.5), 'lightgrey': (.83,.83,.83),
+        'lightgray': (.83,.83,.83), '#111111': (.067,.067,.067),
+        '#555555': (.333,.333,.333), '#f2f2f2': (.949,.949,.949),
+        '#f0f0f0': (.941,.941,.941), '#ffffff': (1,1,1),
+        '#000000': (0,0,0),
+    }
+    if val.lower() in named:
+        return named[val.lower()]
+    if val.startswith('#'):
+        h = val[1:]
+        if len(h) == 3:
+            h = h[0]*2 + h[1]*2 + h[2]*2
+        if len(h) == 6:
+            try:
+                r = int(h[0:2], 16)/255
+                g = int(h[2:4], 16)/255
+                b = int(h[4:6], 16)/255
+                return (r, g, b)
+            except Exception:
+                pass
+    return default
+
+
+def _parse_points(pts_str):
+    """Parse SVG points attribute into list of (x,y) tuples."""
+    nums = re.findall(r'[-+]?\d*\.?\d+', pts_str)
+    pairs = []
+    for i in range(0, len(nums)-1, 2):
+        pairs.append((float(nums[i]), float(nums[i+1])))
+    return pairs
 
 
 def svg_to_rl_image(svg_str: str, width_pt: float = 360):
-    """Convert SVG string to a ReportLab drawable. Tries svglib then cairosvg."""
-    # Method 1: svglib (pure Python)
-    try:
-        from svglib.svglib import svg2rlg
-        from reportlab.graphics import renderPDF
-        import tempfile, os as _os
-        with tempfile.NamedTemporaryFile(suffix='.svg', delete=False, mode='w', encoding='utf-8') as f:
-            f.write(svg_str)
-            tmp = f.name
-        drawing = svg2rlg(tmp)
-        _os.unlink(tmp)
-        if drawing:
-            # Scale to desired width
-            scale = width_pt / drawing.width
-            drawing.width  = width_pt
-            drawing.height = drawing.height * scale
-            drawing.transform = (scale, 0, 0, scale, 0, 0)
-            return drawing
-    except Exception:
-        pass
+    """
+    Convert a simple SVG string to a ReportLab Drawing using only stdlib + reportlab.
+    Handles: line, circle, rect, polygon, polyline, path (M/L/Z only), text, g.
+    Falls back to None if parsing fails.
+    """
+    from reportlab.graphics.shapes import (
+        Drawing, Line, Circle, Rect, Polygon, PolyLine, String, Group
+    )
+    from reportlab.lib.colors import Color
 
-    # Method 2: cairosvg → PNG → RLImage
     try:
-        import cairosvg
-        png_bytes = cairosvg.svg2png(bytestring=svg_str.encode('utf-8'),
-                                      output_width=int(width_pt * 1.5))
-        img = RLImage(BytesIO(png_bytes))
-        ratio = width_pt / img.imageWidth
-        img.drawWidth  = width_pt
-        img.drawHeight = img.imageHeight * ratio
-        return img
-    except Exception:
-        pass
+        # Strip namespace prefixes that might sneak in
+        clean = re.sub(r'<(\/?)\w+:', r'<\1', svg_str)
+        clean = re.sub(r'\s\w+:\w+="[^"]*"', '', clean)
 
-    return None
+        root = ET.fromstring(clean)
+
+        # Determine SVG viewport
+        vb = root.get('viewBox', '0 0 400 260')
+        vb_parts = [float(x) for x in re.findall(r'[-\d.]+', vb)]
+        svg_w = vb_parts[2] if len(vb_parts) >= 3 else float(root.get('width', 400))
+        svg_h = vb_parts[3] if len(vb_parts) >= 4 else float(root.get('height', 260))
+
+        scale_x = width_pt / svg_w
+        height_pt = svg_h * scale_x
+        drawing = Drawing(width_pt, height_pt)
+
+        def tx(x): return float(x) * scale_x
+        def ty(y): return height_pt - float(y) * scale_x  # flip Y axis
+
+        def get_attr(el, *names, default='0'):
+            for n in names:
+                v = el.get(n)
+                if v is not None:
+                    return v
+            return default
+
+        def make_color(val, default_rgb=(0,0,0), alpha=1.0):
+            rgb = _svg_color(val, default_rgb)
+            if rgb is None:
+                return None
+            return Color(rgb[0], rgb[1], rgb[2], alpha)
+
+        def parse_stroke_width(el):
+            sw = el.get('stroke-width', el.get('strokeWidth', '1.5'))
+            try:
+                return max(0.5, float(sw) * scale_x)
+            except Exception:
+                return 1.0
+
+        NS = '{http://www.w3.org/2000/svg}'
+
+        def render_element(el, group):
+            tag = el.tag.replace(NS, '').lower()
+            stroke_val = el.get('stroke', '#111111')
+            fill_val   = el.get('fill', 'none')
+            sw         = parse_stroke_width(el)
+            stroke_c   = make_color(stroke_val)
+            fill_c     = make_color(fill_val)
+
+            if tag == 'line':
+                x1, y1 = tx(get_attr(el,'x1')), ty(get_attr(el,'y1'))
+                x2, y2 = tx(get_attr(el,'x2')), ty(get_attr(el,'y2'))
+                shape = Line(x1, y1, x2, y2)
+                shape.strokeColor = stroke_c or Color(0,0,0)
+                shape.strokeWidth = sw
+                group.add(shape)
+
+            elif tag == 'circle':
+                cx = tx(get_attr(el,'cx','0'))
+                cy = ty(get_attr(el,'cy','0'))
+                r  = float(get_attr(el,'r','5')) * scale_x
+                shape = Circle(cx, cy, r)
+                shape.fillColor   = fill_c or Color(1,1,1)
+                shape.strokeColor = stroke_c or Color(0,0,0)
+                shape.strokeWidth = sw
+                group.add(shape)
+
+            elif tag == 'rect':
+                x  = tx(get_attr(el,'x','0'))
+                y  = ty(float(get_attr(el,'y','0')) + float(get_attr(el,'height','10')))
+                w  = float(get_attr(el,'width','10')) * scale_x
+                h  = float(get_attr(el,'height','10')) * scale_x
+                shape = Rect(x, y, w, h)
+                shape.fillColor   = fill_c or Color(1,1,1)
+                shape.strokeColor = stroke_c or Color(0,0,0)
+                shape.strokeWidth = sw
+                group.add(shape)
+
+            elif tag in ('polygon', 'polyline'):
+                pts_str = el.get('points', '')
+                pairs   = _parse_points(pts_str)
+                if len(pairs) >= 2:
+                    pts_flat = []
+                    for (px, py) in pairs:
+                        pts_flat += [tx(px), ty(py)]
+                    if tag == 'polygon':
+                        shape = Polygon(pts_flat)
+                        shape.fillColor   = fill_c or Color(1,1,1)
+                    else:
+                        shape = PolyLine(pts_flat)
+                        shape.fillColor = None
+                    shape.strokeColor = stroke_c or Color(0,0,0)
+                    shape.strokeWidth = sw
+                    group.add(shape)
+
+            elif tag == 'path':
+                d = el.get('d', '')
+                # Parse M, L, Z commands only
+                tokens = re.findall(r'[MLZmlz]|[-+]?\d*\.?\d+', d)
+                pts_flat = []
+                cmd = 'M'
+                cur_x, cur_y = 0.0, 0.0
+                i2 = 0
+                while i2 < len(tokens):
+                    t = tokens[i2]
+                    if t in 'MLml':
+                        cmd = t; i2 += 1; continue
+                    if t in 'Zz':
+                        if len(pts_flat) >= 4:
+                            pts_flat += [pts_flat[0], pts_flat[1]]
+                        i2 += 1; continue
+                    try:
+                        vx = float(t); vy = float(tokens[i2+1])
+                        i2 += 2
+                        if cmd == 'm': vx += cur_x; vy += cur_y
+                        if cmd == 'l': vx += cur_x; vy += cur_y
+                        cur_x, cur_y = vx, vy
+                        pts_flat += [tx(vx), ty(vy)]
+                    except Exception:
+                        i2 += 1
+                if len(pts_flat) >= 4:
+                    if fill_c:
+                        shape = Polygon(pts_flat)
+                        shape.fillColor   = fill_c
+                        shape.strokeColor = stroke_c or Color(0,0,0)
+                        shape.strokeWidth = sw
+                    else:
+                        shape = PolyLine(pts_flat)
+                        shape.strokeColor = stroke_c or Color(0,0,0)
+                        shape.strokeWidth = sw
+                        shape.fillColor   = None
+                    group.add(shape)
+
+            elif tag == 'text':
+                x  = tx(float(get_attr(el,'x','0')))
+                y  = ty(float(get_attr(el,'y','0')))
+                fs_raw = el.get('font-size', el.get('fontSize', '12'))
+                try:
+                    fs = max(6, float(re.findall(r'[\d.]+', fs_raw)[0]) * scale_x)
+                except Exception:
+                    fs = 10
+                txt = (el.text or '').strip()
+                # Collect tspan children
+                for tspan in el:
+                    if tspan.tag.replace(NS,'').lower() == 'tspan':
+                        txt += (tspan.text or '')
+                if txt:
+                    fc = make_color(el.get('fill', '#111111'), (0,0,0))
+                    s = String(x, y - fs * 0.3, txt)
+                    s.fontSize  = fs
+                    s.fillColor = fc or Color(0,0,0)
+                    ff = el.get('font-family', 'Helvetica')
+                    s.fontName  = 'Helvetica-Bold' if 'bold' in ff.lower() else 'Helvetica'
+                    group.add(s)
+
+            elif tag == 'g':
+                sub = Group()
+                for child in el:
+                    render_element(child, sub)
+                group.add(sub)
+
+        top_group = Group()
+        for child in root:
+            render_element(child, top_group)
+        drawing.add(top_group)
+        return drawing
+
+    except Exception:
+        return None
 
 
 @app.route("/")
