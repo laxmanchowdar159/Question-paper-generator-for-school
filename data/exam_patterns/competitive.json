@@ -1,0 +1,136 @@
+{
+  "exams": {
+
+    "NTSE": {
+      "full_name": "National Talent Search Examination",
+      "conducting_body": "NCERT (Stage 1 by States, Stage 2 by NCERT)",
+      "eligibility": "Class 10 students only",
+      "stages": {
+        "Stage_1_State": {
+          "papers": [
+            {
+              "name": "MAT — Mental Ability Test",
+              "questions": 100, "marks": 100, "duration": "2 Hours",
+              "types": ["Analogy (Verbal & Non-Verbal)", "Series (Number, Letter, Figure)", "Classification", "Pattern Recognition", "Coding–Decoding", "Blood Relations", "Direction & Distance", "Ranking & Ordering", "Clock & Calendar", "Problem Solving", "Mirror/Water Image", "Embedded Figures"]
+            },
+            {
+              "name": "SAT — Scholastic Aptitude Test",
+              "questions": 100, "marks": 100, "duration": "2 Hours",
+              "subjects": {
+                "Science": { "questions": 40, "topics": ["Physics: Motion, Force, Optics, Electricity, Magnetism, Sound", "Chemistry: Matter, Atoms, Molecules, Chemical Reactions, Acids-Bases, Periodic Table", "Biology: Cell, Tissues, Life Processes, Control & Coordination, Reproduction, Heredity, Environment"] },
+                "Social_Science": { "questions": 40, "topics": ["History: French Revolution, Russian Revolution, Nationalism, Industrialization, World Wars", "Geography: Resources, Agriculture, Manufacturing, India Physical Features, Climate", "Civics: Democracy, Parliament, Constitution, Federalism, Rights", "Economics: Development, Poverty, Food Security, Globalisation"] },
+                "Mathematics": { "questions": 20, "topics": ["Number System", "Polynomials", "Linear Equations", "Quadratic Equations", "Arithmetic Progressions", "Triangles", "Coordinate Geometry", "Trigonometry", "Mensuration", "Statistics", "Probability"] }
+              }
+            }
+          ],
+          "marking": "Each question 1 mark. No negative marking at Stage 1.",
+          "cutoff_note": "State-level cutoff varies. Top ~1000 per state qualify for Stage 2."
+        },
+        "Stage_2_National": {
+          "same_structure": "MAT 100Q + SAT 100Q, same duration",
+          "marking": "+1 correct, -1/3 wrong (negative marking applies at Stage 2)",
+          "important": "Stage 2 has negative marking unlike Stage 1."
+        }
+      },
+      "question_style": "All MCQ. 4 options (A) (B) (C) (D). One correct answer.",
+      "paper_generation_note": "When generating NTSE practice, create MAT and SAT as two separate papers. SAT must mix all three subjects in one paper with 40 Science + 40 Social Science + 20 Maths questions numbered sequentially."
+    },
+
+    "NSO": {
+      "full_name": "National Science Olympiad",
+      "conducting_body": "Science Olympiad Foundation (SOF)",
+      "eligibility": "Classes 1–12. For school context: Classes 6–10.",
+      "levels": 2,
+      "paper_structure": {
+        "Classes_6_10": {
+          "sections": [
+            {
+              "name": "Section 1 — Logical Reasoning",
+              "questions": 10, "marks_each": 1, "total": 10,
+              "types": ["Analogy", "Odd One Out", "Series Completion", "Coding–Decoding", "Direction Sense", "Mirror & Water Images", "Figure Counting", "Pattern Recognition"]
+            },
+            {
+              "name": "Section 2 — Science",
+              "questions": 35, "marks_each": 1, "total": 35,
+              "note": "Syllabus exactly follows the NCERT/State board class curriculum for that year."
+            },
+            {
+              "name": "Section 3 — Achiever's Section",
+              "questions": 5, "marks_each": 3, "total": 15,
+              "note": "Higher order thinking. Challenging application-based questions from the same science syllabus."
+            }
+          ],
+          "total_questions": 50,
+          "total_marks": 60,
+          "duration": "1 Hour"
+        }
+      },
+      "marking": "No negative marking.",
+      "question_style": "All MCQ. 4 options. One correct answer.",
+      "paper_generation_note": "Generate Section 1 (logical reasoning, 10Q), Section 2 (science chapter questions, 35Q), Section 3 (tough HOT questions, 5Q worth 3 marks each). Total 60 marks, 1 hour."
+    },
+
+    "IMO": {
+      "full_name": "International Mathematics Olympiad",
+      "conducting_body": "Science Olympiad Foundation (SOF)",
+      "eligibility": "Classes 1–12. For school context: Classes 6–10.",
+      "levels": 2,
+      "paper_structure": {
+        "Classes_6_10": {
+          "sections": [
+            {
+              "name": "Section 1 — Logical Reasoning",
+              "questions": 10, "marks_each": 1, "total": 10,
+              "types": ["Number Analogy", "Letter Series", "Coding–Decoding", "Ranking", "Venn Diagrams", "Puzzle", "Data Interpretation", "Figure Pattern"]
+            },
+            {
+              "name": "Section 2 — Mathematical Reasoning",
+              "questions": 25, "marks_each": 1, "total": 25,
+              "note": "Class syllabus-aligned mathematics questions. Conceptual and computational."
+            },
+            {
+              "name": "Section 3 — Everyday Mathematics",
+              "questions": 10, "marks_each": 1, "total": 10,
+              "note": "Word problems and real-life application of maths concepts."
+            },
+            {
+              "name": "Section 4 — Achiever's Section",
+              "questions": 5, "marks_each": 3, "total": 15,
+              "note": "High-difficulty maths questions requiring deep problem-solving. Often multi-step."
+            }
+          ],
+          "total_questions": 50,
+          "total_marks": 60,
+          "duration": "1 Hour"
+        }
+      },
+      "marking": "No negative marking.",
+      "question_style": "All MCQ. 4 options. One correct answer.",
+      "paper_generation_note": "Generate Section 1 (logical reasoning, 10Q), Section 2 (maths syllabus, 25Q), Section 3 (application word problems, 10Q), Section 4 (HOT, 5Q × 3 marks). Total 60 marks."
+    },
+
+    "IJSO": {
+      "full_name": "International Junior Science Olympiad",
+      "conducting_body": "HBCSE (Homi Bhabha Centre for Science Education) for Indian selection",
+      "eligibility": "Class 9 and below, age below 15 years",
+      "national_selection_stages": {
+        "Stage_1_NSEJS": {
+          "name": "National Standard Examination in Junior Science",
+          "conducting_body": "IAPT",
+          "questions": 80, "duration": "2 Hours",
+          "marking": "+3 correct, -1 wrong",
+          "subjects": "Integrated Physics + Chemistry + Biology (equal weightage)",
+          "level": "Class 10 NCERT level but with deep application",
+          "note": "All MCQ. 4 options. Single correct."
+        },
+        "Stage_2_INJSO": {
+          "name": "Indian National Junior Science Olympiad",
+          "type": "Theory + Experiment",
+          "theory": "Written descriptive test. 3 hours. Sub-problems requiring derivation, numerical, diagram."
+        }
+      },
+      "question_style_stage1": "All MCQ. +3/-1. Integrated science — single question may span physics+chemistry or chemistry+biology.",
+      "paper_generation_note": "For IJSO practice (Stage 1 NSEJS style): generate 80 MCQ questions mixing Physics (27), Chemistry (27), Biology (26). +3/-1 marking. Duration 2 Hours. Questions at Class 10 level but with high difficulty and application. Use 4 options per question."
+    }
+  }
+}

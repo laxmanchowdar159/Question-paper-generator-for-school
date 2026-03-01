@@ -36,9 +36,23 @@ app = Flask(__name__, template_folder="templates",
 GEMINI_KEY = os.environ.get("GEMINI_API_KEY", "").strip()
 
 # ═══════════════════════════════════════════════════════════════════════
+# LOAD EXAM PATTERN DATA
+# ═══════════════════════════════════════════════════════════════════════
+_DATA_DIR = Path(os.path.dirname(os.path.abspath(__file__))) / "data"
+
+def _load_json(name):
+    p = _DATA_DIR / name
+    if p.exists():
+        with open(p, encoding="utf-8") as f:
+            return json.load(f)
+    return {}
+
+_PATTERN_AP_TS    = _load_json("exam_patterns/ap_ts.json")
+_PATTERN_COMP     = _load_json("exam_patterns/competitive.json")
+_CURRICULUM       = _load_json("curriculum.json")
+
+# ═══════════════════════════════════════════════════════════════════════
 # FONT REGISTRATION
-# Bundles DejaVu Sans (Regular + Bold + Oblique) for full Unicode support.
-# Falls back to Helvetica gracefully if fonts are missing.
 # ═══════════════════════════════════════════════════════════════════════
 _fonts_registered = False
 
@@ -48,10 +62,10 @@ def register_fonts():
         return
     _base = os.path.dirname(os.path.abspath(__file__))
     fdir  = os.path.join(_base, "static", "fonts")
-    sys   = "/usr/share/fonts/truetype/dejavu"
+    sys_d = "/usr/share/fonts/truetype/dejavu"
 
     def reg(name, filename):
-        for d in [fdir, sys]:
+        for d in [fdir, sys_d]:
             p = os.path.join(d, filename)
             if os.path.exists(p):
                 try:
@@ -67,7 +81,6 @@ def register_fonts():
     _fonts_registered = True
 
 def _f(variant="Reg"):
-    """Return registered font name or safe fallback."""
     register_fonts()
     fallback = {"Reg": "Helvetica", "Bold": "Helvetica-Bold", "Ital": "Helvetica-Oblique"}
     try:
@@ -79,15 +92,10 @@ def _f(variant="Reg"):
 
 # ═══════════════════════════════════════════════════════════════════════
 # LATEX → REPORTLAB XML
-#
-# CRITICAL: NEVER use Unicode subscript/superscript characters (₀¹², etc.)
-# in ReportLab — they render as solid black boxes because the font has no
-# glyph for them. Use ReportLab's <sub> and <super> XML tags instead.
+# CRITICAL: NEVER use Unicode sub/superscript chars — use <sub>/<super>
 # ═══════════════════════════════════════════════════════════════════════
-
 _MATH_RE = re.compile(r'(\$\$[^$]+\$\$|\$[^$\n]+\$)')
 
-# Greek → unicode (fine in body text, not as sub/super)
 _GREEK = {
     r'\alpha':'α', r'\beta':'β', r'\gamma':'γ', r'\delta':'δ',
     r'\epsilon':'ε', r'\varepsilon':'ε', r'\zeta':'ζ', r'\eta':'η',
@@ -99,7 +107,6 @@ _GREEK = {
     r'\Xi':'Ξ', r'\Pi':'Π', r'\Sigma':'Σ', r'\Upsilon':'Υ',
     r'\Phi':'Φ', r'\Psi':'Ψ', r'\Omega':'Ω',
 }
-# Math symbols → unicode
 _SYM = {
     r'\times':'×', r'\div':'÷', r'\pm':'±', r'\mp':'∓',
     r'\cdot':'·', r'\ldots':'…', r'\cdots':'⋯',
@@ -122,7 +129,6 @@ _SYM = {
 
 
 def _extract_braced(s, pos):
-    """Extract {…} content at pos. Returns (content, new_pos)."""
     if pos >= len(s) or s[pos] != '{':
         return (s[pos], pos + 1) if pos < len(s) else ('', pos)
     depth, i = 0, pos
@@ -136,17 +142,9 @@ def _extract_braced(s, pos):
 
 
 def _latex_to_rl(expr: str) -> str:
-    """
-    Convert a LaTeX expression string to ReportLab paragraph XML.
-    Uses <super>/<sub> tags — never Unicode super/subscript characters.
-    """
     s = expr.strip().lstrip('$').rstrip('$').strip()
-
-    # Unwrap font/text wrappers
     s = re.sub(r'\\(?:text|mathrm|mathbf|mathit|boldsymbol)\{([^}]*)\}', r'\1', s)
     s = re.sub(r'\\(?:left|right)(?=[|(\[\]{}.])', '', s)
-
-    # Replace Greek (longest key first to avoid prefix collisions)
     for k in sorted(_GREEK, key=len, reverse=True):
         s = s.replace(k, _GREEK[k])
     for k in sorted(_SYM, key=len, reverse=True):
@@ -154,46 +152,35 @@ def _latex_to_rl(expr: str) -> str:
 
     result, i = '', 0
     while i < len(s):
-
-        # \frac{num}{den}  →  (num/den)
         if s[i:i+5] == '\\frac':
             i += 5
             num, i = _extract_braced(s, i)
             den, i = _extract_braced(s, i)
             result += f'({_latex_to_rl(num)}/{_latex_to_rl(den)})'
             continue
-
-        # \sqrt[n]{x}  →  n√(x)
         if s[i:i+5] == '\\sqrt':
             i += 5
             n_root = ''
             if i < len(s) and s[i] == '[':
-                j = s.find(']', i);  j = j if j != -1 else i
-                n_root = s[i+1:j];   i = j + 1
+                j = s.find(']', i); j = j if j != -1 else i
+                n_root = s[i+1:j];  i = j + 1
             inner, i = _extract_braced(s, i)
             result += f'{n_root}√({_latex_to_rl(inner)})'
             continue
-
-        # ^{sup}  →  <super>sup</super>   (NOT unicode superscript)
         if s[i] == '^':
             i += 1
             raw, i = _extract_braced(s, i)
-            inner  = _latex_to_rl(raw).replace('&','&amp;').replace('<','&lt;').replace('>','&gt;')
+            inner = _latex_to_rl(raw).replace('&','&amp;').replace('<','&lt;').replace('>','&gt;')
             result += f'<super>{inner}</super>'
             continue
-
-        # _{sub}  →  <sub>sub</sub>       (NOT unicode subscript)
         if s[i] == '_':
             i += 1
             raw, i = _extract_braced(s, i)
-            inner  = _latex_to_rl(raw).replace('&','&amp;').replace('<','&lt;').replace('>','&gt;')
+            inner = _latex_to_rl(raw).replace('&','&amp;').replace('<','&lt;').replace('>','&gt;')
             result += f'<sub>{inner}</sub>'
             continue
-
-        # Decorator commands — just render inner content
         decorated = False
-        for cmd in (r'\overline', r'\widehat', r'\widetilde',
-                    r'\vec', r'\hat', r'\bar', r'\tilde'):
+        for cmd in (r'\overline', r'\widehat', r'\widetilde', r'\vec', r'\hat', r'\bar', r'\tilde'):
             if s[i:].startswith(cmd):
                 i += len(cmd)
                 inner, i = _extract_braced(s, i)
@@ -202,8 +189,6 @@ def _latex_to_rl(expr: str) -> str:
                 break
         if decorated:
             continue
-
-        # Unknown backslash command — skip
         if s[i] == '\\':
             j = i + 1
             while j < len(s) and (s[j].isalpha() or s[j] == '*'):
@@ -213,69 +198,55 @@ def _latex_to_rl(expr: str) -> str:
             i = j
             result += ' '
             continue
-
-        # Escape XML chars in literal characters
         c = s[i]
         if   c == '&': result += '&amp;'
         elif c == '<': result += '&lt;'
         elif c == '>': result += '&gt;'
         else:          result += c
         i += 1
-
     return re.sub(r'  +', ' ', result).strip()
 
 
 def _process(text: str) -> str:
-    """
-    Convert a raw text line (possibly with $math$) into
-    ReportLab-XML-safe markup. Returns a string ready for Paragraph().
-    """
-    # Fix common LaTeX artifacts
     text = re.sub(r'\\_', '_', text)
     text = re.sub(r'\\-',  '-', text)
     text = re.sub(r'\\%',  '%', text)
 
-    # Replace $math$ spans
     def _repl(m):
         return _latex_to_rl(m.group(0))
     converted = _MATH_RE.sub(_repl, text)
 
-    # Now escape remaining XML chars, but NOT inside the tags we just created
-    # Strategy: split on ReportLab tags, escape only non-tag segments
     tag_re = re.compile(r'(</?(?:super|sub|b|i|font)[^>]*>)')
     parts  = tag_re.split(converted)
     safe   = []
     for p in parts:
         if tag_re.match(p):
-            safe.append(p)  # it's a tag, pass through
+            safe.append(p)
         else:
-            # Escape & and bare < >  (but don't double-escape existing entities)
             p = p.replace('&', '&amp;')
             p = re.sub(r'&amp;(amp|lt|gt|quot|#\d+);', r'&\1;', p)
             p = re.sub(r'<', '&lt;', p)
             safe.append(p)
 
     out = ''.join(safe)
-
-    # Markdown bold/italic
     out = re.sub(r'\*\*(.+?)\*\*', r'<b>\1</b>', out)
     out = re.sub(r'\*(.+?)\*',     r'<i>\1</i>', out)
-
     return out
 
 
 # ═══════════════════════════════════════════════════════════════════════
 # COLOURS
 # ═══════════════════════════════════════════════════════════════════════
-C_NAVY   = HexColor("#1a237e")   # main accent
-C_STEEL  = HexColor("#283593")   # question numbers
-C_BODY   = HexColor("#212121")   # body text
-C_GREY   = HexColor("#546e7a")   # meta / secondary
-C_LIGHT  = HexColor("#e8eaf6")   # section banner fill
-C_RULE   = HexColor("#b0bec5")   # thin lines
-C_MARK   = HexColor("#2e7d32")   # marks annotation
-C_KRED   = HexColor("#b71c1c")   # answer key accent
-C_KFILL  = HexColor("#fff8f8")   # answer key fill
+C_NAVY  = HexColor("#1a237e")
+C_STEEL = HexColor("#1565c0")
+C_BODY  = HexColor("#1a1a1a")
+C_GREY  = HexColor("#546e7a")
+C_LIGHT = HexColor("#e8eaf6")
+C_RULE  = HexColor("#90a4ae")
+C_MARK  = HexColor("#2e7d32")
+C_KRED  = HexColor("#c62828")
+C_KFILL = HexColor("#fff8f8")
+C_STEP  = HexColor("#37474f")
 
 
 # ═══════════════════════════════════════════════════════════════════════
@@ -289,88 +260,65 @@ def _styles():
     def S(name, **kw):
         if name not in base:
             base.add(ParagraphStyle(name=name, **kw))
+        else:
+            for k, v in kw.items():
+                setattr(base[name], k, v)
 
-    # ── Paper header ─────────────────────────────────────────────────
-    S("PTitle",  fontName=B, fontSize=15, textColor=white,
-      alignment=TA_CENTER, leading=20, spaceAfter=0, spaceBefore=0)
-    S("PMeta",   fontName=R, fontSize=9,  textColor=C_BODY,
-      alignment=TA_LEFT,   leading=12, spaceAfter=0)
-    S("PMetaR",  fontName=R, fontSize=9,  textColor=C_BODY,
-      alignment=TA_RIGHT,  leading=12, spaceAfter=0)
-    S("PMetaC",  fontName=R, fontSize=9,  textColor=C_BODY,
-      alignment=TA_CENTER, leading=12, spaceAfter=0)
-
-    # ── Section banners ───────────────────────────────────────────────
-    S("SecBanner", fontName=B, fontSize=10.5, textColor=C_NAVY,
-      leading=14, spaceAfter=0, spaceBefore=0)
-
-    # ── Instructions block ────────────────────────────────────────────
+    S("PTitle",    fontName=B, fontSize=16, textColor=white,
+      alignment=TA_CENTER, leading=22, spaceAfter=0, spaceBefore=0)
+    S("PMeta",     fontName=R, fontSize=9, textColor=C_BODY,
+      alignment=TA_LEFT, leading=13, spaceAfter=0)
+    S("PMetaR",    fontName=R, fontSize=9, textColor=C_BODY,
+      alignment=TA_RIGHT, leading=13, spaceAfter=0)
+    S("PMetaC",    fontName=R, fontSize=9, textColor=C_BODY,
+      alignment=TA_CENTER, leading=13, spaceAfter=0)
+    S("SecBanner", fontName=B, fontSize=11, textColor=C_NAVY,
+      leading=15, spaceAfter=0, spaceBefore=0)
     S("InstrHead", fontName=B, fontSize=9.5, textColor=C_BODY,
-      leading=13, spaceAfter=1, spaceBefore=4)
+      leading=14, spaceAfter=2, spaceBefore=4)
     S("Instr",     fontName=R, fontSize=9.5, textColor=C_BODY,
-      leading=13, spaceAfter=1, leftIndent=14, firstLineIndent=-14)
-
-    # ── Questions ─────────────────────────────────────────────────────
-    # Hanging-indent: number floats left, body wraps at indent
-    S("Q", fontName=R, fontSize=10.5, textColor=C_BODY,
-      alignment=TA_JUSTIFY, leading=15,
-      spaceBefore=5, spaceAfter=1,
-      leftIndent=24, firstLineIndent=-24)
-
-    # Sub-parts (a), (b) …
-    S("QSub", fontName=R, fontSize=10.5, textColor=C_BODY,
-      alignment=TA_JUSTIFY, leading=15,
-      spaceBefore=2, spaceAfter=1,
-      leftIndent=38, firstLineIndent=-14)
-
-    # Continuation / generic body lines inside a question
-    S("QCont", fontName=R, fontSize=10.5, textColor=C_BODY,
-      alignment=TA_JUSTIFY, leading=15,
-      spaceAfter=1, leftIndent=24)
-
-    # MCQ option cell (inside a 2-col table)
-    S("Opt", fontName=R, fontSize=10.5, textColor=C_BODY,
-      leading=14, spaceAfter=0, leftIndent=0)
-
-    # ── Answer key ────────────────────────────────────────────────────
-    S("KTitle",  fontName=B, fontSize=13, textColor=C_KRED,
-      alignment=TA_CENTER, leading=17, spaceAfter=4)
-    S("KSec",    fontName=B, fontSize=10, textColor=C_KRED,
-      leading=13, spaceAfter=2)
-    S("KQ",      fontName=B, fontSize=10, textColor=C_STEEL,
-      leading=13, spaceAfter=1,
-      leftIndent=22, firstLineIndent=-22)
-    S("KBody",   fontName=R, fontSize=9.5, textColor=C_BODY,
-      leading=13, spaceAfter=1, leftIndent=22)
-
-    # ── Misc ──────────────────────────────────────────────────────────
-    S("DiagLabel", fontName=I, fontSize=8.5, textColor=C_GREY,
-      leading=11, spaceAfter=1)
-
+      leading=14, spaceAfter=2, leftIndent=18, firstLineIndent=-18)
+    S("Q",         fontName=R, fontSize=11, textColor=C_BODY,
+      alignment=TA_JUSTIFY, leading=17, spaceBefore=8, spaceAfter=2,
+      leftIndent=26, firstLineIndent=-26)
+    S("QCont",     fontName=R, fontSize=11, textColor=C_BODY,
+      alignment=TA_JUSTIFY, leading=17, spaceBefore=1, spaceAfter=2, leftIndent=26)
+    S("QSub",      fontName=R, fontSize=11, textColor=C_BODY,
+      alignment=TA_JUSTIFY, leading=17, spaceBefore=3, spaceAfter=2,
+      leftIndent=42, firstLineIndent=-16)
+    S("Opt",       fontName=R, fontSize=10.5, textColor=C_BODY,
+      leading=15, spaceAfter=0, leftIndent=0)
+    S("KTitle",    fontName=B, fontSize=14, textColor=C_KRED,
+      alignment=TA_CENTER, leading=18, spaceAfter=6, spaceBefore=0)
+    S("KSec",      fontName=B, fontSize=10.5, textColor=C_KRED,
+      leading=14, spaceAfter=2, spaceBefore=6)
+    S("KQ",        fontName=B, fontSize=10.5, textColor=C_STEEL,
+      leading=14, spaceAfter=2, spaceBefore=4, leftIndent=24, firstLineIndent=-24)
+    S("KStep",     fontName=R, fontSize=10, textColor=C_STEP,
+      leading=15, spaceAfter=1, leftIndent=24)
+    S("KSub",      fontName=R, fontSize=10, textColor=C_BODY,
+      leading=15, spaceAfter=1, leftIndent=36, firstLineIndent=-12)
+    S("KMath",     fontName=I, fontSize=10, textColor=C_BODY,
+      leading=15, spaceAfter=1, leftIndent=32)
+    S("DiagLabel", fontName=I, fontSize=9, textColor=C_GREY,
+      leading=12, spaceAfter=2, spaceBefore=2)
     return base
 
 
 # ═══════════════════════════════════════════════════════════════════════
-# PAGE CANVAS  (top rule + footer on every page)
+# PAGE CANVAS
 # ═══════════════════════════════════════════════════════════════════════
 class ExamCanvas:
     def __call__(self, canvas, doc):
         W = A4[0]
         LM, RM = doc.leftMargin, W - doc.rightMargin
-
         canvas.saveState()
-
-        # Top navy rule
         canvas.setStrokeColor(C_NAVY)
         canvas.setLineWidth(1.5)
         canvas.line(LM, A4[1] - 12*mm, RM, A4[1] - 12*mm)
-
-        # Footer separator
         canvas.setStrokeColor(C_RULE)
         canvas.setLineWidth(0.4)
         canvas.line(LM, 20, RM, 20)
-
-        # Footer text — credit only on page 1
         canvas.setFont(_f("Ital"), 7.5)
         canvas.setFillColor(C_GREY)
         if doc.page == 1:
@@ -378,12 +326,11 @@ class ExamCanvas:
                 "ExamCraft  ·  Created by Laxman Nimmagadda"
                 "  (if the paper is hard, I am not guilty)")
         canvas.drawRightString(RM, 10, f"Page {doc.page}")
-
         canvas.restoreState()
 
 
 # ═══════════════════════════════════════════════════════════════════════
-# HELPER: section banner table
+# HELPERS
 # ═══════════════════════════════════════════════════════════════════════
 def _sec_banner(text, st, pw):
     p = Paragraph(f'<b>{text}</b>', st["SecBanner"])
@@ -400,10 +347,6 @@ def _sec_banner(text, st, pw):
     return t
 
 
-# ═══════════════════════════════════════════════════════════════════════
-# HELPER: 2-column MCQ options table
-# opts = [(letter, rl_text), …]
-# ═══════════════════════════════════════════════════════════════════════
 def _opts_table(opts, st, pw):
     rows = []
     for k in range(0, len(opts), 2):
@@ -424,9 +367,6 @@ def _opts_table(opts, st, pw):
     return t
 
 
-# ═══════════════════════════════════════════════════════════════════════
-# HELPER: pipe-table → PDF table
-# ═══════════════════════════════════════════════════════════════════════
 def _pipe_table(rows, st, pw):
     if not rows:
         return None
@@ -436,24 +376,24 @@ def _pipe_table(rows, st, pw):
 
     para_rows = []
     for ri, row in enumerate(norm):
-        sty = st["KQ"] if ri == 0 else st["KBody"]
+        sty = st["KQ"] if ri == 0 else st["KStep"]
         para_rows.append([Paragraph(_process(c), sty) for c in row])
 
     cw = pw / mc
     t = Table(para_rows, colWidths=[cw]*mc, repeatRows=1)
     t.setStyle(TableStyle([
-        ("FONTNAME",      (0,0),(-1,-1), R),
-        ("FONTSIZE",      (0,0),(-1,-1), 9.5),
-        ("BACKGROUND",    (0,0),(-1,0),  C_LIGHT),
-        ("TEXTCOLOR",     (0,0),(-1,0),  C_NAVY),
-        ("FONTNAME",      (0,0),(-1,0),  B),
-        ("GRID",          (0,0),(-1,-1), 0.4, C_RULE),
-        ("ROWBACKGROUNDS",(0,1),(-1,-1), [white, HexColor("#f8f8f8")]),
-        ("TOPPADDING",    (0,0),(-1,-1), 4),
-        ("BOTTOMPADDING", (0,0),(-1,-1), 4),
-        ("LEFTPADDING",   (0,0),(-1,-1), 7),
-        ("RIGHTPADDING",  (0,0),(-1,-1), 7),
-        ("VALIGN",        (0,0),(-1,-1), "MIDDLE"),
+        ("FONTNAME",       (0,0),(-1,-1), R),
+        ("FONTSIZE",       (0,0),(-1,-1), 9.5),
+        ("BACKGROUND",     (0,0),(-1,0),  C_LIGHT),
+        ("TEXTCOLOR",      (0,0),(-1,0),  C_NAVY),
+        ("FONTNAME",       (0,0),(-1,0),  B),
+        ("GRID",           (0,0),(-1,-1), 0.4, C_RULE),
+        ("ROWBACKGROUNDS", (0,1),(-1,-1), [white, HexColor("#f8f8f8")]),
+        ("TOPPADDING",     (0,0),(-1,-1), 4),
+        ("BOTTOMPADDING",  (0,0),(-1,-1), 4),
+        ("LEFTPADDING",    (0,0),(-1,-1), 7),
+        ("RIGHTPADDING",   (0,0),(-1,-1), 7),
+        ("VALIGN",         (0,0),(-1,-1), "MIDDLE"),
     ]))
     return t
 
@@ -478,8 +418,6 @@ def _is_hrule(s):
     s = s.strip()
     return len(s) > 3 and all(c in '-=_' for c in s)
 
-# Lines that come from the AI exam header and should NOT be re-rendered
-# (we render our own canonical header box instead)
 _HDR_SKIP = re.compile(
     r'^(School|Subject|Class|Board|Total\s*Marks|Time\s*Allowed|Date)\s*[:/]',
     re.I)
@@ -490,16 +428,14 @@ _HDR_SKIP = re.compile(
 # ═══════════════════════════════════════════════════════════════════════
 def create_exam_pdf(text, subject, chapter, board="",
                    answer_key=None, include_key=False, diagrams=None) -> bytes:
-    """diagrams: dict mapping diagram description -> svg string (pre-generated)"""
 
     register_fonts()
     st = _styles()
 
-    # Margins: snug but comfortable — standard exam paper feel
     LM = BM = 20 * mm
     RM = 20 * mm
-    TM = 16 * mm           # tight top — canvas draws rule at 12 mm
-    PW = A4[0] - LM - RM   # usable width ≈ 170 mm
+    TM = 16 * mm
+    PW = A4[0] - LM - RM
 
     buf = BytesIO()
     doc = SimpleDocTemplate(buf, pagesize=A4,
@@ -508,21 +444,18 @@ def create_exam_pdf(text, subject, chapter, board="",
                             title=f"{subject}{' – '+chapter if chapter else ''}")
     elems = []
 
-    # ─── Canonical header ────────────────────────────────────────────
-    # Pull fields from AI-generated text
     def _pull(pat, default=""):
         m = re.search(pat, text, re.I | re.M)
         return m.group(1).strip() if m else default
 
-    h_marks  = _pull(r'Total\s*Marks\s*[:/]\s*(\d+)', "100")
-    h_time   = _pull(r'Time\s*Allowed\s*[:/]\s*([^\n]+)', "3 Hours")
-    h_class  = _pull(r'Class\s*[:/]?\s*(\d+\w*)', "")
-    h_board  = board or _pull(r'Board\s*[:/]\s*([^\n]+)', "")
+    h_marks = _pull(r'Total\s*Marks\s*[:/]\s*(\d+)', "100")
+    h_time  = _pull(r'Time\s*(?:Allowed|:)\s*([^\n]+)', "3 Hours")
+    h_class = _pull(r'Class\s*[:/]?\s*(\d+\w*)', "")
+    h_board = board or _pull(r'Board\s*[:/]\s*([^\n]+)', "")
 
     disp_title   = subject or "Question Paper"
     disp_chapter = chapter or ""
 
-    # Row 1: dark navy title bar
     title_str = disp_title
     if disp_chapter:
         title_str += f"  —  {disp_chapter}"
@@ -537,7 +470,6 @@ def create_exam_pdf(text, subject, chapter, board="",
         ("RIGHTPADDING",  (0,0),(-1,-1), 12),
     ]))
 
-    # Row 2: meta strip (left = board+class, right = marks+time)
     left_meta  = "  |  ".join(x for x in [h_board, f"Class {h_class}" if h_class else ""] if x)
     right_meta = f"Total Marks: {h_marks}   |   Time: {h_time}"
     tbl_meta = Table(
@@ -553,7 +485,6 @@ def create_exam_pdf(text, subject, chapter, board="",
         ("VALIGN",        (0,0),(-1,-1), "MIDDLE"),
     ]))
 
-    # Row 3: school / date fill-in line
     tbl_school = Table(
         [[Paragraph("School / Institution: " + "_"*34
                     + "   Date: " + "_"*12,
@@ -568,12 +499,12 @@ def create_exam_pdf(text, subject, chapter, board="",
         ("RIGHTPADDING",  (0,0),(-1,-1), 10),
     ]))
 
-    elems += [tbl_title, tbl_meta, tbl_school, Spacer(1, 7)]
+    elems += [tbl_title, tbl_meta, tbl_school, Spacer(1, 8)]
 
-    # ─── Body parser ─────────────────────────────────────────────────
-    tbl_rows  = []
-    in_table  = False
-    pending_opts = []   # MCQ options waiting to be flushed
+    tbl_rows    = []
+    in_table    = False
+    pending_opts = []
+    in_instr    = False
 
     def flush_table():
         nonlocal tbl_rows, in_table
@@ -589,18 +520,25 @@ def create_exam_pdf(text, subject, chapter, board="",
         nonlocal pending_opts
         if pending_opts:
             elems.append(_opts_table(pending_opts, st, PW))
-            elems.append(Spacer(1, 2))
+            elems.append(Spacer(1, 3))
         pending_opts = []
 
     lines = text.split('\n')
     i_line = 0
+
+    def _is_general_instr(s):
+        return bool(re.match(r'^(GENERAL INSTRUCTIONS|General Instructions'
+                             r'|Instructions)\s*$', s.strip()))
+
+    def _is_instr_line(s):
+        return bool(re.match(r'^\d+\.\s+', s.strip())) and in_instr
+
     while i_line < len(lines):
         raw  = lines[i_line].rstrip()
         line = re.sub(r'\\_', '_', re.sub(r'\\-', '-', raw))
         s    = line.strip()
         i_line += 1
 
-        # ── table rows ──────────────────────────────────────────────
         if _is_table_row(line):
             if _is_divider(line):
                 continue
@@ -613,65 +551,82 @@ def create_exam_pdf(text, subject, chapter, board="",
         elif in_table:
             flush_table()
 
-        # ── blank / spacing ─────────────────────────────────────────
         if not s:
             flush_opts()
-            elems.append(Spacer(1, 3))
+            elems.append(Spacer(1, 4))
             continue
 
-        # ── skip AI-generated header fields (we drew our own) ───────
         if _HDR_SKIP.match(s):
             continue
 
-        # ── horizontal rule ─────────────────────────────────────────
         if _is_hrule(line):
             flush_opts()
             elems.append(HRFlowable(width="100%", thickness=0.4,
-                                    color=C_RULE, spaceBefore=2, spaceAfter=2))
+                                    color=C_RULE, spaceBefore=3, spaceAfter=3))
             continue
 
-        # ── diagram placeholder ──────────────────────────────────────
         if s.startswith('[DIAGRAM:') or s.lower().startswith('[draw'):
             flush_opts()
-            label = s.strip('[]')
-            desc  = re.sub(r'^DIAGRAM:\s*', '', label, flags=re.I).strip()
-            elems.append(Paragraph(f'<i>{label}</i>', st["DiagLabel"]))
+            label   = s.strip('[]')
+            desc    = re.sub(r'^DIAGRAM:\s*', '', label, flags=re.I).strip()
+            elems.append(Paragraph(f'<i>Figure: {desc}</i>', st["DiagLabel"]))
 
-            # Try to use pre-generated SVG drawing
             drawing = None
             if diagrams:
                 for d_key, d_svg in diagrams.items():
-                    if d_svg and (d_key.lower() in desc.lower() or desc.lower() in d_key.lower()):
-                        drawing = svg_to_rl_image(d_svg, width_pt=PW * 0.85)
+                    if d_svg and (d_key.lower() in desc.lower()
+                                  or desc.lower() in d_key.lower()):
+                        drawing = svg_to_rl_image(d_svg, width_pt=PW * 0.82)
                         break
                 if drawing is None and desc in diagrams:
-                    drawing = svg_to_rl_image(diagrams[desc], width_pt=PW * 0.85)
+                    drawing = svg_to_rl_image(diagrams[desc], width_pt=PW * 0.82)
 
             if drawing is not None:
                 elems.append(Spacer(1, 3))
                 elems.append(drawing)
             else:
-                box = Table([['']],  colWidths=[PW], rowHeights=[60])
+                box = Table([['']],  colWidths=[PW*0.7], rowHeights=[70])
                 box.setStyle(TableStyle([
-                    ('BOX',        (0,0),(-1,-1), 0.7, C_RULE),
-                    ('BACKGROUND', (0,0),(-1,-1), HexColor('#fafafa')),
+                    ('BOX',        (0,0),(-1,-1), 0.8, C_RULE),
+                    ('BACKGROUND', (0,0),(-1,-1), HexColor('#f8f9fa')),
                 ]))
-                elems.append(box)
-            elems.append(Spacer(1, 4))
-            continue
-
-        # ── section header ───────────────────────────────────────────
-        if _is_sec_hdr(line):
-            flush_opts()
+                outer = Table([[box]], colWidths=[PW])
+                outer.setStyle(TableStyle([
+                    ('ALIGN',          (0,0),(-1,-1), 'CENTER'),
+                    ('TOPPADDING',     (0,0),(-1,-1), 2),
+                    ('BOTTOMPADDING',  (0,0),(-1,-1), 2),
+                ]))
+                elems.append(outer)
             elems.append(Spacer(1, 5))
-            elems.append(_sec_banner(s, st, PW))
-            elems.append(Spacer(1, 4))
             continue
 
-        # ── MCQ options — collect and render as 2-col table ──────────
-        # single option: "(a) text" or "a) text" or "A. text"
-        opt_m = re.match(r'^\s*[\(\[]?\s*([a-dA-D])\s*[\)\]\.]\s+(.+)', s)
-        if opt_m and not re.match(r'^\d', s):
+        if _is_general_instr(s):
+            flush_opts()
+            in_instr = True
+            elems.append(Spacer(1, 4))
+            elems.append(Paragraph(f'<b>{s}</b>', st["InstrHead"]))
+            continue
+
+        if _is_sec_hdr(line) and not _is_general_instr(s):
+            flush_opts()
+            in_instr = False
+            elems.append(Spacer(1, 7))
+            elems.append(_sec_banner(s, st, PW))
+            elems.append(Spacer(1, 5))
+            continue
+
+        if _is_instr_line(s):
+            flush_opts()
+            m_i = re.match(r'^(\d+)\.\s+(.+)$', s)
+            if m_i:
+                elems.append(Paragraph(
+                    f'<b>{m_i.group(1)}.</b>  {_process(m_i.group(2))}',
+                    st["Instr"]))
+            continue
+
+        opt_m = re.match(r'^\s*[\(\[]\s*([a-dA-D])\s*[\)\]\.]?\s+(.+)', s)
+        if opt_m and not re.match(r'^(Q\.?\s*)?\d+[\.)\]]\s', s):
+            in_instr = False
             letter = opt_m.group(1).lower()
             val    = _process(opt_m.group(2))
             pending_opts.append((letter, val))
@@ -679,51 +634,45 @@ def create_exam_pdf(text, subject, chapter, board="",
                 flush_opts()
             continue
 
-        # multiple options on one line: "(a) x  (b) y  (c) z  (d) w"
         multi = re.findall(
-            r'[\(\[]([a-dA-D])[\)\]\.]\s+([^(\[]+?)(?=\s*[\(\[][a-dA-D][\)\]\.]|$)',
+            r'[\(\[]([a-dA-D])[\)\]\.]?\s+([^(\[]+?)(?=\s*[\(\[][a-dA-D][\)\]\.]|$)',
             s)
-        if len(multi) >= 2 and not re.match(r'^\d+\.', s):
+        if len(multi) >= 2 and not re.match(r'^(Q\.?\s*)?\d+[\.)\]]\s', s):
             flush_opts()
+            in_instr = False
             opts = [(l.lower(), _process(v.strip())) for l, v in multi]
             elems.append(_opts_table(opts, st, PW))
-            elems.append(Spacer(1, 2))
+            elems.append(Spacer(1, 3))
             continue
 
-        # ── numbered questions: "1. text [2 Marks]" ──────────────────
-        q_m = re.match(r'^(Q\.?\s*)?(\d+)[\.\)]\s+(.+)', s)
-        if q_m:
+        q_m = re.match(r'^(Q\.?\s*)?(\d+)[\.)\]]\s+(.+)', s)
+        if q_m and not in_instr:
             flush_opts()
+            in_instr = False
             qnum  = q_m.group(2)
             qbody = q_m.group(3)
-
-            # Pull mark annotation from end
             mk_m = re.search(r'(\[\s*\d+\s*[Mm]arks?\s*\])\s*$', qbody)
             mark_tag = ''
             if mk_m:
                 mark_tag = mk_m.group(1)
                 qbody    = qbody[:mk_m.start()].strip()
-
             body_rl = _process(qbody)
-            mark_rl = (f'  <font color="{C_MARK.hexval()}" size="9">'
+            mark_rl = (f'  <font color="{C_MARK.hexval()}" size="9.5">'
                        f'<b>{mark_tag}</b></font>') if mark_tag else ''
-
-            # Hanging-indent: bold number, then body wraps with indent
             xml = (f'<font color="{C_STEEL.hexval()}"><b>{qnum}.</b></font>'
                    f'  {body_rl}{mark_rl}')
             elems.append(Paragraph(xml, st["Q"]))
             continue
 
-        # ── sub-parts: "(a) long sentence [2 Marks]" ─────────────────
         sub_m = re.match(r'^\s*[\(\[]\s*([a-z])\s*[\)\]]\s+(.+)', s)
-        if sub_m:
+        if sub_m and not in_instr:
             flush_opts()
-            sl   = sub_m.group(1)
-            sbod = sub_m.group(2)
+            sl    = sub_m.group(1)
+            sbod  = sub_m.group(2)
             mk_m2 = re.search(r'(\[\s*\d+\s*[Mm]arks?\s*\])\s*$', sbod)
             mark2 = ''
             if mk_m2:
-                mark2 = (f'  <font color="{C_MARK.hexval()}" size="9">'
+                mark2 = (f'  <font color="{C_MARK.hexval()}" size="9.5">'
                          f'<b>{mk_m2.group(1)}</b></font>')
                 sbod  = sbod[:mk_m2.start()].strip()
             elems.append(Paragraph(
@@ -731,16 +680,6 @@ def create_exam_pdf(text, subject, chapter, board="",
                 st["QSub"]))
             continue
 
-        # ── numbered instruction lines (inside instr block) ───────────
-        instr_m = re.match(r'^(\d+)\.\s+(.+)$', s)
-        if instr_m and len(s) < 220:
-            flush_opts()
-            elems.append(Paragraph(
-                f'<b>{instr_m.group(1)}.</b>  {_process(instr_m.group(2))}',
-                st["Instr"]))
-            continue
-
-        # ── fallback: continuation / general body ────────────────────
         flush_opts()
         elems.append(Paragraph(_process(s), st["QCont"]))
 
@@ -751,48 +690,76 @@ def create_exam_pdf(text, subject, chapter, board="",
     # ─── Answer key ───────────────────────────────────────────────────
     if include_key and answer_key and answer_key.strip():
         elems.append(PageBreak())
-
-        # Key title banner
         kt = Table([[Paragraph("ANSWER KEY", st["KTitle"])]], colWidths=[PW])
         kt.setStyle(TableStyle([
             ("BACKGROUND",    (0,0),(-1,-1), C_KFILL),
-            ("LINEBELOW",     (0,0),(-1,-1), 2, C_KRED),
-            ("LINETOP",       (0,0),(-1,-1), 2, C_KRED),
-            ("TOPPADDING",    (0,0),(-1,-1), 7),
-            ("BOTTOMPADDING", (0,0),(-1,-1), 7),
+            ("LINEBELOW",     (0,0),(-1,-1), 2.5, C_KRED),
+            ("LINETOP",       (0,0),(-1,-1), 2.5, C_KRED),
+            ("TOPPADDING",    (0,0),(-1,-1), 8),
+            ("BOTTOMPADDING", (0,0),(-1,-1), 8),
         ]))
-        elems += [kt, Spacer(1, 8)]
+        elems += [kt, Spacer(1, 10)]
 
-        for raw in answer_key.split('\n'):
-            line = re.sub(r'\\_', '_', re.sub(r'\\-', '-', raw.rstrip()))
-            s    = line.strip()
+        key_lines = answer_key.split('\n')
+        ki = 0
+        while ki < len(key_lines):
+            raw_k  = key_lines[ki].rstrip()
+            line_k = re.sub(r'\\_', '_', re.sub(r'\\-', '-', raw_k))
+            sk     = line_k.strip()
+            ki    += 1
 
-            if not s:
-                elems.append(Spacer(1, 2))
+            if not sk:
+                elems.append(Spacer(1, 3))
                 continue
 
-            if re.match(r'^(Section|SECTION|Part|PART)\s+[A-D]', s):
-                ks = Table([[Paragraph(f'<b>{s}</b>', st["KSec"])]], colWidths=[PW])
+            if re.match(r'^(Section|SECTION|Part|PART)\s+[A-Da-d]\b', sk):
+                ks = Table([[Paragraph(f'<b>{sk.rstrip(":")}:</b>',
+                                       st["KSec"])]], colWidths=[PW])
                 ks.setStyle(TableStyle([
                     ("BACKGROUND",    (0,0),(-1,-1), C_KFILL),
-                    ("LINEBELOW",     (0,0),(-1,-1), 0.8, C_KRED),
-                    ("LEFTPADDING",   (0,0),(-1,-1), 8),
-                    ("TOPPADDING",    (0,0),(-1,-1), 3),
-                    ("BOTTOMPADDING", (0,0),(-1,-1), 3),
+                    ("LINEBELOW",     (0,0),(-1,-1), 1.2, C_KRED),
+                    ("LEFTPADDING",   (0,0),(-1,-1), 10),
+                    ("TOPPADDING",    (0,0),(-1,-1), 4),
+                    ("BOTTOMPADDING", (0,0),(-1,-1), 4),
                 ]))
-                elems += [Spacer(1, 4), ks, Spacer(1, 3)]
+                elems += [Spacer(1, 6), ks, Spacer(1, 4)]
                 continue
 
-            q_m = re.match(r'^(Q\.?\s*)?(\d+)[\.\)]\s*(.*)', s)
-            if q_m:
-                body = _process(q_m.group(3)) if q_m.group(3) else ''
+            q_km = re.match(r'^(Q\.?\s*)?(\d+)[\.)\]]\s*(.*)', sk)
+            if q_km:
+                body_k = q_km.group(3).strip()
+                mk_k = re.search(r'(\[\s*\d+\s*[Mm]arks?\s*\])\s*$', body_k)
+                mk_str = ''
+                if mk_k:
+                    mk_str  = (f'  <font color="{C_MARK.hexval()}" size="9">'
+                               f'<b>{mk_k.group(1)}</b></font>')
+                    body_k  = body_k[:mk_k.start()].strip()
+                body_rl = _process(body_k) if body_k else ''
                 elems.append(Paragraph(
-                    f'<b>{q_m.group(2)}.</b>  {body}', st["KQ"]))
+                    f'<font color="{C_KRED.hexval()}"><b>{q_km.group(2)}.</b></font>'
+                    f'  {body_rl}{mk_str}',
+                    st["KQ"]))
                 continue
 
-            elems.append(Paragraph(_process(s), st["KBody"]))
+            sub_km = re.match(r'^\(?([a-z])\)\.?\s+(.+)', sk)
+            if sub_km:
+                elems.append(Paragraph(
+                    f'<b>({sub_km.group(1)})</b>  {_process(sub_km.group(2))}',
+                    st["KSub"]))
+                continue
 
-    # ─── Build ────────────────────────────────────────────────────────
+            if raw_k.startswith('   ') or raw_k.startswith('\t'):
+                elems.append(Paragraph(_process(sk), st["KStep"]))
+                continue
+
+            if (sk.startswith('$') or
+                    re.match(r'^[A-Za-z]\s*[=<>≤≥]', sk) or
+                    re.match(r'^\s*(∴|Therefore|Hence|Thus)\b', sk, re.I)):
+                elems.append(Paragraph(_process(sk), st["KStep"]))
+                continue
+
+            elems.append(Paragraph(_process(sk), st["KStep"]))
+
     doc.build(elems, onFirstPage=ExamCanvas(), onLaterPages=ExamCanvas())
     pdf = buf.getvalue()
     buf.close()
@@ -837,7 +804,7 @@ def call_gemini(prompt):
             try:
                 model = genai.GenerativeModel(
                     model_name,
-                    generation_config={"temperature":0.7, "max_output_tokens":8192, "top_p":0.9})
+                    generation_config={"temperature": 0.7, "max_output_tokens": 8192, "top_p": 0.9})
                 response = model.generate_content(prompt)
                 if response and hasattr(response, "text") and response.text.strip():
                     return response.text.strip(), None
@@ -855,156 +822,807 @@ def call_gemini(prompt):
 
 
 # ═══════════════════════════════════════════════════════════════════════
-# FALLBACK PAPER
+# FALLBACK PAPER (used when Gemini is unavailable)
 # ═══════════════════════════════════════════════════════════════════════
 def build_local_paper(cls, subject, chapter, marks, difficulty):
     return f"""{subject or "Science"} — Model Question Paper
-Subject: {subject or "Science"}   Class: {cls}   Board: Standard Board
-Total Marks: {marks}   Time Allowed: 3 Hours
+Subject: {subject or "Science"}   Class: {cls}
+Total Marks: {marks}   Time Allowed: 3 Hours 15 Minutes
 
 GENERAL INSTRUCTIONS
-1. All questions are compulsory.
-2. Read each question carefully before answering.
-3. Marks for each question are indicated in brackets.
-4. Write your answers neatly and in the correct order.
-5. Calculators are not permitted unless specified.
-6. Draw neat, labelled diagrams wherever necessary.
+1. Answer all the questions under Part-A on the question paper itself and attach it to the answer booklet at the end.
+2. Read the instructions carefully and answer only the required number of questions in each section.
+3. Figures to the right indicate marks allotted.
+4. Draw neat, labelled diagrams wherever necessary.
 
-SECTION A - Objective Questions (20 Marks)
+PART A — OBJECTIVE (20 Marks)
+(Answer in the question paper itself. Submit after 30 minutes.)
 
-1. Which of the following best describes Newton's First Law? [1 Mark]
-(a) Force equals mass times acceleration
-(b) An object at rest stays at rest unless acted on by a net force
-(c) Every action has an equal and opposite reaction
-(d) Acceleration is inversely proportional to mass
+Section-I — Multiple Choice Questions [1 Mark each]
+1. Which of the following best describes Newton's First Law of Motion? [1 Mark]
+   (A) Force equals mass times acceleration
+   (B) An object at rest stays at rest unless acted upon by an external force
+   (C) Every action has an equal and opposite reaction
+   (D) Acceleration is inversely proportional to mass  (   )
 
 2. The SI unit of electric charge is __________. [1 Mark]
+   (A) Ampere   (B) Coulomb   (C) Volt   (D) Ohm  (   )
 
-3. True or False: $v^2 = u^2 + 2as$ is an equation of uniformly accelerated motion. [1 Mark]
+Section-II — Fill in the Blanks [1 Mark each]
+11. The chemical formula of water is __________.
+12. The process by which plants make food using sunlight is called __________.
 
-SECTION B - Short Answer Questions (30 Marks)
+Section-III — Match the Following [1 Mark each]
+| Group A | Group B |
+|---|---|
+| Newton | Laws of Motion |
+| Ohm | Resistance |
+| Faraday | Electromagnetic Induction |
+| Darwin | Theory of Evolution |
+| Mendel | Laws of Heredity |
 
-4. State the law of conservation of momentum and give one real-world example. [3 Marks]
+PART B — WRITTEN (80 Marks)
 
-5. A wire of resistance $R$ is stretched to double its length. Find the new resistance. [3 Marks]
+Section-IV — Very Short Answer Questions [2 Marks each]
+(Answer ALL questions in not more than 5 lines each.)
 
-SECTION C - Long Answer Questions (30 Marks)
+1. State Newton's Second Law of Motion. [2 Marks]
+2. What is an electric circuit? Name its two essential components. [2 Marks]
 
-6. Derive the mirror formula $\\frac{{1}}{{v}} + \\frac{{1}}{{u}} = \\frac{{1}}{{f}}$ with a labelled diagram. [5 Marks]
+Section-V — Short Answer Questions [4 Marks each]
+(Answer any FOUR of the following six questions.)
 
-[DIAGRAM: Ray diagram for concave mirror showing object, image and focal points]
+11. Explain the process of photosynthesis with a labelled diagram. [4 Marks]
+12. State and explain Ohm's Law. Give one example. [4 Marks]
 
-SECTION D - Case Study (20 Marks)
+Section-VI — Long Answer / Essay Questions [6 Marks each]
+(Answer any FOUR of the following six questions.)
 
-7. Ravi connects a $6\\ \\Omega$ resistor and a $12\\ \\Omega$ resistor in parallel across a $12$ V battery.
-(a) Calculate the equivalent resistance of the combination. [2 Marks]
-(b) Find the total current drawn from the battery. [3 Marks]
+21. (i) Derive the equations of motion $v = u + at$ and $s = ut + \\frac{{1}}{{2}}at^2$. [6 Marks]
+OR
+    (ii) A car starts from rest and accelerates uniformly at $2\\ m/s^2$. Find the velocity after 5 seconds and the distance covered. [6 Marks]
 
+Section-VII — Application / Problem Solving [10 Marks each]
+(Answer any TWO of the following three questions.)
+
+31. A wire of resistance $R = 6\\ \\Omega$ is connected to a $12\\ V$ battery.
+    (a) Find the current flowing through the circuit. [3 Marks]
+    (b) If three such resistors are connected in parallel, find the equivalent resistance and total current. [4 Marks]
+    (c) State two differences between series and parallel circuits. [3 Marks]
+
+ANSWER KEY
+
+Section-I:
+1. (B)   2. (B)
+
+Section-II:
+11. H₂O   12. Photosynthesis
+
+Section-III:
+Newton → Laws of Motion, Ohm → Resistance, Faraday → Electromagnetic Induction, Darwin → Theory of Evolution, Mendel → Laws of Heredity
+
+Section-IV:
+1. Newton's Second Law: The rate of change of momentum of a body is directly proportional to the applied force and takes place in the direction of the force. F = ma.
+2. An electric circuit is a closed path through which electric current flows. Essential components: (1) a source of EMF (battery/cell), (2) conducting wires.
+
+Section-V:
+11. Photosynthesis: 6CO₂ + 6H₂O → C₆H₁₂O₆ + 6O₂. Occurs in chloroplasts. Requires sunlight, chlorophyll, CO₂, and water. [DIAGRAM: Chloroplast showing grana and stroma]
+
+Section-VI:
+21. (i) Starting from F = ma → a = (v-u)/t → v = u + at. Substituting: s = ut + ½at². 
+(ii) Given: u=0, a=2 m/s², t=5s. v = 0 + 2×5 = 10 m/s. s = 0 + ½×2×25 = 25 m.
+
+Section-VII:
+31. (a) I = V/R = 12/6 = 2 A.
+    (b) 1/R_eq = 1/6 + 1/6 + 1/6 = 3/6, R_eq = 2 Ω. I_total = 12/2 = 6 A.
+    (c) Series: same current, voltages add. Parallel: same voltage, currents add.
+"""
+
+
+# ═══════════════════════════════════════════════════════════════════════
+# MATH NOTATION RULES (injected into every STEM prompt)
+# ═══════════════════════════════════════════════════════════════════════
+def _math_rules():
+    return (
+        "\nMATH NOTATION — wrap EVERY mathematical expression in $...$:\n"
+        "  Superscripts:  $x^{2}$  $a^{3}$  $10^{-3}$  $v^{2}$        NOT: x2, a3\n"
+        "  Subscripts:    $H_{2}O$  $v_{0}$  $x_{1}$                   NOT: H2O, v0\n"
+        "  Fractions:     $\\frac{a}{b}$  $\\frac{1}{f}$  $\\frac{mv^{2}}{r}$\n"
+        "  Square root:   $\\sqrt{2}$  $\\sqrt{34}$\n"
+        "  Greek:         $\\theta$  $\\alpha$  $\\pi$  $\\omega$  $\\lambda$\n"
+        "  Trig:          $\\sin\\theta$  $\\cos 60^{\\circ}$  $\\tan\\alpha$\n"
+        "  Units in text: write 'm/s', 'kg', 'N', 'Ω' as plain text outside $\n"
+        "  Fill-in-blank: use __________ (plain underscores, no backslash)\n"
+    )
+
+
+# ═══════════════════════════════════════════════════════════════════════
+# PROMPT BUILDER — routes to AP/TS or Competitive
+# ═══════════════════════════════════════════════════════════════════════
+def _class_int(cls_str):
+    m = re.search(r'\d+', str(cls_str or "10"))
+    return int(m.group()) if m else 10
+
+
+def build_prompt(class_name, subject, chapter, board, exam_type, difficulty, marks, suggestions):
+    m       = max(10, int(marks) if str(marks).isdigit() else 100)
+    cls_str = class_name or "10"
+    cls_n   = _class_int(cls_str)
+    chap    = chapter or "as per syllabus"
+    extra   = f"Teacher's instructions: {suggestions.strip()}\n" if (suggestions or "").strip() else ""
+    board_l = (board or "").lower()
+
+    subj_l  = (subject or "").lower()
+    is_stem = any(k in subj_l for k in [
+        "math", "maths", "science", "physics", "chemistry", "biology",
+        "algebra", "geometry", "trigonometry", "statistics"
+    ])
+    math_note = _math_rules() if is_stem else ""
+
+    # Route competitive exams
+    comp_map = {
+        "ntse": "NTSE", "nso": "NSO", "imo": "IMO", "ijso": "IJSO"
+    }
+    for key, val in comp_map.items():
+        if key in board_l:
+            return _prompt_competitive(val, subject, chap, cls_str, m, difficulty, extra, math_note)
+
+    # AP / TS state boards
+    return _prompt_ap_ts(subject, chap, board, cls_str, cls_n, m, difficulty, extra, math_note)
+
+
+# ═══════════════════════════════════════════════════════════════════════
+# AP / TELANGANA STATE BOARD PROMPT
+# Uses the actual exam pattern from ap_ts.json
+# ═══════════════════════════════════════════════════════════════════════
+def _prompt_ap_ts(subject, chap, board, cls_str, cls_n, m, difficulty, extra, math_note):
+    pat = _PATTERN_AP_TS
+
+    if cls_n <= 8:
+        # Classes 6–8: 50-mark SA pattern
+        return _prompt_ap_ts_6_8(subject, chap, board, cls_str, m, difficulty, extra, math_note, pat)
+    else:
+        # Classes 9–10: 100-mark SSC pattern
+        return _prompt_ap_ts_9_10(subject, chap, board, cls_str, m, difficulty, extra, math_note, pat)
+
+
+def _prompt_ap_ts_9_10(subject, chap, board, cls_str, m, difficulty, extra, math_note, pat):
+    p   = pat.get("ssc_class_9_10", {})
+    dur = p.get("duration", "3 Hours 15 Minutes")
+
+    # Scale section counts to requested marks (default 100)
+    # If teacher requests fewer marks, scale proportionally but keep structure
+    scale = m / 100.0
+
+    n_mcq     = max(5,  round(10  * scale))
+    n_fib     = max(3,  round(5   * scale))
+    n_match   = max(3,  round(5   * scale))
+    n_vsq     = max(4,  round(10  * scale))   # Section IV, 2 marks each
+    n_sq_give = max(4,  round(6   * scale))   # Section V given, 4 marks each
+    n_sq_att  = max(3,  round(4   * scale))   # attempt
+    n_lq_give = max(4,  round(6   * scale))   # Section VI given, 6 marks each
+    n_lq_att  = max(3,  round(4   * scale))   # attempt
+    n_app_give= max(2,  round(3   * scale))   # Section VII given, 10 marks each
+    n_app_att = max(1,  round(2   * scale))   # attempt
+
+    obj_marks = n_mcq + n_fib + n_match
+    vsq_marks = n_vsq * 2
+    sq_marks  = n_sq_att * 4
+    lq_marks  = n_lq_att * 6
+    app_marks = n_app_att * 10
+    total_b   = vsq_marks + sq_marks + lq_marks + app_marks
+    total     = obj_marks + total_b
+
+    # Build subject-specific guidance
+    subj_l = (subject or "").lower()
+    subj_hint = ""
+    specs = p.get("subject_specifics", {})
+    if "math" in subj_l:
+        subj_hint = specs.get("Mathematics", "")
+    elif "science" in subj_l or "physics" in subj_l or "chemistry" in subj_l:
+        subj_hint = specs.get("Science_Physics_Chemistry", "")
+    elif "biology" in subj_l:
+        subj_hint = specs.get("Science_Biology", "")
+    elif "social" in subj_l or "history" in subj_l or "geography" in subj_l:
+        subj_hint = specs.get("Social_Studies", "")
+    elif "english" in subj_l:
+        subj_hint = specs.get("English", "")
+
+    instrs = p.get("general_instructions", [])
+
+    prompt = f"""You are a senior examiner producing an official {board} practice paper for Class {cls_str}.
+Subject: {subject}   Chapter/Topic: {chap}   Total Marks: {total}   Time: {dur}   Difficulty: {difficulty}
+{extra}
+REAL EXAM PATTERN (AP/Telangana SSC):
+This paper has TWO parts. Part A (Objective, {obj_marks} marks) is answered in the question paper itself and collected after 30 minutes. Part B (Written, {total_b} marks) is answered in the answer booklet.
+
+GENERAL INSTRUCTIONS (print exactly as given):
+{chr(10).join(instrs)}
+
+ABSOLUTE RULES — every violation is an error:
+R1. Output ONLY the paper and answer key. No meta-commentary. No square-bracket placeholders like [write here]. Every line is real exam content.
+R2. Questions must be 100% curriculum-accurate for {board} Class {cls_str} {subject}.
+R3. Every question must show its mark in brackets at the end: [1 Mark] [2 Marks] [4 Marks] [6 Marks] [10 Marks]
+R4. MCQ options go on ONE LINE in format: (A) ...  (B) ...  (C) ...  (D) ...  followed by (   ) on the same line for the student to write.
+R5. Section headers go on their own line exactly as shown in the template.
+R6. For diagrams: write [DIAGRAM: detailed description] on its own line.
+R7. For tables: use | col | col | pipe format.
+R8. Write ANSWER KEY on its own line to separate paper from answers.
+R9. Answer key must show complete working — formula, substitution, every step, unit.
+R10. OR alternatives in Section VI/VII must be genuine alternatives of equal difficulty.
+{f"Subject note: {subj_hint}" if subj_hint else ""}
+{math_note}
+NOW WRITE THE COMPLETE PAPER using this EXACT template structure:
+
+Subject: {subject}   Class: {cls_str}   Total Marks: {total}
+Board: {board}   Time: {dur}
+
+GENERAL INSTRUCTIONS
+1. Answer all the questions under Part-A on the question paper itself and attach it to the answer booklet at the end.
+2. Read the instructions carefully and answer only the required number of questions in each section.
+3. Figures to the right indicate marks allotted.
+4. Neat and fully labelled diagrams must be drawn wherever required.
+5. Write the question number and sub-question number clearly.
+
+PART A — OBJECTIVE  ({obj_marks} Marks)
+(Answer in the question paper itself. Hand it over after 30 minutes.)
+
+Section-I — Multiple Choice Questions  [1 Mark each]
+
+1. [question stem relevant to {chap}] [1 Mark]
+   (A) ...  (B) ...  (C) ...  (D) ...   (   )
+""" + "".join(
+    f"{i}. [question stem] [1 Mark]\n   (A) ...  (B) ...  (C) ...  (D) ...   (   )\n"
+    for i in range(2, n_mcq + 1)
+) + f"""
+Section-II — Fill in the Blanks  [1 Mark each]
+
+{n_mcq + 1}. __________ [1 Mark]
+""" + "".join(
+    f"{n_mcq + i}. __________ [1 Mark]\n"
+    for i in range(2, n_fib + 1)
+) + f"""
+Section-III — Match the Following  [1 Mark each]
+
+{n_mcq + n_fib + 1}. Match Group-A with Group-B: [5 Marks]
+
+| Group A | Group B |
+|---|---|
+| [term 1] | [matching item] |
+| [term 2] | [matching item] |
+| [term 3] | [matching item] |
+| [term 4] | [matching item] |
+| [term 5] | [matching item] |
+
+PART B — WRITTEN  ({total_b} Marks)
+
+Section-IV — Very Short Answer Questions  [2 Marks each]
+(Answer ALL {n_vsq} questions. Each answer in not more than 5 lines.)
+
+1. [question] [2 Marks]
+""" + "".join(
+    f"{i}. [question] [2 Marks]\n"
+    for i in range(2, n_vsq + 1)
+) + f"""
+Section-V — Short Answer Questions  [4 Marks each]
+(Answer any {n_sq_att} of the following {n_sq_give} questions. Each answer in not more than one page.)
+
+{n_vsq + 1}. [question] [4 Marks]
+""" + "".join(
+    f"{n_vsq + i}. [question] [4 Marks]\n"
+    for i in range(2, n_sq_give + 1)
+) + f"""
+Section-VI — Long Answer / Essay Questions  [6 Marks each]
+(Answer any {n_lq_att} of the following {n_lq_give} questions. Each answer in not more than two pages.)
+
+{n_vsq + n_sq_give + 1}. (i) [question] [6 Marks]
+OR
+{n_vsq + n_sq_give + 1}. (ii) [alternate question of equal difficulty] [6 Marks]
+""" + "".join(
+    f"{n_vsq + n_sq_give + i}. (i) [question] [6 Marks]\nOR\n{n_vsq + n_sq_give + i}. (ii) [alternate question] [6 Marks]\n"
+    for i in range(2, n_lq_give + 1)
+) + f"""
+Section-VII — Activity / Application / Problem Solving  [10 Marks each]
+(Answer any {n_app_att} of the following {n_app_give} questions.)
+
+{n_vsq + n_sq_give + n_lq_give + 1}. [multi-part application question with sub-parts (a)(b)(c)] [10 Marks]
+""" + "".join(
+    f"{n_vsq + n_sq_give + n_lq_give + i}. [multi-part application question] [10 Marks]\n"
+    for i in range(2, n_app_give + 1)
+) + f"""
+ANSWER KEY
+
+Section-I (MCQ):
+1. (X) — [brief reason]
+""" + "".join(f"{i}. (X) — [reason]\n" for i in range(2, n_mcq + 1)) + f"""
+Section-II (Fill in the Blank):
+{n_mcq + 1}. [answer]
+""" + "".join(f"{n_mcq + i}. [answer]\n" for i in range(2, n_fib + 1)) + f"""
+Section-III (Match):
+[1→?, 2→?, 3→?, 4→?, 5→?]
+
+Section-IV (Very Short Answer):
+1. [complete answer with definition/formula/explanation as appropriate]
+""" + "".join(f"{i}. [complete answer]\n" for i in range(2, n_vsq + 1)) + f"""
+Section-V (Short Answer):
+{n_vsq + 1}. [step-by-step solution with formula, working, diagram if needed]
+""" + "".join(f"{n_vsq + i}. [complete solution]\n" for i in range(2, n_sq_att + 1)) + f"""
+Section-VI (Long Answer):
+{n_vsq + n_sq_give + 1}. (i) [detailed solution — derivation/proof/explanation with diagram]
+""" + "".join(
+    f"{n_vsq + n_sq_give + i}. [detailed solution]\n"
+    for i in range(2, n_lq_att + 1)
+) + f"""
+Section-VII (Application):
+{n_vsq + n_sq_give + n_lq_give + 1}. (a) [working] (b) [working] (c) [working]
+""" + "".join(
+    f"{n_vsq + n_sq_give + n_lq_give + i}. [complete solution]\n"
+    for i in range(2, n_app_att + 1)
+) + f"""
+Now replace EVERY placeholder with real, curriculum-accurate content for {board} Class {cls_str} {subject}, chapter: {chap}.
+Difficulty: {difficulty}. All questions must be original and exam-ready. Begin:"""
+
+    return prompt
+
+
+def _prompt_ap_ts_6_8(subject, chap, board, cls_str, m, difficulty, extra, math_note, pat):
+    p   = pat.get("classes_6_8", {})
+    dur = "2 Hours 30 Minutes"
+
+    # Scale to requested marks
+    obj_m  = max(5,  round(m * 0.20))
+    vsq_m  = max(10, round(m * 0.40))
+    sa_m   = max(5,  round(m * 0.20))
+    la_m   = m - obj_m - vsq_m - sa_m
+
+    n_obj  = obj_m
+    n_vsq  = vsq_m // 2
+    n_sa_g = max(4, (sa_m // 5) + 2)
+    n_sa_a = sa_m // 5
+    n_la_g = max(2, (la_m // 10) + 1)
+    n_la_a = la_m // 10
+
+    prompt = f"""You are a senior examiner creating an official {board} practice paper for Class {cls_str}.
+Subject: {subject}   Chapter/Topic: {chap}   Total Marks: {m}   Time: {dur}   Difficulty: {difficulty}
+{extra}
+ABSOLUTE RULES:
+R1. Output ONLY paper and answer key. No placeholders, no meta-commentary.
+R2. Questions must be 100% curriculum-accurate for Class {cls_str} {subject}.
+R3. Mark allocation shown in [brackets] at end of every question.
+R4. MCQ options: (A) ...  (B) ...  (C) ...  (D) ...  (   )  all on ONE line.
+R5. Answer key must show complete working for every question.
+{math_note}
+
+Subject: {subject}   Class: {cls_str}   Total Marks: {m}
+Board: {board}   Time: {dur}
+
+GENERAL INSTRUCTIONS
+1. Answer ALL questions in Section A.
+2. Answer ALL questions in Section B.
+3. Answer any {n_sa_a} questions from Section C.
+4. Answer any {n_la_a} question from Section D.
+5. Figures to the right indicate marks. Draw neat diagrams wherever required.
+
+Section A — Objective  ({obj_m} Marks)  [1 Mark each]
+(Choose correct answer / fill blank / match)
+
+1. [MCQ question] [1 Mark]
+   (A) ...  (B) ...  (C) ...  (D) ...   (   )
+""" + "".join(
+    f"{i}. [MCQ/FIB/Match question] [1 Mark]\n"
+    for i in range(2, n_obj + 1)
+) + f"""
+Section B — Very Short Answer  ({vsq_m} Marks)  [2 Marks each]
+(Answer ALL questions in 1–2 sentences.)
+
+{n_obj + 1}. [question] [2 Marks]
+""" + "".join(
+    f"{n_obj + i}. [question] [2 Marks]\n"
+    for i in range(2, n_vsq + 1)
+) + f"""
+Section C — Short Answer  ({sa_m} Marks)  [5 Marks each]
+(Answer any {n_sa_a} of the following {n_sa_g} questions.)
+
+{n_obj + n_vsq + 1}. [question] [5 Marks]
+""" + "".join(
+    f"{n_obj + n_vsq + i}. [question] [5 Marks]\n"
+    for i in range(2, n_sa_g + 1)
+) + f"""
+Section D — Long Answer  ({la_m} Marks)  [10 Marks each]
+(Answer any {n_la_a} of the following {n_la_g} questions.)
+
+{n_obj + n_vsq + n_sa_g + 1}. [question with sub-parts] [10 Marks]
+""" + "".join(
+    f"{n_obj + n_vsq + n_sa_g + i}. [question] [10 Marks]\n"
+    for i in range(2, n_la_g + 1)
+) + f"""
 ANSWER KEY
 
 Section A:
-1. (b)
-2. Coulomb (C)
-3. True
-
+1. (X)
+""" + "".join(f"{i}. [answer]\n" for i in range(2, n_obj + 1)) + f"""
 Section B:
-4. Law of conservation of momentum: total momentum of an isolated system remains constant.
-   Example: A gun recoils when fired — momentum of bullet forward equals recoil backward.
-5. Resistance R = ρl/A. On stretching to 2l, area becomes A/2. New R = ρ(2l)/(A/2) = 4R.
-
+{n_obj + 1}. [complete answer]
+""" + "".join(f"{n_obj + i}. [answer]\n" for i in range(2, n_vsq + 1)) + f"""
 Section C:
-6. Consider a concave mirror. Using geometry of reflected rays from a point object:
-   1/v + 1/u = 1/f  (derived by similar triangles from the ray diagram).
-
+{n_obj + n_vsq + 1}. [step-by-step solution]
+""" + "".join(f"{n_obj + n_vsq + i}. [solution]\n" for i in range(2, n_sa_a + 1)) + f"""
 Section D:
-7. (a) 1/R_eq = 1/6 + 1/12 = 2/12 + 1/12 = 3/12, so R_eq = 4 Ω.
-   (b) I = V/R_eq = 12/4 = 3 A.
-"""
+{n_obj + n_vsq + n_sa_g + 1}. [detailed solution with diagram if needed]
+
+Replace ALL placeholders with real curriculum-accurate content for {board} Class {cls_str} {subject}, chapter: {chap}.
+Difficulty: {difficulty}. Begin:"""
+
+    return prompt
 
 
 # ═══════════════════════════════════════════════════════════════════════
-# PROMPT BUILDER
+# COMPETITIVE EXAM PROMPT (NTSE / NSO / IMO / IJSO)
+# Uses the actual pattern from competitive.json
 # ═══════════════════════════════════════════════════════════════════════
-def build_prompt(class_name, subject, chapter, board, exam_type, difficulty, marks, suggestions):
+def _prompt_competitive(exam, subject, chap, cls_str, m, difficulty, extra, math_note):
+    comp = _PATTERN_COMP.get("exams", {}).get(exam, {})
+    exam_full = comp.get("full_name", exam)
+    body  = comp.get("body", comp.get("conducting_body", ""))
+    elig  = comp.get("eligibility", f"Class {cls_str}")
+    style = comp.get("question_style", "All MCQ. 4 options. One correct.")
+    p_note= comp.get("paper_generation_note", "")
+
+    # Exam-specific structure
+    if exam == "NTSE":
+        return _prompt_ntse(comp, exam_full, subject, chap, cls_str, m, difficulty, extra, math_note)
+    elif exam == "NSO":
+        return _prompt_nso(comp, exam_full, subject, chap, cls_str, m, difficulty, extra, math_note)
+    elif exam == "IMO":
+        return _prompt_imo(comp, exam_full, subject, chap, cls_str, m, difficulty, extra, math_note)
+    elif exam == "IJSO":
+        return _prompt_ijso(comp, exam_full, subject, chap, cls_str, m, difficulty, extra, math_note)
+    else:
+        return _prompt_generic_comp(exam, subject, chap, cls_str, m, difficulty, extra, math_note)
+
+
+def _prompt_ntse(comp, exam_full, subject, chap, cls_str, m, difficulty, extra, math_note):
+    """NTSE has MAT + SAT as separate papers. Generate as requested."""
+    stage_info = comp.get("stages", {})
+    s1 = stage_info.get("Stage_1_State", {})
+    marking = comp.get("marking_scheme", s1.get("marking", "No negative marking at Stage 1."))
+
+    # Detect which paper is being asked (MAT vs SAT)
     subj_l = (subject or "").lower()
-    is_stem = any(k in subj_l for k in
-                  ["math","maths","physics","chemistry","science","biology","computer"])
-
-    math_note = ""
-    if is_stem:
-        math_note = """
-MATH/SCIENCE NOTATION:
-- ALL equations and expressions inside $...$: $F = ma$, $v^2 = u^2 + 2as$
-- Fractions: $\\frac{a}{b}$   Powers: $x^2$, $10^{-19}$   Roots: $\\sqrt{x}$
-- Subscripts: $H_2O$, $v_{max}$   Greek: $\\theta$, $\\alpha$, $\\lambda$, $\\pi$
-- Symbols: $\\pm$, $\\times$, $\\approx$, $\\rightarrow$, $\\leq$, $\\geq$
-- Chemical: $2H_2 + O_2 \\rightarrow 2H_2O$   Degree: $90^\\circ$
-- Fill-in-blank: write underscores directly: __________  (never \\_ )
-"""
-
-    extra = f"\nSPECIAL INSTRUCTIONS:\n{suggestions}\n" if suggestions and suggestions.strip() else ""
-
-    m = int(marks) if str(marks).isdigit() else 100
-    sA = max(1, int(m*0.20)); sB = max(1, int(m*0.30))
-    sC = max(1, int(m*0.30)); sD = max(1, m - sA - sB - sC)
-
-    return f"""You are an experienced senior examiner writing an official board examination paper.
-Follow every rule below exactly — no deviation, no extra commentary.
-
-OUTPUT RULES:
-1. Begin immediately with the exam header block (Subject/Class/Board/Marks/Time). No preamble.
-2. Use LaTeX $...$ for ALL math/science expressions.
-3. End every question line with its mark in brackets: [1 Mark], [3 Marks], [5 Marks].
-4. MCQ options MUST be on separate lines, each starting: (a), (b), (c), (d)
-5. Section headers exactly as: SECTION A - Objective Questions ({sA} Marks)
-6. For diagram spots write on its own line: [DIAGRAM: what to draw]
-7. For data tables use Markdown pipes: | Col1 | Col2 |
-8. After the paper write ANSWER KEY on its own line, then the full answer key.
-9. No markdown heading markers (##, ###). No bullet dashes outside MCQ options.
-10. Write natural, well-worded, board-appropriate questions. No trivial fillers.
+    if "mat" in subj_l or "mental" in subj_l or "reasoning" in subj_l or "ability" in subj_l:
+        # MAT paper: 100 questions, 100 marks, 2 hours
+        n_q = min(100, m)
+        return f"""You are a senior examiner creating an official NTSE Stage 1 MAT (Mental Ability Test) practice paper.
+Exam: {exam_full} — MAT (Mental Ability Test)   Class: {cls_str}   Questions: {n_q}   Marks: {n_q}   Time: 2 Hours
+Difficulty: {difficulty}
 {extra}
-EXAM DETAILS:
-  Subject   : {subject or "Not specified"}
-  Class     : {class_name or "Not specified"}
-  Board     : {board}
-  Chapter   : {chapter or "Full Syllabus"}
-  Difficulty: {difficulty}
-  Marks     : {marks}
+MAT PATTERN:
+- All questions are MCQ with 4 options (A) (B) (C) (D).
+- Each carries 1 mark. {marking}
+- Question types to include: Verbal Analogy, Non-Verbal Analogy, Number Series, Letter Series, Mixed Series, Coding–Decoding, Blood Relations, Direction & Distance, Ranking & Ordering, Clock & Calendar, Venn Diagrams, Mirror Image, Paper Folding, Embedded Figures, Figure Matrix, Mathematical Reasoning.
+- Distribute approximately: Analogy (15Q), Series (15Q), Coding/Decoding (10Q), Blood Relations (8Q), Direction/Distance (8Q), Ranking/Ordering (8Q), Clock/Calendar (5Q), Figure-based (15Q), Mathematical Reasoning (16Q).
 
-STRUCTURE TO FOLLOW:
-
-Subject: {subject}   Class: {class_name}   Board: {board}
-Total Marks: {marks}   Time Allowed: 3 Hours
-
-GENERAL INSTRUCTIONS
-1. All questions are compulsory.
-2. The paper consists of four sections A, B, C and D.
-3. Marks for each question are shown in brackets.
-4. Use of calculators is not permitted.
-5. Draw neat, labelled diagrams wherever required.
-6. Write clearly and in order.
-
-SECTION A - Objective Questions ({sA} Marks)
-[MCQ, fill-in-blank, true/false — 1 mark each. Minimum {sA} questions.
- MCQ must have options on 4 separate lines: (a) (b) (c) (d)]
-
-SECTION B - Short Answer ({sB} Marks)
-[2–3 marks each. Minimum {sB//3} questions. Include sub-parts where appropriate.]
-
-SECTION C - Long Answer ({sC} Marks)
-[5 marks each with labelled sub-parts (a)(b)(c). Minimum {sC//5} questions.
- Include proofs/derivations/diagrams as appropriate.]
-
-SECTION D - Case Study ({sD} Marks)
-[One real-world scenario, then {sD//5} questions totalling {sD} marks.]
-
-ANSWER KEY
-Section A: answer for each question
-Section B: 3–4 key points per answer
-Section C: step-by-step solution with all working shown
-Section D: full explanation with units and reasoning
+ABSOLUTE RULES:
+R1. Every question must be fully formed — no placeholders.
+R2. MCQ options: (A) ...  (B) ...  (C) ...  (D) ... on ONE line after the question.
+R3. Mark each question [1 Mark].
+R4. No hints or labels revealing the question type embedded in the question.
+R5. Difficulty: {difficulty}. NTSE questions are moderately challenging.
 {math_note}
-Begin the paper now."""
+
+Exam: {exam_full} — Mental Ability Test
+Class: {cls_str}                                                   Total Marks: {n_q}
+                                                                    Time: 2 Hours
+
+INSTRUCTIONS
+1. This paper contains {n_q} Multiple Choice Questions.
+2. Each question carries 1 mark. {marking}
+3. Choose the correct option and darken the appropriate circle on the OMR sheet.
+
+1. [MAT question] [1 Mark]
+   (A) ...  (B) ...  (C) ...  (D) ...
+""" + "".join(
+    f"{i}. [MAT question] [1 Mark]\n   (A) ...  (B) ...  (C) ...  (D) ...\n"
+    for i in range(2, n_q + 1)
+) + f"""
+ANSWER KEY
+""" + "".join(f"{i}. (X) — [explanation]\n" for i in range(1, n_q + 1)) + f"""
+Replace ALL placeholders with real, well-formed NTSE MAT questions. Difficulty: {difficulty}. Begin:"""
+
+    else:
+        # SAT paper: 100Q — 40 Science + 40 Social Science + 20 Maths
+        n_sci = 40; n_soc = 40; n_mat = 20
+        total_q = n_sci + n_soc + n_mat
+        topic = chap if chap and chap != "as per syllabus" else "Class 10 syllabus (all topics)"
+
+        return f"""You are a senior examiner creating an official NTSE Stage 1 SAT (Scholastic Aptitude Test) practice paper.
+Exam: {exam_full} — SAT (Scholastic Aptitude Test)   Class: {cls_str}   Questions: {total_q}   Marks: {total_q}   Time: 2 Hours
+Topic focus: {topic}   Difficulty: {difficulty}
+{extra}
+SAT PATTERN:
+- Science: {n_sci} questions (Physics ~13, Chemistry ~13, Biology ~14)
+- Social Science: {n_soc} questions (History ~13, Geography ~13, Civics ~7, Economics ~7)
+- Mathematics: {n_mat} questions
+- All MCQ, 1 mark each, 4 options. {marking}
+- Questions are numbered sequentially 1–{total_q} across all subjects.
+
+ABSOLUTE RULES:
+R1. Every question is complete, curriculum-accurate, original.
+R2. Options: (A) ...  (B) ...  (C) ...  (D) ... on one line after question.
+R3. Mark each [1 Mark]. No category labels within question text.
+R4. Wrong options must be plausible (not obviously wrong).
+R5. Language must match NCERT/State Board textbook terminology.
+{math_note}
+
+Exam: {exam_full} — Scholastic Aptitude Test
+Class: {cls_str}   Topic: {topic}                                  Total Marks: {total_q}
+                                                                    Time: 2 Hours
+
+INSTRUCTIONS
+1. This paper contains {total_q} questions — Science ({n_sci}), Social Science ({n_soc}), Mathematics ({n_mat}).
+2. Each question carries 1 mark. {marking}
+
+SCIENCE  (Questions 1–{n_sci})
+
+1. [Science question — Physics/Chemistry/Biology] [1 Mark]
+   (A) ...  (B) ...  (C) ...  (D) ...
+""" + "".join(
+    f"{i}. [Science question] [1 Mark]\n   (A) ...  (B) ...  (C) ...  (D) ...\n"
+    for i in range(2, n_sci + 1)
+) + f"""
+SOCIAL SCIENCE  (Questions {n_sci+1}–{n_sci+n_soc})
+
+{n_sci+1}. [Social Science question] [1 Mark]
+   (A) ...  (B) ...  (C) ...  (D) ...
+""" + "".join(
+    f"{n_sci+i}. [Social Science question] [1 Mark]\n   (A) ...  (B) ...  (C) ...  (D) ...\n"
+    for i in range(2, n_soc + 1)
+) + f"""
+MATHEMATICS  (Questions {n_sci+n_soc+1}–{total_q})
+
+{n_sci+n_soc+1}. [Maths question] [1 Mark]
+   (A) ...  (B) ...  (C) ...  (D) ...
+""" + "".join(
+    f"{n_sci+n_soc+i}. [Maths question] [1 Mark]\n   (A) ...  (B) ...  (C) ...  (D) ...\n"
+    for i in range(2, n_mat + 1)
+) + f"""
+ANSWER KEY
+""" + "".join(f"{i}. (X) — [explanation]\n" for i in range(1, total_q + 1)) + f"""
+Replace ALL placeholders with real NTSE-level questions. Difficulty: {difficulty}. Topic: {topic}. Begin:"""
+
+
+def _prompt_nso(comp, exam_full, subject, chap, cls_str, m, difficulty, extra, math_note):
+    patt = comp.get("paper_structure", {}).get("Classes_6_10", {})
+    secs = patt.get("sections", [])
+    total_q = patt.get("total_questions", 50)
+    total_m = patt.get("total_marks", 60)
+    dur = patt.get("duration", "1 Hour")
+    marking = comp.get("marking", "No negative marking.")
+
+    # Section details
+    s1_q = 10; s1_m = 10   # Logical Reasoning, 1 mark each
+    s2_q = 35; s2_m = 35   # Science, 1 mark each
+    s3_q = 5;  s3_m = 15   # Achiever's, 3 marks each
+
+    topic = chap if chap and chap != "as per syllabus" else f"Class {cls_str} Science syllabus"
+
+    return f"""You are a senior examiner creating an official NSO (National Science Olympiad) practice paper.
+Exam: {exam_full}   Class: {cls_str}   Total Questions: {total_q}   Total Marks: {total_m}   Time: {dur}
+Topic: {topic}   Difficulty: {difficulty}
+{extra}
+NSO PATTERN (SOF):
+- Section 1 — Logical Reasoning: {s1_q} questions × 1 mark = {s1_m} marks
+- Section 2 — Science: {s2_q} questions × 1 mark = {s2_m} marks (from Class {cls_str} science syllabus)
+- Section 3 — Achiever's Section: {s3_q} questions × 3 marks = {s3_m} marks (HOT — higher order thinking)
+- All MCQ, 4 options, ONE correct answer. {marking}
+
+ABSOLUTE RULES:
+R1. Section 1: pure logical reasoning questions (analogy, series, coding, mirror image, figure, etc.).
+R2. Section 2: science questions exactly from Class {cls_str} syllabus, topic: {topic}.
+R3. Section 3: challenging application questions from the same syllabus — multi-concept or data-based.
+R4. Wrong options must be plausible. Questions must be complete and original.
+R5. Options format: (A) ...  (B) ...  (C) ...  (D) ... on one line after question.
+R6. Mark each question: Section 1 and 2 = [1 Mark], Section 3 = [3 Marks].
+{math_note}
+
+Exam: {exam_full}
+Class: {cls_str}   Topic: {topic}   Total Marks: {total_m}   Time: {dur}
+
+INSTRUCTIONS
+1. Total {total_q} questions: Section 1 ({s1_q}Q × 1M), Section 2 ({s2_q}Q × 1M), Section 3 ({s3_q}Q × 3M).
+2. All questions are MCQ. 4 options. {marking}
+
+Section 1 — Logical Reasoning  ({s1_m} Marks)
+
+1. [Logical Reasoning question] [1 Mark]
+   (A) ...  (B) ...  (C) ...  (D) ...
+""" + "".join(
+    f"{i}. [Logical Reasoning question] [1 Mark]\n   (A) ...  (B) ...  (C) ...  (D) ...\n"
+    for i in range(2, s1_q + 1)
+) + f"""
+Section 2 — Science  ({s2_m} Marks)
+
+{s1_q+1}. [Science question from {topic}] [1 Mark]
+   (A) ...  (B) ...  (C) ...  (D) ...
+""" + "".join(
+    f"{s1_q+i}. [Science question] [1 Mark]\n   (A) ...  (B) ...  (C) ...  (D) ...\n"
+    for i in range(2, s2_q + 1)
+) + f"""
+Section 3 — Achiever's Section  ({s3_m} Marks)
+(Higher Order Thinking — 3 marks each)
+
+{s1_q+s2_q+1}. [Challenging HOT science question] [3 Marks]
+   (A) ...  (B) ...  (C) ...  (D) ...
+""" + "".join(
+    f"{s1_q+s2_q+i}. [HOT question] [3 Marks]\n   (A) ...  (B) ...  (C) ...  (D) ...\n"
+    for i in range(2, s3_q + 1)
+) + f"""
+ANSWER KEY
+""" + "".join(f"{i}. (X) — [explanation]\n" for i in range(1, total_q + 1)) + f"""
+Replace ALL placeholders with real NSO-quality questions. Class {cls_str}. Topic: {topic}. Difficulty: {difficulty}. Begin:"""
+
+
+def _prompt_imo(comp, exam_full, subject, chap, cls_str, m, difficulty, extra, math_note):
+    patt = comp.get("paper_structure", {}).get("Classes_6_10", {})
+    total_q = patt.get("total_questions", 50)
+    total_m = patt.get("total_marks", 60)
+    dur = patt.get("duration", "1 Hour")
+    marking = comp.get("marking", "No negative marking.")
+
+    s1_q = 10; s1_m = 10    # Logical Reasoning
+    s2_q = 25; s2_m = 25    # Mathematical Reasoning
+    s3_q = 10; s3_m = 10    # Everyday Mathematics
+    s4_q = 5;  s4_m = 15    # Achiever's Section, 3 marks each
+
+    topic = chap if chap and chap != "as per syllabus" else f"Class {cls_str} Mathematics"
+
+    return f"""You are a senior examiner creating an official IMO (International Mathematics Olympiad, SOF) practice paper.
+Exam: {exam_full}   Class: {cls_str}   Total Marks: {total_m}   Time: {dur}
+Topic: {topic}   Difficulty: {difficulty}
+{extra}
+IMO PATTERN (SOF):
+- Section 1 — Logical Reasoning: {s1_q} questions × 1 mark = {s1_m} marks
+- Section 2 — Mathematical Reasoning: {s2_q} questions × 1 mark = {s2_m} marks (syllabus-based)
+- Section 3 — Everyday Mathematics: {s3_q} questions × 1 mark = {s3_m} marks (real-life application)
+- Section 4 — Achiever's Section: {s4_q} questions × 3 marks = {s4_m} marks (high-difficulty)
+- All MCQ, 4 options, ONE correct. {marking}
+
+ABSOLUTE RULES:
+R1. Section 1: logical/reasoning questions using numbers, letters, figures.
+R2. Section 2: maths questions from Class {cls_str} curriculum, topic {topic}.
+R3. Section 3: word problems applying maths to real-world situations.
+R4. Section 4: tough multi-step maths problems requiring deep problem-solving.
+R5. All wrong options must arise from plausible errors.
+R6. Options: (A) ...  (B) ...  (C) ...  (D) ... on one line after question.
+{math_note}
+
+Exam: {exam_full}
+Class: {cls_str}   Topic: {topic}   Total Marks: {total_m}   Time: {dur}
+
+INSTRUCTIONS
+1. Total {total_q} questions across 4 sections. {marking}
+2. Section 1 & 2 & 3: 1 mark each. Section 4: 3 marks each.
+
+Section 1 — Logical Reasoning  ({s1_m} Marks)
+
+1. [Logical Reasoning question using numbers/letters/figures] [1 Mark]
+   (A) ...  (B) ...  (C) ...  (D) ...
+""" + "".join(
+    f"{i}. [Logical Reasoning question] [1 Mark]\n   (A) ...  (B) ...  (C) ...  (D) ...\n"
+    for i in range(2, s1_q + 1)
+) + f"""
+Section 2 — Mathematical Reasoning  ({s2_m} Marks)
+
+{s1_q+1}. [Maths question from {topic}] [1 Mark]
+   (A) ...  (B) ...  (C) ...  (D) ...
+""" + "".join(
+    f"{s1_q+i}. [Maths question] [1 Mark]\n   (A) ...  (B) ...  (C) ...  (D) ...\n"
+    for i in range(2, s2_q + 1)
+) + f"""
+Section 3 — Everyday Mathematics  ({s3_m} Marks)
+
+{s1_q+s2_q+1}. [Real-life application word problem] [1 Mark]
+   (A) ...  (B) ...  (C) ...  (D) ...
+""" + "".join(
+    f"{s1_q+s2_q+i}. [Word problem] [1 Mark]\n   (A) ...  (B) ...  (C) ...  (D) ...\n"
+    for i in range(2, s3_q + 1)
+) + f"""
+Section 4 — Achiever's Section  ({s4_m} Marks)
+(High difficulty — 3 marks each)
+
+{s1_q+s2_q+s3_q+1}. [Challenging multi-step maths question] [3 Marks]
+   (A) ...  (B) ...  (C) ...  (D) ...
+""" + "".join(
+    f"{s1_q+s2_q+s3_q+i}. [HOT maths question] [3 Marks]\n   (A) ...  (B) ...  (C) ...  (D) ...\n"
+    for i in range(2, s4_q + 1)
+) + f"""
+ANSWER KEY
+""" + "".join(f"{i}. (X) — [explanation]\n" for i in range(1, total_q + 1)) + f"""
+Replace ALL placeholders with real IMO-quality questions. Class {cls_str}. Topic: {topic}. Difficulty: {difficulty}. Begin:"""
+
+
+def _prompt_ijso(comp, exam_full, subject, chap, cls_str, m, difficulty, extra, math_note):
+    s1 = comp.get("national_selection_stages", {}).get("Stage_1_NSEJS", {})
+    n_q = s1.get("questions", 80)
+    dur = "2 Hours"
+    marking = "+3 correct, −1 wrong"
+
+    # Physics 27, Chemistry 27, Biology 26
+    n_phy = 27; n_che = 27; n_bio = 26
+
+    topic = chap if chap and chap != "as per syllabus" else "Integrated Science (Class 9–10 level)"
+
+    return f"""You are a senior examiner creating an official IJSO / NSEJS Stage 1 practice paper.
+Exam: {exam_full} (NSEJS Stage 1 style)   Class: {cls_str}   Questions: {n_q}   Time: {dur}
+Marks: +3 correct, −1 wrong   Difficulty: {difficulty}   Topic: {topic}
+{extra}
+IJSO/NSEJS PATTERN:
+- {n_q} MCQ questions: Physics ({n_phy}), Chemistry ({n_che}), Biology ({n_bio})
+- 4 options per question, ONE correct answer.
+- Marking: {marking}. Total maximum = {n_q*3} marks if all correct.
+- Level: Class 10 NCERT standard with deep application and multi-concept questions.
+- Questions are numbered sequentially 1–{n_q}.
+
+ABSOLUTE RULES:
+R1. Physics, Chemistry, Biology questions must be accurately labelled with section headers.
+R2. Every question is complete, original, curriculum-accurate at Class 9–10 NCERT level.
+R3. Questions must test understanding and application, not just recall.
+R4. Wrong options must arise from plausible misconceptions or partial understanding.
+R5. Options: (A) ...  (B) ...  (C) ...  (D) ... on one line after question.
+R6. Mark each: [+3/−1]
+R7. Diagrams: write [DIAGRAM: description] before the question if diagram-based.
+{math_note}
+
+Exam: {exam_full} (NSEJS Stage 1 Practice)
+Class: {cls_str}   Topic: {topic}
+Total Questions: {n_q}   Marking: +3 correct / −1 wrong   Time: {dur}
+
+INSTRUCTIONS
+1. Each question has ONE correct answer. Marking: +3 correct, −1 wrong, 0 unattempted.
+2. Questions cover Physics, Chemistry and Biology equally.
+
+PHYSICS  (Questions 1–{n_phy})
+
+1. [Physics question at Class 9–10 level, application-based] [+3/−1]
+   (A) ...  (B) ...  (C) ...  (D) ...
+""" + "".join(
+    f"{i}. [Physics question] [+3/−1]\n   (A) ...  (B) ...  (C) ...  (D) ...\n"
+    for i in range(2, n_phy + 1)
+) + f"""
+CHEMISTRY  (Questions {n_phy+1}–{n_phy+n_che})
+
+{n_phy+1}. [Chemistry question] [+3/−1]
+   (A) ...  (B) ...  (C) ...  (D) ...
+""" + "".join(
+    f"{n_phy+i}. [Chemistry question] [+3/−1]\n   (A) ...  (B) ...  (C) ...  (D) ...\n"
+    for i in range(2, n_che + 1)
+) + f"""
+BIOLOGY  (Questions {n_phy+n_che+1}–{n_q})
+
+{n_phy+n_che+1}. [Biology question] [+3/−1]
+   (A) ...  (B) ...  (C) ...  (D) ...
+""" + "".join(
+    f"{n_phy+n_che+i}. [Biology question] [+3/−1]\n   (A) ...  (B) ...  (C) ...  (D) ...\n"
+    for i in range(2, n_bio + 1)
+) + f"""
+ANSWER KEY
+""" + "".join(f"{i}. (X) — [explanation: 2 sentences why correct + why main distractor is wrong]\n" for i in range(1, n_q + 1)) + f"""
+Replace ALL placeholders with real IJSO/NSEJS-quality questions. Topic: {topic}. Difficulty: {difficulty}. Begin:"""
+
+
+def _prompt_generic_comp(exam, subject, chap, cls_str, m, difficulty, extra, math_note):
+    n_q = m // 4
+    return f"""Create a {exam} style practice paper.
+Subject: {subject}   Class: {cls_str}   Chapter: {chap}   Marks: {m}   Difficulty: {difficulty}
+{extra}
+All MCQ, 4 options, 1 mark each. Show ANSWER KEY at the end.
+{math_note}
+1. [question] [1 Mark]
+   (A) ...  (B) ...  (C) ...  (D) ...
+""" + "".join(
+    f"{i}. [question] [1 Mark]\n   (A) ...  (B) ...  (C) ...  (D) ...\n"
+    for i in range(2, n_q + 1)
+) + "ANSWER KEY\n" + "".join(f"{i}. (X)\n" for i in range(1, n_q + 1)) + "\nBegin:"
 
 
 # ═══════════════════════════════════════════════════════════════════════
@@ -1021,11 +1639,8 @@ def split_key(text):
 
 # ═══════════════════════════════════════════════════════════════════════
 # AI DIAGRAM GENERATION (SVG via Gemini)
-# Returns an SVG string for a given diagram description
 # ═══════════════════════════════════════════════════════════════════════
-
 def generate_diagram_svg(description: str):
-    """Ask Gemini to produce a clean SVG diagram for the given description."""
     prompt = f"""You are an expert scientific illustrator for school textbooks. Create a clean, accurate SVG diagram for:
 
 "{description}"
@@ -1038,12 +1653,11 @@ STRICT RULES:
 5. stroke-width="2" for main lines, stroke-width="1" for detail lines.
 6. Add clear text labels: font-size="12" font-family="Arial,sans-serif" fill="#111111"
 7. Geometrically accurate. Include all key parts a student needs.
-8. NO external resources, NO JavaScript, NO CSS, NO defs/filters — only basic SVG elements: line, circle, rect, polygon, polyline, path, text, g.
+8. NO external resources, NO JavaScript, NO CSS, NO defs/filters — only: line, circle, rect, polygon, polyline, path, text, g.
 9. Every text element must have explicit x, y, font-size, font-family, fill attributes.
-10. Keep it clean and suitable for a printed exam paper (black on white).
+10. Clean and suitable for a printed exam paper (black on white).
 
 Output only the SVG:"""
-
     text, err = call_gemini(prompt)
     if not text:
         return None
@@ -1052,10 +1666,7 @@ Output only the SVG:"""
 
 
 # ── Pure-Python SVG → ReportLab renderer ──────────────────────────────
-# No Cairo, no pycairo, no svglib — uses xml.etree + ReportLab graphics only.
-
 def _svg_color(val, default=(0, 0, 0)):
-    """Parse a colour value to (r, g, b) floats 0–1."""
     if not val or val in ('none', 'transparent'):
         return None
     val = val.strip()
@@ -1076,43 +1687,26 @@ def _svg_color(val, default=(0, 0, 0)):
             h = h[0]*2 + h[1]*2 + h[2]*2
         if len(h) == 6:
             try:
-                r = int(h[0:2], 16)/255
-                g = int(h[2:4], 16)/255
-                b = int(h[4:6], 16)/255
-                return (r, g, b)
+                return (int(h[0:2],16)/255, int(h[2:4],16)/255, int(h[4:6],16)/255)
             except Exception:
                 pass
     return default
 
 
 def _parse_points(pts_str):
-    """Parse SVG points attribute into list of (x,y) tuples."""
     nums = re.findall(r'[-+]?\d*\.?\d+', pts_str)
-    pairs = []
-    for i in range(0, len(nums)-1, 2):
-        pairs.append((float(nums[i]), float(nums[i+1])))
-    return pairs
+    return [(float(nums[i]), float(nums[i+1])) for i in range(0, len(nums)-1, 2)]
 
 
 def svg_to_rl_image(svg_str: str, width_pt: float = 360):
-    """
-    Convert a simple SVG string to a ReportLab Drawing using only stdlib + reportlab.
-    Handles: line, circle, rect, polygon, polyline, path (M/L/Z only), text, g.
-    Falls back to None if parsing fails.
-    """
-    from reportlab.graphics.shapes import (
-        Drawing, Line, Circle, Rect, Polygon, PolyLine, String, Group
-    )
+    from reportlab.graphics.shapes import Drawing, Line, Circle, Rect, Polygon, PolyLine, String, Group
     from reportlab.lib.colors import Color
 
     try:
-        # Strip namespace prefixes that might sneak in
-        clean = re.sub(r'<(\/?)\w+:', r'<\1', svg_str)
-        clean = re.sub(r'\s\w+:\w+="[^"]*"', '', clean)
-
+        clean = re.sub(r'<(\/?)\\w+:', r'<\1', svg_str)
+        clean = re.sub(r'\\s\\w+:\\w+="[^"]*"', '', clean)
         root = ET.fromstring(clean)
 
-        # Determine SVG viewport
         vb = root.get('viewBox', '0 0 400 260')
         vb_parts = [float(x) for x in re.findall(r'[-\d.]+', vb)]
         svg_w = vb_parts[2] if len(vb_parts) >= 3 else float(root.get('width', 400))
@@ -1123,7 +1717,7 @@ def svg_to_rl_image(svg_str: str, width_pt: float = 360):
         drawing = Drawing(width_pt, height_pt)
 
         def tx(x): return float(x) * scale_x
-        def ty(y): return height_pt - float(y) * scale_x  # flip Y axis
+        def ty(y): return height_pt - float(y) * scale_x
 
         def get_attr(el, *names, default='0'):
             for n in names:
@@ -1138,7 +1732,7 @@ def svg_to_rl_image(svg_str: str, width_pt: float = 360):
                 return None
             return Color(rgb[0], rgb[1], rgb[2], alpha)
 
-        def parse_stroke_width(el):
+        def parse_sw(el):
             sw = el.get('stroke-width', el.get('strokeWidth', '1.5'))
             try:
                 return max(0.5, float(sw) * scale_x)
@@ -1148,107 +1742,80 @@ def svg_to_rl_image(svg_str: str, width_pt: float = 360):
         NS = '{http://www.w3.org/2000/svg}'
 
         def render_element(el, group):
-            tag = el.tag.replace(NS, '').lower()
-            stroke_val = el.get('stroke', '#111111')
-            fill_val   = el.get('fill', 'none')
-            sw         = parse_stroke_width(el)
-            stroke_c   = make_color(stroke_val)
-            fill_c     = make_color(fill_val)
+            tag      = el.tag.replace(NS, '').lower()
+            stroke_c = make_color(el.get('stroke', '#111111'))
+            fill_c   = make_color(el.get('fill', 'none'))
+            sw       = parse_sw(el)
 
             if tag == 'line':
-                x1, y1 = tx(get_attr(el,'x1')), ty(get_attr(el,'y1'))
-                x2, y2 = tx(get_attr(el,'x2')), ty(get_attr(el,'y2'))
-                shape = Line(x1, y1, x2, y2)
+                shape = Line(tx(get_attr(el,'x1')), ty(get_attr(el,'y1')),
+                             tx(get_attr(el,'x2')), ty(get_attr(el,'y2')))
                 shape.strokeColor = stroke_c or Color(0,0,0)
                 shape.strokeWidth = sw
                 group.add(shape)
-
             elif tag == 'circle':
-                cx = tx(get_attr(el,'cx','0'))
-                cy = ty(get_attr(el,'cy','0'))
-                r  = float(get_attr(el,'r','5')) * scale_x
-                shape = Circle(cx, cy, r)
+                shape = Circle(tx(get_attr(el,'cx','0')), ty(get_attr(el,'cy','0')),
+                               float(get_attr(el,'r','5')) * scale_x)
                 shape.fillColor   = fill_c or Color(1,1,1)
                 shape.strokeColor = stroke_c or Color(0,0,0)
                 shape.strokeWidth = sw
                 group.add(shape)
-
             elif tag == 'rect':
-                x  = tx(get_attr(el,'x','0'))
-                y  = ty(float(get_attr(el,'y','0')) + float(get_attr(el,'height','10')))
-                w  = float(get_attr(el,'width','10')) * scale_x
-                h  = float(get_attr(el,'height','10')) * scale_x
+                x = tx(get_attr(el,'x','0'))
+                y = ty(float(get_attr(el,'y','0')) + float(get_attr(el,'height','10')))
+                w = float(get_attr(el,'width','10'))  * scale_x
+                h = float(get_attr(el,'height','10')) * scale_x
                 shape = Rect(x, y, w, h)
                 shape.fillColor   = fill_c or Color(1,1,1)
                 shape.strokeColor = stroke_c or Color(0,0,0)
                 shape.strokeWidth = sw
                 group.add(shape)
-
             elif tag in ('polygon', 'polyline'):
-                pts_str = el.get('points', '')
-                pairs   = _parse_points(pts_str)
+                pairs = _parse_points(el.get('points', ''))
                 if len(pairs) >= 2:
-                    pts_flat = []
+                    pts = []
                     for (px, py) in pairs:
-                        pts_flat += [tx(px), ty(py)]
-                    if tag == 'polygon':
-                        shape = Polygon(pts_flat)
-                        shape.fillColor   = fill_c or Color(1,1,1)
-                    else:
-                        shape = PolyLine(pts_flat)
-                        shape.fillColor = None
+                        pts += [tx(px), ty(py)]
+                    shape = Polygon(pts) if tag == 'polygon' else PolyLine(pts)
+                    shape.fillColor   = fill_c or (Color(1,1,1) if tag == 'polygon' else None)
                     shape.strokeColor = stroke_c or Color(0,0,0)
                     shape.strokeWidth = sw
                     group.add(shape)
-
             elif tag == 'path':
                 d = el.get('d', '')
-                # Parse M, L, Z commands only
                 tokens = re.findall(r'[MLZmlz]|[-+]?\d*\.?\d+', d)
-                pts_flat = []
-                cmd = 'M'
-                cur_x, cur_y = 0.0, 0.0
+                pts, cmd, cur_x, cur_y = [], 'M', 0.0, 0.0
                 i2 = 0
                 while i2 < len(tokens):
                     t = tokens[i2]
-                    if t in 'MLml':
-                        cmd = t; i2 += 1; continue
+                    if t in 'MLml': cmd = t; i2 += 1; continue
                     if t in 'Zz':
-                        if len(pts_flat) >= 4:
-                            pts_flat += [pts_flat[0], pts_flat[1]]
+                        if len(pts) >= 4: pts += [pts[0], pts[1]]
                         i2 += 1; continue
                     try:
-                        vx = float(t); vy = float(tokens[i2+1])
-                        i2 += 2
+                        vx = float(t); vy = float(tokens[i2+1]); i2 += 2
                         if cmd == 'm': vx += cur_x; vy += cur_y
                         if cmd == 'l': vx += cur_x; vy += cur_y
                         cur_x, cur_y = vx, vy
-                        pts_flat += [tx(vx), ty(vy)]
+                        pts += [tx(vx), ty(vy)]
                     except Exception:
                         i2 += 1
-                if len(pts_flat) >= 4:
-                    if fill_c:
-                        shape = Polygon(pts_flat)
-                        shape.fillColor   = fill_c
-                        shape.strokeColor = stroke_c or Color(0,0,0)
-                        shape.strokeWidth = sw
-                    else:
-                        shape = PolyLine(pts_flat)
-                        shape.strokeColor = stroke_c or Color(0,0,0)
-                        shape.strokeWidth = sw
-                        shape.fillColor   = None
+                if len(pts) >= 4:
+                    shape = Polygon(pts) if fill_c else PolyLine(pts)
+                    if fill_c: shape.fillColor = fill_c
+                    shape.strokeColor = stroke_c or Color(0,0,0)
+                    shape.strokeWidth = sw
+                    if not fill_c: shape.fillColor = None
                     group.add(shape)
-
             elif tag == 'text':
-                x  = tx(float(get_attr(el,'x','0')))
-                y  = ty(float(get_attr(el,'y','0')))
-                fs_raw = el.get('font-size', el.get('fontSize', '12'))
+                x = tx(float(get_attr(el,'x','0')))
+                y = ty(float(get_attr(el,'y','0')))
                 try:
+                    fs_raw = el.get('font-size', el.get('fontSize', '12'))
                     fs = max(6, float(re.findall(r'[\d.]+', fs_raw)[0]) * scale_x)
                 except Exception:
                     fs = 10
                 txt = (el.text or '').strip()
-                # Collect tspan children
                 for tspan in el:
                     if tspan.tag.replace(NS,'').lower() == 'tspan':
                         txt += (tspan.text or '')
@@ -1260,7 +1827,6 @@ def svg_to_rl_image(svg_str: str, width_pt: float = 360):
                     ff = el.get('font-family', 'Helvetica')
                     s.fontName  = 'Helvetica-Bold' if 'bold' in ff.lower() else 'Helvetica'
                     group.add(s)
-
             elif tag == 'g':
                 sub = Group()
                 for child in el:
@@ -1272,11 +1838,13 @@ def svg_to_rl_image(svg_str: str, width_pt: float = 360):
             render_element(child, top_group)
         drawing.add(top_group)
         return drawing
-
     except Exception:
         return None
 
 
+# ═══════════════════════════════════════════════════════════════════════
+# FLASK ROUTES
+# ═══════════════════════════════════════════════════════════════════════
 @app.route("/")
 def index():
     return render_template("index.html")
@@ -1301,12 +1869,12 @@ def generate():
         elif exam_type == "competitive" and competitive_exam:
             board = competitive_exam
         else:
-            board = (data.get("board") or "Standard Curriculum").strip()
+            board = (data.get("board") or "AP State Board").strip()
 
         if not subject and (data.get("scope") == "all" or data.get("all_chapters")):
             subject = "Mixed Subjects"
 
-        use_fallback = str(data.get("use_fallback","false")).lower() in ("true","1","yes")
+        use_fallback = str(data.get("use_fallback", "false")).lower() in ("true", "1", "yes")
         prompt = data.get("prompt") or build_prompt(
             class_name, subject, chapter, board, exam_type, difficulty, marks, suggestions)
 
@@ -1349,7 +1917,6 @@ def download_pdf():
         if not paper_text.strip():
             return jsonify({"success": False, "error": "No paper text provided"}), 400
 
-        # ── Generate AI diagrams for every [DIAGRAM: ...] tag ──────────
         diagrams = {}
         if GEMINI_KEY and GENAI_AVAILABLE:
             diag_descs = re.findall(
@@ -1389,7 +1956,7 @@ def health():
 @app.route("/chapters")
 def chapters():
     try:
-        data_path = Path(os.path.dirname(os.path.abspath(__file__))) / "data" / "curriculum.json"
+        data_path = _DATA_DIR / "curriculum.json"
         if not data_path.exists():
             return jsonify({"success": False, "error": "curriculum.json not found"})
         with open(data_path, encoding="utf-8") as f:

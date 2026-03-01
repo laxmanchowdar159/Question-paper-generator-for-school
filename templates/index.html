@@ -31,8 +31,8 @@
     <span class="nav-badge">AI</span>
   </div>
   <div class="nav-center">
-    <span class="nav-pill">🏛️ 7 Boards</span>
-    <span class="nav-pill">🏆 Olympiads</span>
+    <span class="nav-pill">🏛️ AP &amp; TS Boards</span>
+    <span class="nav-pill">🏆 NTSE · NSO · IMO · IJSO</span>
     <span class="nav-pill">📄 PDF Export</span>
   </div>
   <div class="nav-right">
@@ -51,10 +51,10 @@
     <div class="hero-card glass-card">
       <div class="hero-eyebrow"><span class="pulse-dot"></span>Gemini AI · Live</div>
       <h1 class="hero-title">Craft Perfect<br><em>Exam Papers</em></h1>
-      <p class="hero-sub">Board-aligned, syllabus-accurate question papers with AI-generated diagrams — in under 60 seconds.</p>
+      <p class="hero-sub">AP &amp; TS board-accurate question papers and competitive exam practice sets — with AI-generated diagrams, in under 60 seconds.</p>
       <div class="hero-stats">
-        <div class="hero-stat"><span class="hero-stat-num">7</span><span class="hero-stat-lbl">Boards</span></div>
-        <div class="hero-stat"><span class="hero-stat-num">AI</span><span class="hero-stat-lbl">Diagrams</span></div>
+        <div class="hero-stat"><span class="hero-stat-num">AP·TS</span><span class="hero-stat-lbl">State Boards</span></div>
+        <div class="hero-stat"><span class="hero-stat-num">4</span><span class="hero-stat-lbl">Olympiads</span></div>
         <div class="hero-stat"><span class="hero-stat-num">PDF</span><span class="hero-stat-lbl">Export</span></div>
       </div>
     </div>
@@ -109,13 +109,13 @@
         <button class="type-tile" id="tile-state" onclick="selectType('state-board')">
           <div class="tile-icon">🏛️</div>
           <div class="tile-name">State Board</div>
-          <div class="tile-sub">AP · TS · MH · KA · TN · KL · UP</div>
+          <div class="tile-sub">Andhra Pradesh · Telangana</div>
           <div class="tile-check"><svg width="10" height="10" viewBox="0 0 12 12"><polyline points="2,6 5,9 10,3" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/></svg></div>
         </button>
         <button class="type-tile" id="tile-comp" onclick="selectType('competitive')">
           <div class="tile-icon">🏆</div>
           <div class="tile-name">Competitive</div>
-          <div class="tile-sub">NTSE · KVPY · IMO · NSO · IJSO</div>
+          <div class="tile-sub">NTSE · NSO · IMO · IJSO</div>
           <div class="tile-check"><svg width="10" height="10" viewBox="0 0 12 12"><polyline points="2,6 5,9 10,3" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/></svg></div>
         </button>
       </div>
@@ -137,11 +137,6 @@
             <option value="">Choose your state…</option>
             <option value="Andhra Pradesh">Andhra Pradesh (BSEAP)</option>
             <option value="Telangana">Telangana (BSETS)</option>
-            <option value="Maharashtra">Maharashtra (SSC)</option>
-            <option value="Karnataka">Karnataka (KSEEB)</option>
-            <option value="Tamil Nadu">Tamil Nadu (TN Board)</option>
-            <option value="Kerala">Kerala (SCERT)</option>
-            <option value="Uttar Pradesh">Uttar Pradesh (UPMSP)</option>
           </select>
           <svg class="chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
         </div>
@@ -157,14 +152,17 @@
         <div class="select-shell">
           <select id="competitiveExam" name="competitiveExam" class="glass-select">
             <option value="">Choose exam…</option>
-            <option value="NTSE">NTSE — National Talent Search</option>
-            <option value="KVPY">KVPY — Kishore Vaigyanik</option>
-            <option value="NSO">NSO — National Science Olympiad</option>
-            <option value="IMO">IMO — Maths Olympiad</option>
-            <option value="IJSO">IJSO — Junior Science Olympiad</option>
+            <option value="NTSE">NTSE — National Talent Search Examination</option>
+            <option value="NSO">NSO — National Science Olympiad (SOF)</option>
+            <option value="IMO">IMO — International Mathematics Olympiad (SOF)</option>
+            <option value="IJSO">IJSO — International Junior Science Olympiad</option>
           </select>
           <svg class="chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
         </div>
+      </div>
+      <!-- Competitive exam info box -->
+      <div class="comp-info-box" id="compInfoBox" style="display:none">
+        <div class="comp-info-text" id="compInfoText"></div>
       </div>
     </div>
 
@@ -239,8 +237,8 @@
           <label class="field-label">Total Marks <span class="marks-auto-hint" id="marksAutoHint" style="font-size:10px;color:var(--accent-2);font-family:var(--font-mono);margin-left:6px;opacity:.8;"></span></label>
           <div class="chip-row" id="markChips">
             <button type="button" class="chip" data-val="20" onclick="selectMark(this)">20</button>
-            <button type="button" class="chip active" data-val="80" onclick="selectMark(this)">80</button>
-            <button type="button" class="chip" data-val="100" onclick="selectMark(this)">100</button>
+            <button type="button" class="chip" data-val="50" onclick="selectMark(this)">50</button>
+            <button type="button" class="chip active" data-val="100" onclick="selectMark(this)">100</button>
             <button type="button" class="chip chip-custom" id="chipCustom" onclick="toggleCustomMark(this)">Custom</button>
           </div>
           <div id="customMarkWrap" class="custom-mark-wrap" style="display:none;">
@@ -250,8 +248,8 @@
             <span class="custom-mark-unit">marks</span>
           </div>
           <select id="totalMarks" name="marks" style="display:none">
-            <option value="80">80</option><option value="20">20</option>
-            <option value="100">100</option>
+            <option value="100">100</option><option value="20">20</option>
+            <option value="50">50</option>
           </select>
         </div>
         <div class="field-wrap" id="difficultyCard">
@@ -276,7 +274,7 @@
         <div class="card-step">06</div>
         <div class="card-title">Custom Instructions <span class="opt-tag">optional</span></div>
         <textarea id="suggestions" name="suggestions" rows="3" class="glass-ta"
-          placeholder="e.g. Include 2 labelled diagrams · Follow AP Board 2024 pattern · Step-by-step solutions for all long answers"></textarea>
+          placeholder="e.g. Focus on numerical problems · Include 2 labelled diagrams · Step-by-step solutions for all long answers"></textarea>
         <label class="toggle-row" for="includeKey">
           <div class="toggle-wrap">
             <input type="checkbox" id="includeKey" name="includeKey" class="toggle-cb">

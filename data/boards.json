@@ -1,22 +1,12 @@
 {
-  "standard_boards": [
-    "State Board - Andhra Pradesh",
-    "State Board - Telangana",
-    "CBSE",
-    "ICSE",
-    "IB",
-    "State Board - Maharashtra",
-    "State Board - Karnataka",
-    "State Board - Tamil Nadu",
-    "State Board - Kerala",
-    "State Board - Uttar Pradesh"
+  "state_boards": [
+    { "value": "Andhra Pradesh", "label": "Andhra Pradesh (BSEAP)" },
+    { "value": "Telangana",      "label": "Telangana (BSETS)" }
   ],
   "competitive_exams": [
-    "NTSE",
-    "KVPY",
-    "NSO",
-    "IMO",
-    "IJSO",
-    "Other School Olympiads"
+    { "value": "NTSE", "label": "NTSE — National Talent Search Examination" },
+    { "value": "NSO",  "label": "NSO — National Science Olympiad (SOF)" },
+    { "value": "IMO",  "label": "IMO — International Maths Olympiad (SOF)" },
+    { "value": "IJSO", "label": "IJSO — International Junior Science Olympiad" }
   ]
 }

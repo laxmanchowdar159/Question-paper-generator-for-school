@@ -1,0 +1,95 @@
+{
+  "board": "AP_TS",
+  "full_name": "AP Board of Secondary Education (BSEAP) / Telangana Board of Secondary Education (BSETS)",
+  "classes_covered": ["6","7","8","9","10"],
+
+  "ssc_class_9_10": {
+    "total_marks": 100,
+    "duration": "3 Hours 15 Minutes",
+    "structure_note": "Paper has TWO physical parts. Part A (Objective, 20 marks) is collected after 30 minutes. Part B (Written, 80 marks) continues for remaining time.",
+
+    "PART_A_OBJECTIVE": {
+      "marks": 20,
+      "time_allowed": "30 minutes",
+      "handover_instruction": "Part A question paper must be submitted to the invigilator at the end of 30 minutes.",
+      "sections": [
+        {
+          "section": "Section-I", "type": "Multiple Choice Questions",
+          "count": 10, "marks_each": 1, "total": 10,
+          "instruction": "Choose correct answer. Write the letter in the bracket against the question.",
+          "format_example": "1. [stem]\n   (A) ...  (B) ...  (C) ...  (D) ...   (   )"
+        },
+        {
+          "section": "Section-II", "type": "Fill in the Blanks",
+          "count": 5, "marks_each": 1, "total": 5,
+          "instruction": "Fill in the blank with correct answer."
+        },
+        {
+          "section": "Section-III", "type": "Match the Following",
+          "count": 5, "marks_each": 1, "total": 5,
+          "instruction": "Match Group-A with Group-B. Write the letter in the bracket.",
+          "format": "Two-column table: Group A (5 items) | Group B (5 items)"
+        }
+      ]
+    },
+
+    "PART_B_WRITTEN": {
+      "marks": 80,
+      "sections": [
+        {
+          "section": "Section-IV", "type": "Very Short Answer Questions",
+          "instruction": "Answer ALL questions. Each carries 2 marks. Answer in not more than 5 lines.",
+          "count": 10, "marks_each": 2, "total": 20,
+          "choice": false
+        },
+        {
+          "section": "Section-V", "type": "Short Answer Questions",
+          "instruction": "Answer any FOUR of the following six questions. Each carries 4 marks. Answer in not more than one page.",
+          "count_given": 6, "count_to_attempt": 4, "marks_each": 4, "total": 16
+        },
+        {
+          "section": "Section-VI", "type": "Long Answer / Essay Questions",
+          "instruction": "Answer any FOUR of the following six questions. Each carries 6 marks. Answer in not more than two pages.",
+          "count_given": 6, "count_to_attempt": 4, "marks_each": 6, "total": 24,
+          "note": "Each question may have internal choice indicated by OR."
+        },
+        {
+          "section": "Section-VII", "type": "Activity / Application / Problem Solving",
+          "instruction": "Answer any TWO of the following three questions. Each carries 10 marks.",
+          "count_given": 3, "count_to_attempt": 2, "marks_each": 10, "total": 20,
+          "note": "Numericals, proofs, derivations, constructions, map activity, or application problems depending on subject."
+        }
+      ],
+      "total_check": "Section IV(20) + Section V(16) + Section VI(24) + Section VII(20) = 80"
+    },
+
+    "general_instructions": [
+      "1. Answer all questions under Part-A on the question paper itself and attach it to the answer booklet at the end of the examination.",
+      "2. Read the instructions carefully and answer only the required number of questions in each section.",
+      "3. Figures to the right indicate marks allotted.",
+      "4. Neat and fully labelled diagrams must be drawn wherever required.",
+      "5. In case of any ambiguity in translation, the English version shall be treated as final.",
+      "6. Write the question number and sub-question number clearly."
+    ],
+
+    "subject_specifics": {
+      "Mathematics": "Section VII: construction OR proof of theorem OR numerical. All steps must be shown with reasons.",
+      "Science_Physics_Chemistry": "Paper 1 (Physics + Chemistry): Section VII has numericals. Show formula, substitution, calculation, unit.",
+      "Science_Biology": "Paper 2 (Biology + part Chemistry): Section VII has labelled diagram drawing OR detailed paragraph. Diagrams must be large, neat, fully labelled.",
+      "Social_Studies": "Section VII includes map-marking question — students mark specific items on outline map of India or World. Also includes source/document analysis.",
+      "English": "No Part A for English. Full paper is descriptive: Reading (comprehension), Writing (letter/essay/notice), Grammar (transformation, editing)."
+    }
+  },
+
+  "classes_6_8": {
+    "exam_type": "Summative Assessment (SA1 in October, SA2 in March)",
+    "total_marks": 50,
+    "duration": "2 Hours 30 Minutes",
+    "sections": [
+      { "type": "Objective (MCQ + Fill blank + Match)", "marks": 10, "count": 10, "marks_each": 1 },
+      { "type": "Very Short Answer (1-2 lines)", "marks": 20, "count": 10, "marks_each": 2, "instruction": "Answer ALL 10." },
+      { "type": "Short Answer (5-6 lines)", "marks": 10, "count_given": 4, "count_to_attempt": 2, "marks_each": 5 },
+      { "type": "Long Answer / Essay", "marks": 10, "count_given": 2, "count_to_attempt": 1, "marks_each": 10 }
+    ]
+  }
+}

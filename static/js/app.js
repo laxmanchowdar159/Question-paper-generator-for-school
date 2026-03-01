@@ -1,13 +1,44 @@
 // =====================================================================
 // ExamCraft — Frontend Controller
-// Features: history panel (localStorage), manual PDF download,
-//           all existing form logic preserved
+// Scope: AP/TS State Boards (Classes 6–10) + NTSE, NSO, IMO, IJSO
 // =====================================================================
 
 let curriculumData   = {};
 let currentPaper     = '';
 let currentAnswerKey = '';
 let currentMeta      = {};
+
+// ── Competitive exam info (shown after selection) ─────────────────────
+const COMP_INFO = {
+  NTSE: {
+    papers: 'MAT (Mental Ability) + SAT (Science 40Q + Social 40Q + Maths 20Q)',
+    marks:  '100 marks each paper',
+    time:   '2 Hours per paper',
+    marking:'Stage 1: +1 / no negative. Stage 2: +1 / −1/3.',
+    tip:    'Select "MAT" as subject for the Mental Ability paper, or any subject for the SAT paper.',
+  },
+  NSO: {
+    papers: 'Logical Reasoning (10Q) + Science (35Q) + Achiever\'s Section (5Q × 3M)',
+    marks:  '60 marks total',
+    time:   '1 Hour',
+    marking:'No negative marking.',
+    tip:    'Select the class and science chapter. The Achiever\'s Section auto-generates as harder HOT questions.',
+  },
+  IMO: {
+    papers: 'Logical Reasoning (10Q) + Mathematical Reasoning (25Q) + Everyday Maths (10Q) + Achiever\'s (5Q × 3M)',
+    marks:  '60 marks total',
+    time:   '1 Hour',
+    marking:'No negative marking.',
+    tip:    'Select the class and maths chapter for a focused paper.',
+  },
+  IJSO: {
+    papers: 'Integrated Science MCQ: Physics (27Q) + Chemistry (27Q) + Biology (26Q)',
+    marks:  '80Q × +3/−1 = 240 max',
+    time:   '2 Hours',
+    marking:'+3 correct, −1 wrong.',
+    tip:    'Select class and chapter (or leave as Full Syllabus for mixed paper).',
+  },
+};
 
 // ── History ──────────────────────────────────────────────────────────
 const HISTORY_KEY = 'examcraft_history';
@@ -41,7 +72,7 @@ function addToHistory(meta, paper, answerKey) {
 }
 
 function renderHistory() {
-    const list    = document.getElementById('historyList');
+    const list = document.getElementById('historyList');
     if (!list) return;
     const history = loadHistory();
     if (!history.length) {
@@ -132,6 +163,7 @@ async function initCurriculum() {
     const cls = document.getElementById('class')?.value;
     if (cls) { await updateSubjects(); updateFormVisibility(); updateSidebar(); }
 }
+
 async function updateSubjects() {
     const cls           = document.getElementById('class').value;
     const subjectSelect = document.getElementById('subject');
@@ -139,97 +171,154 @@ async function updateSubjects() {
     subjectSelect.innerHTML = '<option value="">Loading…</option>';
     chapterSelect.innerHTML = '<option value="">Select chapter…</option>';
     if (!cls) { subjectSelect.innerHTML = '<option value="">Select subject…</option>'; return; }
+
+    const examType = document.getElementById('examType')?.value;
+    const compExam = document.getElementById('competitiveExam')?.value;
+
+    // For competitive exams, use the competitive curriculum key
+    let lookupKey = cls;
+    if (examType === 'competitive' && compExam) {
+        lookupKey = compExam;
+    }
+
     let subjects = null;
     try {
-        const res  = await fetch(`/chapters?class=${cls}`);
+        const res  = await fetch(`/chapters?class=${lookupKey}`);
         const json = await res.json();
-        if (json.success && json.data) { subjects = Object.keys(json.data); curriculumData[cls] = json.data; }
+        if (json.success && json.data) {
+            subjects = Object.keys(json.data);
+            curriculumData[lookupKey] = json.data;
+        }
     } catch {}
-    if (!subjects && curriculumData[cls]) subjects = Object.keys(curriculumData[cls]);
+
+    if (!subjects && curriculumData[lookupKey]) subjects = Object.keys(curriculumData[lookupKey]);
     subjectSelect.innerHTML = '<option value="">Select subject…</option>';
     chapterSelect.innerHTML = '<option value="">Select chapter…</option>';
-    if (subjects?.length) subjects.forEach(s => {
-        const opt = document.createElement('option');
-        opt.value = s; opt.textContent = s; subjectSelect.appendChild(opt);
-    });
-}
-function updateChapters() {
-    const cls           = document.getElementById('class').value;
-    const subject       = document.getElementById('subject').value;
-    const chapterSelect = document.getElementById('chapter');
-    chapterSelect.innerHTML = '<option value="">Select chapter…</option>';
-    if (!cls || !subject) return;
-    (curriculumData[cls]?.[subject] || []).forEach(c => {
-        const opt = document.createElement('option');
-        opt.value = c; opt.textContent = c; chapterSelect.appendChild(opt);
-    });
+
+    if (subjects) {
+        subjects.forEach(s => {
+            const opt = document.createElement('option');
+            opt.value = s; opt.textContent = s;
+            subjectSelect.appendChild(opt);
+        });
+    }
+    updateSidebar();
 }
 
-// ── Difficulty ────────────────────────────────────────────────────────
-function getDifficulty() {
-    const radio = document.querySelector('input[name="difficulty"]:checked');
-    return radio ? radio.value : 'Medium';
+function updateChapters() {
+    const cls      = document.getElementById('class').value;
+    const subj     = document.getElementById('subject').value;
+    const chapSel  = document.getElementById('chapter');
+    const examType = document.getElementById('examType')?.value;
+    const compExam = document.getElementById('competitiveExam')?.value;
+
+    let lookupKey = cls;
+    if (examType === 'competitive' && compExam) lookupKey = compExam;
+
+    chapSel.innerHTML = '<option value="">Select chapter…</option>';
+    if (!subj || !curriculumData[lookupKey]) return;
+    const chapters = curriculumData[lookupKey][subj] || [];
+    chapters.forEach(ch => {
+        const opt = document.createElement('option');
+        opt.value = ch; opt.textContent = ch;
+        chapSel.appendChild(opt);
+    });
+    updateSidebar();
 }
 
 // ── Form Visibility ───────────────────────────────────────────────────
 function updateFormVisibility() {
-    const examType        = document.getElementById('examType').value;
-    const stateCard       = document.getElementById('stateCard');
-    const competitiveCard = document.getElementById('competitiveCard');
-    const scopeCard       = document.getElementById('scopeCard');
-    const subjectCard     = document.getElementById('subjectCard');
-    const chapterCard     = document.getElementById('chapterCard');
-    const marksCard       = document.getElementById('marksCard');
-    const difficultyCard  = document.getElementById('difficultyCard');
+    const examType = document.getElementById('examType').value;
+    const scope    = document.getElementById('scopeSelect').value;
+    const stateC   = document.getElementById('stateCard');
+    const compC    = document.getElementById('competitiveCard');
+    const scopeC   = document.getElementById('scopeCard');
+    const chapCard = document.getElementById('chapterCard');
+    const subjCard = document.getElementById('subjectCard');
 
-    function show(el) { if (!el) return; el.style.display = ''; el.classList.remove('collapsed'); el.classList.add('expanded'); }
-    function hide(el) { if (!el) return; el.style.display = 'none'; el.classList.remove('expanded'); el.classList.add('collapsed'); }
+    // Show/hide board selector
+    stateC.classList.toggle('collapsed', examType !== 'state-board');
+    compC.classList.toggle('collapsed', examType !== 'competitive');
 
-    hide(subjectCard); document.getElementById('subject').value = '';
-    hide(chapterCard); document.getElementById('chapter').value = '';
-    hide(marksCard);   document.getElementById('totalMarks').value = '100';
-
-    if (examType === 'state-board') {
-        show(stateCard); hide(competitiveCard);
-        show(scopeCard); show(subjectCard); show(marksCard); show(difficultyCard);
-        const scope = document.getElementById('scopeSelect')?.value;
-        if (scope === 'all') { hide(chapterCard); document.getElementById('chapter').value = ''; }
-        else show(chapterCard);
-    } else if (examType === 'competitive') {
-        hide(stateCard); show(competitiveCard);
-        show(scopeCard); show(difficultyCard);
-        const scope = document.getElementById('scopeSelect')?.value;
-        if (scope === 'all') {
-            hide(subjectCard); document.getElementById('subject').value = '';
-            hide(chapterCard); document.getElementById('chapter').value = '';
-            hide(marksCard);   document.getElementById('totalMarks').value = '100';
-        } else { show(subjectCard); show(chapterCard); show(marksCard); }
+    // Show scope selector only after board is chosen
+    if (examType) {
+        scopeC.classList.remove('collapsed');
     } else {
-        hide(stateCard); hide(competitiveCard); hide(scopeCard); hide(difficultyCard);
+        scopeC.classList.add('collapsed');
     }
-    const globalScope = document.getElementById('scopeSelect')?.value;
-    if (globalScope === 'all') {
-        hide(subjectCard); document.getElementById('subject').value = '';
-        hide(chapterCard); document.getElementById('chapter').value = '';
-    }
+
+    // Show chapter only for single-chapter scope
+    const showChap = scope === 'single';
+    if (chapCard) chapCard.style.display = showChap ? '' : 'none';
+    if (subjCard) subjCard.style.display = '';  // always show subject
 }
 
-// ── Selection handlers ────────────────────────────────────────────────
+// ── Paper type tiles ──────────────────────────────────────────────────
 window.selectType = function(val) {
     document.querySelectorAll('.type-tile').forEach(t => t.classList.remove('active'));
-    const tile = val === 'state-board' ? document.getElementById('tile-state') : document.getElementById('tile-comp');
+    const tile = document.getElementById(val === 'state-board' ? 'tile-state' : 'tile-comp');
     if (tile) tile.classList.add('active');
-    const sel = document.getElementById('examType');
-    sel.value = val; sel.dispatchEvent(new Event('change'));
+    document.getElementById('examType').value = val;
+    updateFormVisibility();
+    updateSidebar();
+    // Reset curriculum when switching type
+    updateSubjects();
+
+    if (val === 'state-board') {
+        setHint('Select Andhra Pradesh or Telangana, then choose paper scope.');
+    } else {
+        setHint('Select the competitive exam. Each has its own paper pattern.');
+    }
 };
+
+// ── Scope ─────────────────────────────────────────────────────────────
 window.selectScope = function(val) {
     document.querySelectorAll('.scope-btn').forEach(b => b.classList.remove('active'));
-    const btn = val === 'single' ? document.getElementById('scope-single') : document.getElementById('scope-all');
+    const btn = document.getElementById(`scope-${val}`);
     if (btn) btn.classList.add('active');
-    const sel = document.getElementById('scopeSelect');
-    sel.value = val; sel.dispatchEvent(new Event('change'));
+    document.getElementById('scopeSelect').value = val;
+    updateFormVisibility();
     applySmartMarkDefault(val);
+    updateSidebar();
+    setHint(val === 'all'
+        ? 'Full syllabus — class selection is sufficient.'
+        : 'Single chapter — please choose subject and chapter.');
 };
+
+// ── Competitive exam info box ─────────────────────────────────────────
+function updateCompInfo() {
+    const exam    = document.getElementById('competitiveExam')?.value;
+    const infoBox = document.getElementById('compInfoBox');
+    const infoTxt = document.getElementById('compInfoText');
+    if (!infoBox || !infoTxt) return;
+    if (!exam || !COMP_INFO[exam]) {
+        infoBox.style.display = 'none';
+        return;
+    }
+    const info = COMP_INFO[exam];
+    infoTxt.innerHTML = `
+      <b>${exam}</b>: ${info.papers}<br>
+      <span style="opacity:.8">Marks: ${info.marks} · Time: ${info.time} · ${info.marking}</span><br>
+      <span style="color:var(--accent-2)">💡 ${info.tip}</span>`;
+    infoBox.style.display = 'block';
+    // Also update curriculum for this exam
+    updateSubjects().then(updateChapters);
+}
+
+// ── Difficulty ───────────────────────────────────────────────────────
+function getDifficulty() {
+    const el = document.querySelector('input[name="difficulty"]:checked');
+    return el ? el.value : 'Medium';
+}
+window.selectDiff = function(val, btn) {
+    document.querySelectorAll('.diff-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    const radio = document.getElementById(val === 'Easy' ? 'r-easy' : val === 'Medium' ? 'r-med' : 'r-hard');
+    if (radio) radio.checked = true;
+    updateSidebar();
+};
+
+// ── Marks chips ───────────────────────────────────────────────────────
 window.selectMark = function(btn) {
     document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
     btn.classList.add('active');
@@ -260,14 +349,12 @@ window.applyCustomMark = function(val) {
     }
 };
 
-// Smart default marks: 20 for single chapter, 80 for full syllabus
+// Smart mark defaults
 function applySmartMarkDefault(scope) {
-    const currentChip = document.querySelector('.chip.active:not(.chip-custom)');
-    const customChip  = document.getElementById('chipCustom');
-    const isCustom    = customChip && customChip.classList.contains('active');
-    // Only auto-set if user hasn't manually changed it (or it's not custom)
+    const customChip = document.getElementById('chipCustom');
+    const isCustom   = customChip && customChip.classList.contains('active');
     if (!isCustom) {
-        const target = scope === 'all' ? '80' : '20';
+        const target = scope === 'all' ? '100' : '50';
         document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
         const hint = document.getElementById('marksAutoHint');
         document.getElementById('customMarkWrap').style.display = 'none';
@@ -281,14 +368,6 @@ function applySmartMarkDefault(scope) {
     }
 }
 
-window.selectDiff = function(val, btn) {
-    document.querySelectorAll('.diff-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    const radio = document.getElementById(val === 'Easy' ? 'r-easy' : val === 'Medium' ? 'r-med' : 'r-hard');
-    if (radio) radio.checked = true;
-    updateSidebar();
-};
-
 // ── Loading ───────────────────────────────────────────────────────────
 let _stepInterval = null;
 function showLoading(show, titleText) {
@@ -299,7 +378,7 @@ function showLoading(show, titleText) {
     clearInterval(_stepInterval);
     if (show) {
         const ids = ['ls1','ls2','ls3','ls4','ls5'];
-        const delays = [0, 5000, 11000, 17000, 26000]; // diagram step gets more time
+        const delays = [0, 5000, 11000, 17000, 26000];
         ids.forEach(id => { const el = document.getElementById(id); if (el) el.classList.remove('active','done'); });
         const el0 = document.getElementById(ids[0]); if (el0) el0.classList.add('active');
         ids.slice(1).forEach((id, idx) => {
@@ -348,6 +427,8 @@ async function generatePaper() {
     const scope    = document.getElementById('scopeSelect')?.value || 'single';
     const examType = document.getElementById('examType').value;
 
+    if (!examType) { showToast('Please select a paper type first'); return; }
+
     const payload = {
         class:       document.getElementById('class').value,
         subject:     document.getElementById('subject').value,
@@ -359,9 +440,9 @@ async function generatePaper() {
         examType,
     };
 
-    if (!examType) { showToast('Please select a paper type first'); return; }
     if (examType === 'state-board') {
         payload.state = document.getElementById('stateSelect')?.value || '';
+        if (!payload.state) { showToast('Please select a state board'); return; }
         if (scope === 'single') {
             if (!payload.subject) { showToast('Please select a subject'); return; }
             if (!payload.chapter) { showToast('Please select a chapter'); return; }
@@ -369,19 +450,20 @@ async function generatePaper() {
     }
     if (examType === 'competitive') {
         payload.competitiveExam = document.getElementById('competitiveExam')?.value || '';
-        if (scope === 'single') {
-            if (!payload.subject) { showToast('Please select a subject'); return; }
-            if (!payload.chapter) { showToast('Please select a chapter'); return; }
+        if (!payload.competitiveExam) { showToast('Please select a competitive exam'); return; }
+        if (scope === 'single' && !payload.subject) {
+            showToast('Please select a subject/paper type');
+            return;
         }
     }
     if (scope === 'all') payload.all_chapters = true;
 
     showLoading(true, 'Crafting your paper…');
-    setHint('Generating — usually 15–30 seconds…');
+    setHint('Generating — usually 20–45 seconds…');
 
     try {
         const res    = await fetch('/generate', {
-            method: 'POST',
+            method:  'POST',
             headers: { 'Content-Type': 'application/json' },
             body:    JSON.stringify(payload),
         });
@@ -420,11 +502,8 @@ async function generatePaper() {
             setTimeout(() => panel.scrollIntoView({ behavior: 'smooth', block: 'start' }), 120);
         }
 
-        // NO auto-download — user reviews first, then clicks download
         setHint('Paper ready! Review below, then click Download PDF.');
         showToast('Paper generated! Review and download below.');
-
-        // Add to history
         addToHistory(currentMeta, currentPaper, currentAnswerKey);
 
     } catch (err) {
@@ -438,7 +517,7 @@ async function triggerPDFDownload(payload, board, subject, chapter, withKey) {
     showLoading(true, 'Rendering PDF…');
     try {
         const res = await fetch('/download-pdf', {
-            method: 'POST',
+            method:  'POST',
             headers: { 'Content-Type': 'application/json' },
             body:    JSON.stringify(payload),
         });
@@ -499,25 +578,23 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('class')?.addEventListener('change', async () => {
         await updateSubjects(); updateFormVisibility(); updateSidebar();
     });
-    document.getElementById('subject')?.addEventListener('change', () => { updateChapters(); updateSidebar(); });
+    document.getElementById('subject')?.addEventListener('change', () => {
+        updateChapters(); updateSidebar();
+    });
     document.getElementById('chapter')?.addEventListener('change', updateSidebar);
     document.getElementById('totalMarks')?.addEventListener('change', updateSidebar);
     document.getElementById('stateSelect')?.addEventListener('change', updateSidebar);
-    document.getElementById('competitiveExam')?.addEventListener('change', updateSidebar);
+    document.getElementById('competitiveExam')?.addEventListener('change', () => {
+        updateCompInfo();
+        updateSidebar();
+    });
     document.getElementById('includeKey')?.addEventListener('change', updateSidebar);
 
     document.getElementById('examType')?.addEventListener('change', () => {
         updateFormVisibility(); updateSidebar();
-        const val = document.getElementById('examType').value;
-        if (val === 'state-board')      setHint('Select your state board and choose paper scope below.');
-        else if (val === 'competitive') setHint('Select the competitive exam and scope.');
-        else setHint('Begin by selecting a paper type above.');
     });
     document.getElementById('scopeSelect')?.addEventListener('change', () => {
         updateFormVisibility(); updateSidebar();
-        const val = document.getElementById('scopeSelect').value;
-        setHint(val === 'all' ? 'Full syllabus — class selection is sufficient.'
-                              : 'Single chapter — please choose subject and chapter.');
     });
     document.getElementById('paperForm')?.addEventListener('submit', e => {
         e.preventDefault(); generatePaper();
@@ -525,6 +602,5 @@ document.addEventListener('DOMContentLoaded', () => {
 
     updateFormVisibility();
     updateSidebar();
-    // Set initial smart default: single chapter = 20 marks
     applySmartMarkDefault('single');
 });

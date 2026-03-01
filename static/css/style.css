@@ -559,3 +559,18 @@ body {
 
 /* marks auto hint */
 .marks-auto-hint { font-size: 10px; color: var(--accent-2); font-family: var(--font-mono); margin-left: 6px; opacity: .8; }
+
+/* ── Competitive info box ─────────────────────────────────── */
+.comp-info-box {
+  margin-top: 12px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  border-left: 3px solid var(--accent-2);
+  background: var(--glass-bg);
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--text-muted);
+}
+[data-theme="light"] .comp-info-box {
+  background: rgba(99,102,241,.06);
+}
