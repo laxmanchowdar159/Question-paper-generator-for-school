@@ -237,16 +237,17 @@ def _process(text: str) -> str:
 # ═══════════════════════════════════════════════════════════════════════
 # COLOURS
 # ═══════════════════════════════════════════════════════════════════════
-C_NAVY  = HexColor("#1a237e")
-C_STEEL = HexColor("#1565c0")
-C_BODY  = HexColor("#1a1a1a")
-C_GREY  = HexColor("#546e7a")
-C_LIGHT = HexColor("#e8eaf6")
-C_RULE  = HexColor("#90a4ae")
-C_MARK  = HexColor("#2e7d32")
-C_KRED  = HexColor("#c62828")
-C_KFILL = HexColor("#fff8f8")
-C_STEP  = HexColor("#37474f")
+# Monochrome palette — exam papers should look like exam papers, not websites
+C_NAVY  = HexColor("#111111")   # was indigo — now near-black for headers
+C_STEEL = HexColor("#111111")   # was blue   — question numbers, plain black
+C_BODY  = HexColor("#1a1a1a")   # body text, unchanged
+C_GREY  = HexColor("#444444")   # marks label, dark grey
+C_LIGHT = HexColor("#f0f0f0")   # section banner background, light grey
+C_RULE  = HexColor("#888888")   # rules/borders, medium grey
+C_MARK  = HexColor("#111111")   # mark labels, plain black
+C_KRED  = HexColor("#111111")   # answer key headings, black
+C_KFILL = HexColor("#f7f7f7")   # answer key background, very light grey
+C_STEP  = HexColor("#1a1a1a")   # key steps, body colour
 
 
 # ═══════════════════════════════════════════════════════════════════════
@@ -264,7 +265,7 @@ def _styles():
             for k, v in kw.items():
                 setattr(base[name], k, v)
 
-    S("PTitle",    fontName=B, fontSize=16, textColor=white,
+    S("PTitle",    fontName=B, fontSize=15, textColor=black,
       alignment=TA_CENTER, leading=22, spaceAfter=0, spaceBefore=0)
     S("PMeta",     fontName=R, fontSize=9, textColor=C_BODY,
       alignment=TA_LEFT, leading=13, spaceAfter=0)
@@ -272,27 +273,27 @@ def _styles():
       alignment=TA_RIGHT, leading=13, spaceAfter=0)
     S("PMetaC",    fontName=R, fontSize=9, textColor=C_BODY,
       alignment=TA_CENTER, leading=13, spaceAfter=0)
-    S("SecBanner", fontName=B, fontSize=11, textColor=C_NAVY,
+    S("SecBanner", fontName=B, fontSize=10.5, textColor=black,
       leading=15, spaceAfter=0, spaceBefore=0)
     S("InstrHead", fontName=B, fontSize=9.5, textColor=C_BODY,
       leading=14, spaceAfter=2, spaceBefore=4)
     S("Instr",     fontName=R, fontSize=9.5, textColor=C_BODY,
       leading=14, spaceAfter=2, leftIndent=18, firstLineIndent=-18)
-    S("Q",         fontName=R, fontSize=11, textColor=C_BODY,
-      alignment=TA_JUSTIFY, leading=17, spaceBefore=8, spaceAfter=2,
-      leftIndent=26, firstLineIndent=-26)
-    S("QCont",     fontName=R, fontSize=11, textColor=C_BODY,
-      alignment=TA_JUSTIFY, leading=17, spaceBefore=1, spaceAfter=2, leftIndent=26)
-    S("QSub",      fontName=R, fontSize=11, textColor=C_BODY,
-      alignment=TA_JUSTIFY, leading=17, spaceBefore=3, spaceAfter=2,
-      leftIndent=42, firstLineIndent=-16)
-    S("Opt",       fontName=R, fontSize=10.5, textColor=C_BODY,
-      leading=15, spaceAfter=0, leftIndent=0)
-    S("KTitle",    fontName=B, fontSize=14, textColor=C_KRED,
+    S("Q",         fontName=R, fontSize=10.5, textColor=C_BODY,
+      alignment=TA_JUSTIFY, leading=15, spaceBefore=5, spaceAfter=1,
+      leftIndent=22, firstLineIndent=-22)
+    S("QCont",     fontName=R, fontSize=10.5, textColor=C_BODY,
+      alignment=TA_JUSTIFY, leading=15, spaceBefore=1, spaceAfter=1, leftIndent=22)
+    S("QSub",      fontName=R, fontSize=10.5, textColor=C_BODY,
+      alignment=TA_JUSTIFY, leading=15, spaceBefore=2, spaceAfter=1,
+      leftIndent=36, firstLineIndent=-14)
+    S("Opt",       fontName=R, fontSize=10, textColor=C_BODY,
+      leading=14, spaceAfter=0, leftIndent=0)
+    S("KTitle",    fontName=B, fontSize=13, textColor=black,
       alignment=TA_CENTER, leading=18, spaceAfter=6, spaceBefore=0)
-    S("KSec",      fontName=B, fontSize=10.5, textColor=C_KRED,
+    S("KSec",      fontName=B, fontSize=10.5, textColor=black,
       leading=14, spaceAfter=2, spaceBefore=6)
-    S("KQ",        fontName=B, fontSize=10.5, textColor=C_STEEL,
+    S("KQ",        fontName=B, fontSize=10.5, textColor=black,
       leading=14, spaceAfter=2, spaceBefore=4, leftIndent=24, firstLineIndent=-24)
     S("KStep",     fontName=R, fontSize=10, textColor=C_STEP,
       leading=15, spaceAfter=1, leftIndent=24)
@@ -313,10 +314,10 @@ class ExamCanvas:
         W = A4[0]
         LM, RM = doc.leftMargin, W - doc.rightMargin
         canvas.saveState()
-        canvas.setStrokeColor(C_NAVY)
-        canvas.setLineWidth(1.5)
+        canvas.setStrokeColor(HexColor("#111111"))
+        canvas.setLineWidth(0.6)
         canvas.line(LM, A4[1] - 12*mm, RM, A4[1] - 12*mm)
-        canvas.setStrokeColor(C_RULE)
+        canvas.setStrokeColor(HexColor("#888888"))
         canvas.setLineWidth(0.4)
         canvas.line(LM, 20, RM, 20)
         canvas.setFont(_f("Ital"), 7.5)
@@ -336,13 +337,13 @@ def _sec_banner(text, st, pw):
     p = Paragraph(f'<b>{text}</b>', st["SecBanner"])
     t = Table([[p]], colWidths=[pw])
     t.setStyle(TableStyle([
-        ("BACKGROUND",    (0,0),(-1,-1), C_LIGHT),
-        ("LINEBELOW",     (0,0),(-1,-1), 1.5, C_NAVY),
-        ("LINETOP",       (0,0),(-1,-1), 0.4, C_RULE),
-        ("LEFTPADDING",   (0,0),(-1,-1), 10),
-        ("RIGHTPADDING",  (0,0),(-1,-1), 10),
-        ("TOPPADDING",    (0,0),(-1,-1), 5),
-        ("BOTTOMPADDING", (0,0),(-1,-1), 5),
+        ("BACKGROUND",    (0,0),(-1,-1), HexColor("#f0f0f0")),
+        ("LINEBELOW",     (0,0),(-1,-1), 0.8, HexColor("#111111")),
+        ("LINETOP",       (0,0),(-1,-1), 0.8, HexColor("#111111")),
+        ("LEFTPADDING",   (0,0),(-1,-1), 8),
+        ("RIGHTPADDING",  (0,0),(-1,-1), 8),
+        ("TOPPADDING",    (0,0),(-1,-1), 4),
+        ("BOTTOMPADDING", (0,0),(-1,-1), 4),
     ]))
     return t
 
@@ -384,10 +385,10 @@ def _pipe_table(rows, st, pw):
     t.setStyle(TableStyle([
         ("FONTNAME",       (0,0),(-1,-1), R),
         ("FONTSIZE",       (0,0),(-1,-1), 9.5),
-        ("BACKGROUND",     (0,0),(-1,0),  C_LIGHT),
-        ("TEXTCOLOR",      (0,0),(-1,0),  C_NAVY),
+        ("BACKGROUND",     (0,0),(-1,0),  HexColor("#e8e8e8")),
+        ("TEXTCOLOR",      (0,0),(-1,0),  black),
         ("FONTNAME",       (0,0),(-1,0),  B),
-        ("GRID",           (0,0),(-1,-1), 0.4, C_RULE),
+        ("GRID",           (0,0),(-1,-1), 0.5, HexColor("#aaaaaa")),
         ("ROWBACKGROUNDS", (0,1),(-1,-1), [white, HexColor("#f8f8f8")]),
         ("TOPPADDING",     (0,0),(-1,-1), 4),
         ("BOTTOMPADDING",  (0,0),(-1,-1), 4),
@@ -463,43 +464,31 @@ def create_exam_pdf(text, subject, chapter, board="",
         [[Paragraph(title_str, st["PTitle"])]],
         colWidths=[PW])
     tbl_title.setStyle(TableStyle([
-        ("BACKGROUND",    (0,0),(-1,-1), C_NAVY),
-        ("TOPPADDING",    (0,0),(-1,-1), 9),
-        ("BOTTOMPADDING", (0,0),(-1,-1), 9),
-        ("LEFTPADDING",   (0,0),(-1,-1), 12),
-        ("RIGHTPADDING",  (0,0),(-1,-1), 12),
+        ("BACKGROUND",    (0,0),(-1,-1), white),
+        ("LINEBELOW",     (0,0),(-1,-1), 1.2, HexColor("#111111")),
+        ("TOPPADDING",    (0,0),(-1,-1), 4),
+        ("BOTTOMPADDING", (0,0),(-1,-1), 4),
+        ("LEFTPADDING",   (0,0),(-1,-1), 0),
+        ("RIGHTPADDING",  (0,0),(-1,-1), 0),
     ]))
 
     left_meta  = "  |  ".join(x for x in [h_board, f"Class {h_class}" if h_class else ""] if x)
-    right_meta = f"Total Marks: {h_marks}   |   Time: {h_time}"
+    right_meta = f"Total Marks: {h_marks}"
     tbl_meta = Table(
         [[Paragraph(left_meta,  st["PMeta"]),
           Paragraph(right_meta, st["PMetaR"])]],
         colWidths=[PW*0.55, PW*0.45])
     tbl_meta.setStyle(TableStyle([
-        ("BACKGROUND",    (0,0),(-1,-1), C_LIGHT),
-        ("TOPPADDING",    (0,0),(-1,-1), 5),
-        ("BOTTOMPADDING", (0,0),(-1,-1), 5),
-        ("LEFTPADDING",   (0,0),(-1,-1), 10),
-        ("RIGHTPADDING",  (0,0),(-1,-1), 10),
+        ("BACKGROUND",    (0,0),(-1,-1), white),
+        ("LINEBELOW",     (0,0),(-1,-1), 0.5, HexColor("#888888")),
+        ("TOPPADDING",    (0,0),(-1,-1), 3),
+        ("BOTTOMPADDING", (0,0),(-1,-1), 3),
+        ("LEFTPADDING",   (0,0),(-1,-1), 0),
+        ("RIGHTPADDING",  (0,0),(-1,-1), 0),
         ("VALIGN",        (0,0),(-1,-1), "MIDDLE"),
     ]))
 
-    tbl_school = Table(
-        [[Paragraph("School / Institution: " + "_"*34
-                    + "   Date: " + "_"*12,
-                    st["PMetaC"])]],
-        colWidths=[PW])
-    tbl_school.setStyle(TableStyle([
-        ("BACKGROUND",    (0,0),(-1,-1), white),
-        ("BOX",           (0,0),(-1,-1), 0.5, C_RULE),
-        ("TOPPADDING",    (0,0),(-1,-1), 5),
-        ("BOTTOMPADDING", (0,0),(-1,-1), 5),
-        ("LEFTPADDING",   (0,0),(-1,-1), 10),
-        ("RIGHTPADDING",  (0,0),(-1,-1), 10),
-    ]))
-
-    elems += [tbl_title, tbl_meta, tbl_school, Spacer(1, 8)]
+    elems += [tbl_title, tbl_meta, Spacer(1, 6)]
 
     tbl_rows    = []
     in_table    = False
@@ -573,28 +562,44 @@ def create_exam_pdf(text, subject, chapter, board="",
 
             drawing = None
             if diagrams:
-                for d_key, d_svg in diagrams.items():
-                    if d_svg and (d_key.lower() in desc.lower()
-                                  or desc.lower() in d_key.lower()):
-                        drawing = svg_to_rl_image(d_svg, width_pt=PW * 0.82)
-                        break
-                if drawing is None and desc in diagrams:
-                    drawing = svg_to_rl_image(diagrams[desc], width_pt=PW * 0.82)
+                # Exact match first
+                if desc in diagrams and diagrams[desc]:
+                    drawing = svg_to_best_image(diagrams[desc], width_pt=PW * 0.58)
+                if drawing is None:
+                    # Fuzzy match: find diagram key with most word overlap
+                    desc_words = set(re.findall(r'\w+', desc.lower()))
+                    best_key, best_score = None, 0
+                    for d_key, d_svg in diagrams.items():
+                        if not d_svg:
+                            continue
+                        key_words = set(re.findall(r'\w+', d_key.lower()))
+                        overlap = len(desc_words & key_words)
+                        if overlap > best_score:
+                            best_score, best_key = overlap, d_key
+                    if best_key and best_score >= 2:
+                        drawing = svg_to_best_image(diagrams[best_key], width_pt=PW * 0.58)
 
             if drawing is not None:
                 elems.append(Spacer(1, 3))
                 elems.append(drawing)
             else:
-                box = Table([['']],  colWidths=[PW*0.7], rowHeights=[70])
+                # Placeholder box when diagram not yet generated
+                ph_style = st.get("DiagLabel", list(st.byName.values())[0])
+                ph = Paragraph(f'<i>[Diagram: {desc}]</i>', ph_style)
+                box = Table([[ph]], colWidths=[PW*0.75])
                 box.setStyle(TableStyle([
-                    ('BOX',        (0,0),(-1,-1), 0.8, C_RULE),
-                    ('BACKGROUND', (0,0),(-1,-1), HexColor('#f8f9fa')),
+                    ('BOX',           (0,0),(-1,-1), 0.5, C_RULE),
+                    ('BACKGROUND',    (0,0),(-1,-1), HexColor('#f8f9fa')),
+                    ('TOPPADDING',    (0,0),(-1,-1), 10),
+                    ('BOTTOMPADDING', (0,0),(-1,-1), 10),
+                    ('LEFTPADDING',   (0,0),(-1,-1), 8),
+                    ('RIGHTPADDING',  (0,0),(-1,-1), 8),
                 ]))
                 outer = Table([[box]], colWidths=[PW])
                 outer.setStyle(TableStyle([
-                    ('ALIGN',          (0,0),(-1,-1), 'CENTER'),
-                    ('TOPPADDING',     (0,0),(-1,-1), 2),
-                    ('BOTTOMPADDING',  (0,0),(-1,-1), 2),
+                    ('ALIGN',         (0,0),(-1,-1), 'CENTER'),
+                    ('TOPPADDING',    (0,0),(-1,-1), 2),
+                    ('BOTTOMPADDING', (0,0),(-1,-1), 2),
                 ]))
                 elems.append(outer)
             elems.append(Spacer(1, 5))
@@ -603,25 +608,19 @@ def create_exam_pdf(text, subject, chapter, board="",
         if _is_general_instr(s):
             flush_opts()
             in_instr = True
-            elems.append(Spacer(1, 4))
-            elems.append(Paragraph(f'<b>{s}</b>', st["InstrHead"]))
+            # Skip instructions header — don't render to save space
             continue
 
         if _is_sec_hdr(line) and not _is_general_instr(s):
             flush_opts()
             in_instr = False
-            elems.append(Spacer(1, 7))
+            elems.append(Spacer(1, 4))
             elems.append(_sec_banner(s, st, PW))
-            elems.append(Spacer(1, 5))
+            elems.append(Spacer(1, 3))
             continue
 
         if _is_instr_line(s):
-            flush_opts()
-            m_i = re.match(r'^(\d+)\.\s+(.+)$', s)
-            if m_i:
-                elems.append(Paragraph(
-                    f'<b>{m_i.group(1)}.</b>  {_process(m_i.group(2))}',
-                    st["Instr"]))
+            # Skip instructions to save paper space
             continue
 
         opt_m = re.match(r'^\s*[\(\[]\s*([a-dA-D])\s*[\)\]\.]?\s+(.+)', s)
@@ -651,14 +650,14 @@ def create_exam_pdf(text, subject, chapter, board="",
             in_instr = False
             qnum  = q_m.group(2)
             qbody = q_m.group(3)
-            mk_m = re.search(r'(\[\s*\d+\s*[Mm]arks?\s*\])\s*$', qbody)
+            mk_m = re.search(r'\[\s*(\d+)\s*[Mm]arks?\s*\]\s*$', qbody)
             mark_tag = ''
             if mk_m:
-                mark_tag = mk_m.group(1)
+                mark_tag = f'[{mk_m.group(1)}M]'
                 qbody    = qbody[:mk_m.start()].strip()
             body_rl = _process(qbody)
-            mark_rl = (f'  <font color="{C_MARK.hexval()}" size="9.5">'
-                       f'<b>{mark_tag}</b></font>') if mark_tag else ''
+            mark_rl = (f'  <font color="{C_GREY.hexval()}" size="9">'
+                       f'{mark_tag}</font>') if mark_tag else ''
             xml = (f'<font color="{C_STEEL.hexval()}"><b>{qnum}.</b></font>'
                    f'  {body_rl}{mark_rl}')
             elems.append(Paragraph(xml, st["Q"]))
@@ -716,8 +715,8 @@ def create_exam_pdf(text, subject, chapter, board="",
                 ks = Table([[Paragraph(f'<b>{sk.rstrip(":")}:</b>',
                                        st["KSec"])]], colWidths=[PW])
                 ks.setStyle(TableStyle([
-                    ("BACKGROUND",    (0,0),(-1,-1), C_KFILL),
-                    ("LINEBELOW",     (0,0),(-1,-1), 1.2, C_KRED),
+                    ("BACKGROUND",    (0,0),(-1,-1), HexColor("#f0f0f0")),
+                    ("LINEBELOW",     (0,0),(-1,-1), 0.8, HexColor("#111111")),
                     ("LEFTPADDING",   (0,0),(-1,-1), 10),
                     ("TOPPADDING",    (0,0),(-1,-1), 4),
                     ("BOTTOMPADDING", (0,0),(-1,-1), 4),
@@ -736,8 +735,7 @@ def create_exam_pdf(text, subject, chapter, board="",
                     body_k  = body_k[:mk_k.start()].strip()
                 body_rl = _process(body_k) if body_k else ''
                 elems.append(Paragraph(
-                    f'<font color="{C_KRED.hexval()}"><b>{q_km.group(2)}.</b></font>'
-                    f'  {body_rl}{mk_str}',
+                    f'<b>{q_km.group(2)}.</b>  {body_rl}{mk_str}',
                     st["KQ"]))
                 continue
 
@@ -783,13 +781,13 @@ def discover_models():
         for m in genai.list_models():
             if "generateContent" in (m.supported_generation_methods or []):
                 models.append(m.name.replace("models/", ""))
-        preferred = ["gemini-2.0-flash", "gemini-1.5-flash", "gemini-1.5-pro", "gemini-pro"]
+        preferred = ["gemini-2.0-flash", "gemini-1.5-flash", "gemini-1.5-pro", "gemini-pro", "gemini-2.0-flash-exp"]
         ordered   = [p for p in preferred if any(p in n for n in models)]
         rest      = [n for n in models if not any(p in n for p in preferred)]
         _discovered_models = ordered + rest
         return _discovered_models
     except Exception:
-        return ["gemini-1.5-flash", "gemini-pro"]
+        return ["gemini-2.0-flash", "gemini-1.5-flash", "gemini-pro", "gemini-2.0-flash-exp"]
 
 
 def call_gemini(prompt):
@@ -922,667 +920,540 @@ Section-VII:
 # ═══════════════════════════════════════════════════════════════════════
 # MATH NOTATION RULES (injected into every STEM prompt)
 # ═══════════════════════════════════════════════════════════════════════
+
 def _math_rules():
     return (
-        "\nMATH NOTATION — wrap EVERY mathematical expression in $...$:\n"
-        "  Superscripts:  $x^{2}$  $a^{3}$  $10^{-3}$  $v^{2}$        NOT: x2, a3\n"
-        "  Subscripts:    $H_{2}O$  $v_{0}$  $x_{1}$                   NOT: H2O, v0\n"
-        "  Fractions:     $\\frac{a}{b}$  $\\frac{1}{f}$  $\\frac{mv^{2}}{r}$\n"
-        "  Square root:   $\\sqrt{2}$  $\\sqrt{34}$\n"
-        "  Greek:         $\\theta$  $\\alpha$  $\\pi$  $\\omega$  $\\lambda$\n"
-        "  Trig:          $\\sin\\theta$  $\\cos 60^{\\circ}$  $\\tan\\alpha$\n"
-        "  Units in text: write 'm/s', 'kg', 'N', 'Ω' as plain text outside $\n"
-        "  Fill-in-blank: use __________ (plain underscores, no backslash)\n"
+        "\nMATH NOTATION — every mathematical expression MUST be in $...$:\n"
+        "  Powers     : $x^{2}$  $a^{3}$  $10^{-3}$    ← never x2\n"
+        "  Subscripts : $H_{2}O$  $v_{0}$  $CO_{2}$     ← never H2O\n"
+        "  Fractions  : $\\frac{a}{b}$  $\\frac{mv^{2}}{r}$\n"
+        "  Roots      : $\\sqrt{2}$  $\\sqrt{b^{2}-4ac}$\n"
+        "  Greek      : $\\theta$  $\\alpha$  $\\pi$  $\\lambda$  $\\omega$\n"
+        "  Trig       : $\\sin\\theta$  $\\cos 60^{\\circ}$  $\\tan\\alpha$\n"
+        "  Units      : write cm, kg, m/s, N, Ω as plain text outside $\n"
+        "  Blanks     : use __________ (underscores, NOT LaTeX)\n"
     )
 
 
-# ═══════════════════════════════════════════════════════════════════════
-# PROMPT BUILDER — routes to AP/TS or Competitive
-# ═══════════════════════════════════════════════════════════════════════
+# ─── helpers ──────────────────────────────────────────────────────────
 def _class_int(cls_str):
     m = re.search(r'\d+', str(cls_str or "10"))
     return int(m.group()) if m else 10
 
 
-def build_prompt(class_name, subject, chapter, board, exam_type, difficulty, marks, suggestions):
+# ═══════════════════════════════════════════════════════════════════════
+# MASTER ROUTER
+# ═══════════════════════════════════════════════════════════════════════
+def build_prompt(class_name, subject, chapter, board, exam_type,
+                 difficulty, marks, suggestions):
     m       = max(10, int(marks) if str(marks).isdigit() else 100)
     cls_str = class_name or "10"
     cls_n   = _class_int(cls_str)
     chap    = chapter or "as per syllabus"
-    extra   = f"Teacher's instructions: {suggestions.strip()}\n" if (suggestions or "").strip() else ""
+    extra   = f"TEACHER NOTES: {suggestions.strip()}\n" if (suggestions or "").strip() else ""
     board_l = (board or "").lower()
-
     subj_l  = (subject or "").lower()
     is_stem = any(k in subj_l for k in [
-        "math", "maths", "science", "physics", "chemistry", "biology",
-        "algebra", "geometry", "trigonometry", "statistics"
+        "math","maths","science","physics","chemistry","biology",
+        "algebra","geometry","trigonometry","statistics"
     ])
     math_note = _math_rules() if is_stem else ""
 
-    # Route competitive exams
-    comp_map = {
-        "ntse": "NTSE", "nso": "NSO", "imo": "IMO", "ijso": "IJSO"
-    }
+    comp_map = {"ntse":"NTSE","nso":"NSO","imo":"IMO","ijso":"IJSO"}
     for key, val in comp_map.items():
         if key in board_l:
-            return _prompt_competitive(val, subject, chap, cls_str, m, difficulty, extra, math_note)
-
-    # AP / TS state boards
-    return _prompt_ap_ts(subject, chap, board, cls_str, cls_n, m, difficulty, extra, math_note)
+            return _prompt_competitive(val, subject, chap, cls_str,
+                                       m, difficulty, extra, math_note)
+    return _prompt_ap_ts(subject, chap, board, cls_str, cls_n,
+                         m, difficulty, extra, math_note)
 
 
 # ═══════════════════════════════════════════════════════════════════════
-# AP / TELANGANA STATE BOARD PROMPT
-# Uses the actual exam pattern from ap_ts.json
+# AP / TS STATE BOARD ROUTER
 # ═══════════════════════════════════════════════════════════════════════
-def _prompt_ap_ts(subject, chap, board, cls_str, cls_n, m, difficulty, extra, math_note):
+def _prompt_ap_ts(subject, chap, board, cls_str, cls_n,
+                  m, difficulty, extra, math_note):
     pat = _PATTERN_AP_TS
-
     if cls_n <= 8:
-        # Classes 6–8: 50-mark SA pattern
-        return _prompt_ap_ts_6_8(subject, chap, board, cls_str, m, difficulty, extra, math_note, pat)
-    else:
-        # Classes 9–10: 100-mark SSC pattern
-        return _prompt_ap_ts_9_10(subject, chap, board, cls_str, m, difficulty, extra, math_note, pat)
+        return _prompt_ap_ts_6_8(subject, chap, board, cls_str,
+                                  m, difficulty, extra, math_note, pat)
+    return _prompt_ap_ts_9_10(subject, chap, board, cls_str,
+                               m, difficulty, extra, math_note, pat)
 
 
-def _prompt_ap_ts_9_10(subject, chap, board, cls_str, m, difficulty, extra, math_note, pat):
-    """
-    Direct-instruction prompt — NO placeholder text anywhere.
-    Uses few-shot examples to show Gemini the exact format, then orders it
-    to write every section in full. Tested to avoid the '[placeholder]' output bug.
-    """
-    p   = pat.get("ssc_class_9_10", {})
-    dur = p.get("duration", "3 Hours 15 Minutes")
-
-    # ── Fixed AP/TS SSC structure (matches real papers exactly) ─────
-    # Part A: 10 MCQ + 5 FIB + 5 Match = 20 marks
-    # Part B: 10 VSQ×2 + 6-of-6 SA×4 (att 4) + 6-of-6 LA×6 (att 4) + 3-of-3 App×10 (att 2) = 80
-    # Total = 100. If m ≠ 100, scale questions but keep structure.
-    scale     = min(1.0, m / 100.0)
-    n_mcq     = max(5,  round(10 * scale))
-    n_fib     = max(3,  round(5  * scale))
-    n_vsq     = max(4,  round(10 * scale))
-    n_sq_g    = max(4,  round(6  * scale))
-    n_sq_a    = max(3,  round(4  * scale))
-    n_lq_g    = max(4,  round(6  * scale))
-    n_lq_a    = max(3,  round(4  * scale))
-    n_app_g   = max(2,  round(3  * scale))
-    n_app_a   = max(1,  round(2  * scale))
-
-    obj_m  = n_mcq + n_fib + 5          # MCQ + FIB + Match(5 always)
-    vsq_m  = n_vsq * 2
-    sq_m   = n_sq_a * 4
-    lq_m   = n_lq_a * 6
-    app_m  = n_app_a * 10
-    total  = obj_m + vsq_m + sq_m + lq_m + app_m
-
-    # ── Subject-specific instructions ───────────────────────────────
+# ═══════════════════════════════════════════════════════════════════════
+# AP/TS CLASS 9–10  SSC  (100-mark official pattern)
+# Technique: Role + CoT self-verification + few-shot anchors + strict counts
+# ═══════════════════════════════════════════════════════════════════════
+def _prompt_ap_ts_9_10(subject, chap, board, cls_str,
+                        m, difficulty, extra, math_note, pat):
     subj_l = (subject or "").lower()
-    specs  = p.get("subject_specifics", {})
+
     if "math" in subj_l:
-        subj_guide = (
-            "Section-VII must contain construction or proof of a theorem as one question. "
-            "All algebra steps must be shown. Numericals must include formula → substitution → answer with unit."
-        )
-        ex_vsq  = f"1. Find the area of a circle whose radius is 7 cm. [2 Marks]"
-        ex_sa   = f"11. The curved surface area of a cone is 550 cm². If the slant height is 25 cm, find the radius of its base. [4 Marks]"
-        ex_la   = f"17. (i) Prove that in a right triangle, the square of the hypotenuse equals the sum of squares of the other two sides (Pythagoras theorem). [6 Marks]"
-        ex_app  = f"23. A cylinder and a cone have the same radius 7 cm and the same height 14 cm.\n   (a) Find the volume of the cylinder. [3 Marks]\n   (b) Find the volume of the cone. [4 Marks]\n   (c) What is the ratio of their volumes? [3 Marks] [10 Marks]"
-    elif "science" in subj_l or "physics" in subj_l or "chemistry" in subj_l:
-        subj_guide = (
-            "Section-VII must include numericals with formula, substitution, calculation, and unit. "
-            "Biology diagrams must be fully labelled."
-        )
-        ex_vsq  = f"1. State Newton's Second Law of Motion. [2 Marks]"
-        ex_sa   = f"11. A train accelerates uniformly from 20 m/s to 60 m/s in 10 seconds. Find the acceleration and the distance covered. [4 Marks]"
-        ex_la   = f"17. (i) With the help of a neat labelled diagram, explain the structure of the human heart and trace the path of blood through it. [6 Marks]"
-        ex_app  = f"23. A resistor of 6 Ω is connected to a 12 V battery.\n   (a) Calculate the current. [3 Marks]\n   (b) If two such resistors are connected in series, find the equivalent resistance and current. [4 Marks]\n   (c) If connected in parallel, find the equivalent resistance and total current. [3 Marks] [10 Marks]"
-    elif "social" in subj_l or "history" in subj_l or "geography" in subj_l:
-        subj_guide = (
-            "Section-VII must contain a map-marking question — list specific rivers/mountains/cities "
-            "for the student to mark on an outline map of India."
-        )
-        ex_vsq  = f"1. What was the main cause of the French Revolution? [2 Marks]"
-        ex_sa   = f"11. Explain the effects of the Non-Cooperation Movement on British rule in India. [4 Marks]"
-        ex_la   = f"17. (i) Describe the physical features of the Northern Plains of India. [6 Marks]"
-        ex_app  = f"23. Study the outline map of India provided.\n   (a) Mark and label the Deccan Plateau. [3 Marks]\n   (b) Mark the river Godavari and its mouth. [4 Marks]\n   (c) Shade the region with black soil. [3 Marks] [10 Marks]"
+        subject_guidance = """\
+SUBJECT — MATHEMATICS:
+• Every numerical: write formula first, substitute values with units, show EACH arithmetic step, box the final answer.
+• Theorems/proofs: state what is Given, what To Prove, then write numbered Steps each with a Reason.
+• Constructions (Section VII): list steps one by one — "Step 1: Draw AB = 5 cm", "Step 2: ..."
+• Wrong options in MCQ must correspond to common student errors (sign slip, formula confusion, wrong formula chosen)."""
+
+    elif any(k in subj_l for k in ["physics","chemistry","science","biology"]):
+        subject_guidance = """\
+SUBJECT — SCIENCE:
+• Physics/Chemistry numericals: Given → Formula → Substitution → Working → Answer with unit.
+• Chemical equations must be balanced with state symbols: (s) (l) (g) (aq).
+• Biology questions needing diagrams: write [DIAGRAM: description with every label] on its own line.
+• Section VII: application/experiment questions. Show full working. Don't skip steps."""
+
+    elif any(k in subj_l for k in ["social","history","geography","civics","economics"]):
+        subject_guidance = """\
+SUBJECT — SOCIAL STUDIES:
+• VSQ: one crisp factual sentence per mark. No waffle.
+• SA: 4–5 distinct points with sub-headings where helpful.
+• LA: structured essay — intro, 5–6 points, conclusion.
+• Section VII must include one map question: ask students to mark exactly 5 items on an outline map of India."""
+
     elif "english" in subj_l:
-        subj_guide = (
-            "English has no Part A Objective section. "
-            "Use: Reading Comprehension (unseen passage), Writing (letter/essay), Grammar (gap fill / transformation), "
-            "Literature (textbook prose and poetry questions)."
-        )
-        ex_vsq  = f"1. What does the poet want to convey through the poem 'The Frog and the Nightingale'? [2 Marks]"
-        ex_sa   = f"11. Write a letter to the Editor of a newspaper complaining about the poor condition of roads in your area. [4 Marks]"
-        ex_la   = f"17. (i) Read the following passage and answer the questions that follow: [6 Marks]"
-        ex_app  = f"23. The following passage has errors. Rewrite it correctly:\n[passage with 5 errors] [10 Marks]"
+        subject_guidance = """\
+SUBJECT — ENGLISH (no Part A objective section):
+Section A — Reading (20 marks): unseen passage ~250 words + 5 comprehension questions.
+Section B — Writing (20 marks): formal letter OR essay (150-200 words) OR notice.
+Section C — Grammar (20 marks): gap-fill, sentence transformation, editing.
+Section D — Literature (40 marks): questions from prescribed Class texts (prose + poetry).
+Do NOT generate any Part A objective section for English."""
+
     else:
-        subj_guide = "Questions must be curriculum-accurate, age-appropriate, and well-structured."
-        ex_vsq  = f"1. Define the key concept from {chap} in one or two sentences. [2 Marks]"
-        ex_sa   = f"11. Explain a real-world application of {chap} with an example. [4 Marks]"
-        ex_la   = f"17. (i) Describe in detail a major process or law from {chap} with a diagram. [6 Marks]"
-        ex_app  = f"23. A multi-part problem based on {chap}.\n   (a) Part 1 [3 Marks]\n   (b) Part 2 [4 Marks]\n   (c) Part 3 [3 Marks] [10 Marks]"
+        subject_guidance = f"""\
+SUBJECT — {subject.upper()}:
+• Questions must follow the official board textbook for Class {cls_str}.
+• Progress from simple recall (Part A) to deep application (Section VII)."""
 
-    ex_mcq  = (f"1. The total surface area of a sphere of radius r is: [1 Mark]\n"
-               f"   (A) $\\pi r^{{2}}$  (B) $2\\pi r^{{2}}$  (C) $3\\pi r^{{2}}$  (D) $4\\pi r^{{2}}$   (   )")
-    ex_fib  = f"{n_mcq+1}. The volume of a cuboid of length l, breadth b and height h is __________. [1 Mark]"
-    ex_match= ("| Group A | Group B |\n|---|---|\n"
-               "| Volume of sphere | $\\frac{{4}}{{3}}\\pi r^{{3}}$ |\n"
-               "| Volume of cylinder | $\\pi r^{{2}}h$ |\n"
-               "| Volume of cone | $\\frac{{1}}{{3}}\\pi r^{{2}}h$ |\n"
-               "| Curved surface area of cone | $\\pi r l$ |\n"
-               "| Total surface area of cylinder | $2\\pi r(r+h)$ |")
+    diff_mix = {
+        "Easy":   "Bloom's: 50% Remember/Understand, 30% Apply, 20% Analyse",
+        "Medium": "Bloom's: 25% Remember/Understand, 40% Apply, 25% Analyse, 10% Evaluate",
+        "Hard":   "Bloom's: 10% Remember, 20% Understand, 35% Apply, 25% Analyse, 10% Evaluate",
+    }.get(difficulty, "Bloom's: 25% Remember/Understand, 40% Apply, 25% Analyse, 10% Evaluate")
 
-    return f"""You are a Class {cls_str} {board} examiner. Write a complete {subject} question paper on the topic: {chap}.
-
-PAPER SPECIFICATIONS:
-Board: {board}   Class: {cls_str}   Subject: {subject}   Chapter: {chap}
-Total Marks: {total}   Duration: {dur}   Difficulty: {difficulty}
+    return f"""You are a senior question-paper setter for {board}, Class {cls_str}, with 15 years of experience.
+Your papers are used as official model papers by the board. Quality, accuracy, and correct marks are non-negotiable.
 {extra}
-EXAM STRUCTURE (AP/TS SSC official pattern):
-Part A — Objective ({obj_m} marks): handed in after 30 minutes
-  Section-I:  {n_mcq} MCQ × 1 mark
-  Section-II: {n_fib} Fill-in-the-blank × 1 mark
-  Section-III: Match the Following (5 pairs × 1 mark = 5 marks)
-Part B — Written ({vsq_m + sq_m + lq_m + app_m} marks):
-  Section-IV:  {n_vsq} VSQ × 2 marks (attempt ALL)
-  Section-V:   {n_sq_g} SA given, attempt any {n_sq_a} × 4 marks each
-  Section-VI:  {n_lq_g} LA given (each with OR), attempt any {n_lq_a} × 6 marks each
-  Section-VII: {n_app_g} Application given, attempt any {n_app_a} × 10 marks each
+━━━ PAPER SPECIFICATION ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Subject : {subject}
+Topic   : {chap}
+Class   : {cls_str}   Board: {board}
+Marks   : 100 total   Difficulty: {difficulty}
+{diff_mix}
+━━━ MANDATORY SECTION STRUCTURE ━━━━━━━━━━━━━━━━━━━━━━━
+Before writing any question, think through the section counts:
 
-SUBJECT GUIDANCE: {subj_guide}
+PART A — OBJECTIVE (20 marks, given separately, collected after 30 min)
+  Section I   — 10 MCQ       × 1 mark  = 10 marks
+  Section II  — 5  Fill-blank × 1 mark =  5 marks
+  Section III — 1  Match (5 pairs) × 1 = 5 marks
+                                Subtotal = 20 marks ✓
+
+PART B — WRITTEN (80 marks, continued in answer booklet)
+  Section IV  — 10 VSQ        ALL compulsory  × 2 marks =  20 marks
+  Section V   — 6 SA given,   attempt any 4   × 4 marks =  16 marks
+  Section VI  — 6 LA given,   attempt any 4   × 6 marks =  24 marks
+                (each LA must have an OR alternative of equal marks)
+  Section VII — 3 Application, attempt any 2  × 10 marks = 20 marks
+                                        TOTAL = 100 marks ✓
+
+{subject_guidance}
 {math_note}
-FORMAT RULES (violations = wrong paper):
-F1. NEVER write any text inside square brackets. Every word you write is the actual question.
-F2. Every MCQ: write the full question stem, then ALL FOUR OPTIONS on ONE line, then (   ) for the answer.
-F3. Every fill-in-the-blank: write the full sentence with __________ where the blank goes.
-F4. Match: use a pipe table with two columns — Group A and Group B.
-F5. Marks label at end of each question: [1 Mark] [2 Marks] [4 Marks] [6 Marks] [10 Marks]
-F6. For diagrams: write [DIAGRAM: <exact description of what to draw>] on its own line.
-F7. Answer key after the text "ANSWER KEY" — show formula + substitution + every step + unit.
-F8. Section-VI questions: pair each question with an OR alternative of equal difficulty.
-F9. Total marks must add up exactly to {total}.
+━━━ FEW-SHOT FORMAT EXAMPLES ━━━━━━━━━━━━━━━━━━━━━━━━━━
+Study these EXACT formats. Your paper must match them precisely.
 
-EXACT FORMAT — write every question EXACTLY like these real examples:
+--- MCQ (Section I) ---
+1. The tangent to a circle is always __________ to the radius at the point of contact. [1 Mark]
+   (A) parallel   (B) perpendicular   (C) equal   (D) bisected   (   )
 
-MCQ example:
-{ex_mcq}
+--- Fill-in-blank (Section II) ---
+11. The sum of the first n natural numbers is given by the formula __________. [1 Mark]
 
-Fill-in-blank example:
-{ex_fib}
+--- Match (Section III) ---
+16. Match the following: [5 Marks]
+   Group A                        |  Group B
+   --------------------------------|------------------
+   Tangent from external point     |  $\\sqrt{{d^{{2}}-r^{{2}}}}$
+   Area of sector                  |  $\\frac{{\\theta}}{{360}}\\pi r^{{2}}$
+   Pythagoras theorem              |  $AB^{{2}}+BC^{{2}}=AC^{{2}}$
+   Volume of cylinder              |  $\\pi r^{{2}}h$
+   Curved surface area of cone     |  $\\pi r l$
 
-Match example:
-{n_mcq+n_fib+1}. Match Group-A with Group-B: [5 Marks]
-{ex_match}
+--- VSQ (Section IV) ---
+1. Find the length of the tangent drawn from a point 13 cm away from the centre of a circle of radius 5 cm. [2 Marks]
 
-VSQ example:
-{ex_vsq}
+--- SA (Section V) ---
+11. Prove that the tangents drawn from an external point to a circle are equal in length. [4 Marks]
 
-SA example:
-{ex_sa}
+--- LA with OR (Section VI) ---
+17. (i) Prove Pythagoras theorem: In a right triangle, the square on the hypotenuse equals the sum of squares on the other two sides. Draw a neat diagram. [6 Marks]
+    OR
+   (ii) In a right triangle ABC with $\\angle B = 90^{{\\circ}}$, D is the midpoint of BC. Prove that $4AD^{{2}} = 4AB^{{2}} + BC^{{2}}$. [6 Marks]
 
-LA example:
-{ex_la}
+--- Application (Section VII) ---
+23. A solid is formed by placing a cone of radius 3.5 cm and slant height 7 cm on top of a cylinder of the same radius and height 10 cm. [10 Marks]
+   (a) Find the curved surface area of the cone. [2 Marks]
+   (b) Find the curved surface area of the cylinder. [3 Marks]
+   (c) Find the total surface area of the solid. [2 Marks]
+   (d) Find the volume of the solid. (Use $\\pi = \\frac{{22}}{{7}}$) [3 Marks]
 
-Application example:
-{ex_app}
+━━━ STRICT RULES ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+1. MARKS LABEL: Every question MUST end with its exact marks in square brackets — [1 Mark], [2 Marks], [4 Marks], [6 Marks], [10 Marks]. The number must match the section it belongs to. This is non-negotiable.
+2. QUESTION NUMBERS: Section I: Q1–Q10. Section II: Q11–Q15. Section III: Q16 (single match question). Section IV: renumber Q1–Q10. Section V: Q11–Q16. Section VI: Q17–Q22. Section VII: Q23–Q25.
+3. MCQ ANSWER BRACKET: Every MCQ must end with (   ) on the same line after option D.
+4. SECTION HEADERS: Write exactly as shown — "Section I — Multiple Choice Questions [1 Mark each]" etc.
+5. DIAGRAMS: When a question requires a diagram (geometry proof, biology structure, physics setup), put [DIAGRAM: full description with all required labels] on its own line immediately after the question.
+6. DO NOT write instructions, do not add a preamble, do not explain your choices. Output the paper directly.
+7. SELF-CHECK: After writing all sections, mentally count: 10 MCQ ✓, 5 fill-blank ✓, 1 match ✓, 10 VSQ ✓, 6 SA ✓, 6 LA ✓, 3 App ✓. Then write the answer key.
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-NOW WRITE THE COMPLETE PAPER. Start immediately with the header line.
-Do NOT copy the examples above — write NEW questions entirely about: {chap}
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+━━━ ANSWER KEY FORMAT ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+After all questions, write exactly: ANSWER KEY
 
-Subject: {subject}   Class: {cls_str}   Total Marks: {total}
-Board: {board}   Time: {dur}
+Section I:   1.(  )  2.(  )  ... 10.(  )   — fill in the letter
+Section II:  11. answer   12. answer  ... 15. answer
+Section III: Match: 1→ , 2→ , 3→ , 4→ , 5→
+Section IV:  For each VSQ, write the key answer in 2–4 lines.
+Section V–VII: Show FULL WORKING — every step, not just the final answer.
 
-GENERAL INSTRUCTIONS
-1. Answer all the questions under Part-A on the question paper itself and attach it to the answer booklet at the end.
-2. Read the instructions carefully and answer only the required number of questions in each section.
-3. Figures to the right indicate marks allotted.
-4. Neat and fully labelled diagrams must be drawn wherever required.
-5. Write the question number and sub-question number clearly.
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+BEGIN THE PAPER. Write the header line first, then start Section I.
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-PART A — OBJECTIVE  ({obj_m} Marks)
-(Answer in the question paper itself. Hand it over to the invigilator after 30 minutes.)
+Subject: {subject}   Class: {cls_str}   Total Marks: 100
+Board: {board}
 
-Section-I — Multiple Choice Questions  [1 Mark each]
+PART A — OBJECTIVE  (20 Marks)
+
+Section I — Multiple Choice Questions  [1 Mark each]
 
 """
 
 
-def _prompt_ap_ts_6_8(subject, chap, board, cls_str, m, difficulty, extra, math_note, pat):
-    """Direct-instruction prompt for Classes 6-8 (SA1/SA2 pattern). No placeholders."""
-    dur = "2 Hours 30 Minutes"
-
-    # Fixed structure scaled to m
-    obj_m  = max(5,  round(m * 0.20))
-    vsq_m  = max(10, round(m * 0.40))
-    sa_m   = max(5,  round(m * 0.20))
-    la_m   = m - obj_m - vsq_m - sa_m
-
-    n_obj  = obj_m
-    n_vsq  = vsq_m // 2
-    n_sa_g = max(4, (sa_m // 5) + 2)
-    n_sa_a = max(2, sa_m // 5)
-    n_la_g = max(2, (la_m // 10) + 1)
-    n_la_a = max(1, la_m // 10)
-
+# ═══════════════════════════════════════════════════════════════════════
+# AP/TS CLASSES 6–8  Summative Assessment (50 marks)
+# ═══════════════════════════════════════════════════════════════════════
+def _prompt_ap_ts_6_8(subject, chap, board, cls_str,
+                       m, difficulty, extra, math_note, pat):
     subj_l = (subject or "").lower()
+    diff_mix = {
+        "Easy":   "Simple recall and recognition. Age-appropriate language for Class {cls_str}.",
+        "Medium": "Mix of recall, understanding, and short application.",
+        "Hard":   "Conceptual questions requiring explanation, comparison, and analysis.",
+    }.get(difficulty, "Mix of recall, understanding and short application.")
+
     if "math" in subj_l:
-        ex_obj = f"1. The perimeter of a square with side 5 cm is: [1 Mark]\n   (A) 10 cm  (B) 20 cm  (C) 25 cm  (D) 5 cm   (   )"
-        ex_vsq = f"{n_obj+1}. Find the area of a rectangle with length 8 cm and breadth 5 cm. [2 Marks]"
-        ex_sa  = f"{n_obj+n_vsq+1}. A triangle has base 12 cm and height 9 cm. Find its area. Also find the area of a square with the same perimeter as the triangle if all sides of the triangle are equal. [5 Marks]"
-        ex_la  = f"{n_obj+n_vsq+n_sa_g+1}. The radius of a circle is 14 cm. Find its (a) circumference (b) area. Also find the area of a semi-circle with the same radius. Show all working. [10 Marks]"
+        subject_guidance = "Maths: Objective items test formulas/definitions. VSQ: short computation with working. SA: multi-step word problem — show formula → substitution → steps → answer with unit. LA: longer proof or complex word problem."
     elif "science" in subj_l:
-        ex_obj = f"1. Which part of the plant prepares food? [1 Mark]\n   (A) Root  (B) Stem  (C) Leaf  (D) Flower   (   )"
-        ex_vsq = f"{n_obj+1}. What is photosynthesis? Write the equation for photosynthesis. [2 Marks]"
-        ex_sa  = f"{n_obj+n_vsq+1}. Explain the differences between autotrophs and heterotrophs with two examples each. [5 Marks]"
-        ex_la  = f"{n_obj+n_vsq+n_sa_g+1}. Draw a neat labelled diagram of the human digestive system and explain the role of each organ in digestion. [10 Marks]"
+        subject_guidance = "Science: Objective tests definitions. VSQ: label/define/name. SA: explain with diagram or short experiment. LA: detailed explanation with fully labelled diagram."
     else:
-        ex_obj = f"1. [A factual question about {chap}] [1 Mark]\n   (A) option  (B) option  (C) option  (D) option   (   )"
-        ex_vsq = f"{n_obj+1}. Define the key term from {chap}. [2 Marks]"
-        ex_sa  = f"{n_obj+n_vsq+1}. Explain a major concept from {chap} with an example. [5 Marks]"
-        ex_la  = f"{n_obj+n_vsq+n_sa_g+1}. Write a detailed answer about an important topic from {chap} with a diagram if applicable. [10 Marks]"
+        subject_guidance = f"{subject}: Questions follow the board textbook. Simple to complex progression."
 
-    return f"""You are a Class {cls_str} {board} examiner. Write a complete {subject} question paper on the topic: {chap}.
-
-PAPER SPECIFICATIONS:
-Board: {board}   Class: {cls_str}   Subject: {subject}   Chapter: {chap}
-Total Marks: {m}   Duration: {dur}   Difficulty: {difficulty}
+    return f"""You are a {board} Class {cls_str} examiner setting a Summative Assessment paper.
 {extra}
-PAPER STRUCTURE:
-Section A — Objective: {n_obj} questions × 1 mark = {obj_m} marks (MCQ + Fill-in-blank + Match)
-Section B — VSQ: {n_vsq} questions × 2 marks = {vsq_m} marks (answer ALL)
-Section C — SA: {n_sa_g} given, attempt any {n_sa_a} × 5 marks = {sa_m} marks
-Section D — LA: {n_la_g} given, attempt any {n_la_a} × 10 marks = {la_m} marks
-Total = {obj_m} + {vsq_m} + {sa_m} + {la_m} = {m} marks
+Subject: {subject}  |  Topic: {chap}  |  Class: {cls_str}  |  Total Marks: 50
+Difficulty: {difficulty} — {diff_mix}
+
+━━━ MANDATORY STRUCTURE ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Section A — Objective  (10 marks):  5 MCQ (Q1–5) + 3 Fill-blank (Q6–8) + 1 Match 2-pair (Q9) = 10 marks
+Section B — VSQ        (20 marks): 10 questions (Q1–10) × 2 marks = 20 marks  [ALL compulsory]
+Section C — SA         (10 marks):  4 questions (Q11–14) given, attempt any 2 × 5 marks = 10 marks
+Section D — LA         (10 marks):  2 questions (Q15–16) given, attempt any 1 × 10 marks = 10 marks
+TOTAL = 50 marks ✓
+
+{subject_guidance}
 {math_note}
-FORMAT RULES:
-F1. NEVER write any text inside square brackets except [marks]. Every word is the actual question.
-F2. MCQ options on ONE line: (A) ... (B) ... (C) ... (D) ...  (   )
-F3. Fill-in-blank: full sentence with __________ in it.
-F4. All working must be shown in answer key: formula → substitution → calculation → answer with unit.
-F5. Marks label at end of every question.
+━━━ FORMAT (follow exactly) ━━━━━━━━━━━━━━━━━━━━━━━━━━━
+MCQ: 1. [question] [1 Mark]
+     (A) opt   (B) opt   (C) opt   (D) opt   (   )
+Fill-blank: 6. [complete sentence with __________ for the blank] [1 Mark]
+Match: 9. Match Group A with Group B: [2 Marks]  (pipe table, 2 data rows)
+VSQ: 1. [question] [2 Marks]
+SA:  11. [question] [5 Marks]
+LA:  15. [question] [10 Marks]
 
-EXACT FORMAT EXAMPLES (write NEW questions like these):
+MARKS LABEL: Every question must end with [X Mark] or [X Marks] — matching section values.
 
-Section A example:
-{ex_obj}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+BEGIN — write header then Section A directly:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-Section B example:
-{ex_vsq}
+Subject: {subject}   Class: {cls_str}   Total Marks: 50
+Board: {board}
 
-Section C example:
-{ex_sa}
-
-Section D example:
-{ex_la}
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-NOW WRITE THE COMPLETE PAPER. Start with the header. Write NEW questions about: {chap}
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-Subject: {subject}   Class: {cls_str}   Total Marks: {m}
-Board: {board}   Time: {dur}
-
-GENERAL INSTRUCTIONS
-1. Answer ALL questions in Section A and Section B.
-2. Answer any {n_sa_a} questions from Section C.
-3. Answer any {n_la_a} question from Section D.
-4. Figures to the right indicate marks. Draw neat diagrams wherever required.
-
-Section A — Objective  ({obj_m} Marks)
-(MCQ: choose correct answer, Fill-in-blank: fill the blank, Match: draw arrows)
+Section A — Objective  (10 Marks)
 
 """
 
 
 # ═══════════════════════════════════════════════════════════════════════
-# COMPETITIVE EXAM PROMPT (NTSE / NSO / IMO / IJSO)
-# Uses the actual pattern from competitive.json
+# COMPETITIVE EXAM ROUTER
 # ═══════════════════════════════════════════════════════════════════════
-def _prompt_competitive(exam, subject, chap, cls_str, m, difficulty, extra, math_note):
+def _prompt_competitive(exam, subject, chap, cls_str,
+                        m, difficulty, extra, math_note):
     comp = _PATTERN_COMP.get("exams", {}).get(exam, {})
     exam_full = comp.get("full_name", exam)
-    body  = comp.get("body", comp.get("conducting_body", ""))
-    elig  = comp.get("eligibility", f"Class {cls_str}")
-    style = comp.get("question_style", "All MCQ. 4 options. One correct.")
-    p_note= comp.get("paper_generation_note", "")
-
-    # Exam-specific structure
-    if exam == "NTSE":
-        return _prompt_ntse(comp, exam_full, subject, chap, cls_str, m, difficulty, extra, math_note)
-    elif exam == "NSO":
-        return _prompt_nso(comp, exam_full, subject, chap, cls_str, m, difficulty, extra, math_note)
-    elif exam == "IMO":
-        return _prompt_imo(comp, exam_full, subject, chap, cls_str, m, difficulty, extra, math_note)
-    elif exam == "IJSO":
-        return _prompt_ijso(comp, exam_full, subject, chap, cls_str, m, difficulty, extra, math_note)
-    else:
-        return _prompt_generic_comp(exam, subject, chap, cls_str, m, difficulty, extra, math_note)
+    dispatch = {"NTSE": _prompt_ntse, "NSO": _prompt_nso,
+                "IMO": _prompt_imo, "IJSO": _prompt_ijso}
+    fn = dispatch.get(exam, _prompt_generic_comp)
+    return fn(comp, exam_full, subject, chap, cls_str,
+              m, difficulty, extra, math_note)
 
 
-def _prompt_ntse(comp, exam_full, subject, chap, cls_str, m, difficulty, extra, math_note):
-    """NTSE MAT or SAT — direct instruction, zero placeholders."""
-    stage_info = comp.get("stages", {})
-    s1 = stage_info.get("Stage_1_State", {})
-    marking = s1.get("marking", "No negative marking at Stage 1.")
+# ═══════════════════════════════════════════════════════════════════════
+# NTSE — 100-mark MAT or SAT
+# ═══════════════════════════════════════════════════════════════════════
+def _prompt_ntse(comp, exam_full, subject, chap, cls_str,
+                 m, difficulty, extra, math_note):
     subj_l = (subject or "").lower()
-    is_mat = any(k in subj_l for k in ["mat", "mental", "reasoning", "ability"])
+    is_mat = any(k in subj_l for k in ["mat","mental","reasoning","ability"])
 
     if is_mat:
-        n_q = min(100, max(10, m))
-        return f"""You are an expert NTSE examiner. Write a complete NTSE Stage 1 MAT (Mental Ability Test) practice paper for Class {cls_str}.
+        return f"""You are an experienced NTSE MAT question setter. Generate a complete, ready-to-use practice paper.
 
-SPECIFICATIONS: {n_q} questions × 1 mark = {n_q} marks | Time: 2 Hours | {marking} | Difficulty: {difficulty}
+EXAM: {exam_full} — Mental Ability Test (MAT)
+Class: {cls_str}   Total: 100 Questions × 1 mark = 100 marks   Time: 2 Hours   No negative marking
+Difficulty: {difficulty}
 {extra}
-DISTRIBUTION (write exactly this many of each type):
-Verbal Analogy 10 | Non-Verbal Analogy 8 | Number Series 10 | Letter Series 8 | Mixed Series 5
-Coding-Decoding 8 | Blood Relations 6 | Direction & Distance 6 | Ranking/Ordering 6
-Clock & Calendar 5 | Venn Diagrams 5 | Mirror/Water Image 8 | Figure Counting 5 | Mathematical Reasoning 10
-{math_note}
+━━━ QUESTION TYPE DISTRIBUTION (total must equal 100) ━━━
+Q1–12    Verbal Analogy                    12 questions
+Q13–22   Series (Number / Letter)          10 questions
+Q23–32   Non-Verbal Analogy (describe)     10 questions
+Q33–40   Coding–Decoding                    8 questions
+Q41–46   Blood Relations                    6 questions
+Q47–52   Direction & Distance               6 questions
+Q53–58   Ranking & Ordering                 6 questions
+Q59–64   Clock & Calendar                   6 questions
+Q65–70   Venn Diagrams                      6 questions
+Q71–76   Mirror / Water Image (text only)   6 questions
+Q77–82   Classification / Odd-One-Out       6 questions
+Q83–88   Pattern Completion (text only)     6 questions
+Q89–94   Mathematical Operations            6 questions
+Q95–100  Mixed Reasoning                    6 questions
+TOTAL = 100 ✓
 
-QUALITY RULES:
-- Every question is 100% complete — a student reads it, thinks, and picks an answer. No description, no label, no instruction embedded in the question text.
-- Four options (A)(B)(C)(D) on one line. Exactly one is correct. Distractors are plausible.
-- Marks label at end: [1 Mark]
-- Answer key: number, correct letter, one-sentence explanation.
+━━━ QUALITY RULES ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+• Every question is 100% self-contained — no reference to figures not described in text.
+• All 4 options are plausible. Wrong options must represent specific reasoning errors.
+• Increase difficulty within each type (Q1 easier than Q12 within Verbal Analogy, etc.).
+• For visual-based types (mirror image, pattern): describe the figure and relationships clearly in words.
 
-FORMAT EXAMPLES (write all questions like these):
+FORMAT (every question):
+Q[n]. [full question text] [1 Mark]
+(A) option   (B) option   (C) option   (D) option
 
-1. BOOK : LIBRARY :: Painting : ? [1 Mark]
-   (A) Artist  (B) Museum  (C) Canvas  (D) Colour
+ANSWER KEY after all 100 questions:
+Q1.(B)  Q2.(A)  Q3.(D)  ... (10 per line)
+Then for Q1–Q20: one-line explanation of the reasoning rule used.
 
-2. Find the missing number: 2, 6, 12, 20, 30, ? [1 Mark]
-   (A) 40  (B) 42  (C) 44  (D) 45
+BEGIN the paper now. Write the header then Q1 directly:
 
-3. If CAT = 3120, DOG = 4157, then COT = ? [1 Mark]
-   (A) 3157  (B) 3152  (C) 3147  (D) 3165
+Exam: {exam_full} — MAT
+Class: {cls_str}   Marks: 100   Time: 2 Hours   No Negative Marking
 
-4. A is the father of B. B is the sister of C. C is the mother of D. How is A related to D? [1 Mark]
-   (A) Father  (B) Grandfather  (C) Uncle  (D) Great-grandfather
+INSTRUCTIONS: Each question carries 1 mark. No negative marking.
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-NOW WRITE THE COMPLETE PAPER. Start directly with the header. Do NOT copy the examples.
-Write {n_q} brand-new original questions following the format above.
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-Exam: {exam_full} — Mental Ability Test
-Class: {cls_str}   Total Marks: {n_q}   Time: 2 Hours
-
-INSTRUCTIONS
-1. This paper contains {n_q} Multiple Choice Questions. Each carries 1 mark.
-2. {marking}
-3. Choose the correct option and darken the appropriate circle on the OMR sheet.
+Q1–Q12 — Verbal Analogy  [1 Mark each]
 
 """
-    else:
-        n_sci = 40; n_soc = 40; n_mat = 20
-        total_q = n_sci + n_soc + n_mat
-        topic = chap if chap and chap != "as per syllabus" else "Class 10 full syllabus"
-        return f"""You are an expert NTSE examiner. Write a complete NTSE Stage 1 SAT (Scholastic Aptitude Test) for Class {cls_str}.
 
-SPECIFICATIONS: {total_q} questions | Science {n_sci}Q + Social Science {n_soc}Q + Mathematics {n_mat}Q | 1 mark each | Time: 2 Hours | {marking} | Difficulty: {difficulty}
-Topic focus: {topic}
+    # SAT paper
+    topic = chap if chap and chap != "as per syllabus" else "Class 10 full syllabus"
+    return f"""You are an experienced NTSE SAT question setter. Generate a complete, ready-to-use practice paper.
+
+EXAM: {exam_full} — Scholastic Aptitude Test (SAT)
+Class: {cls_str}   Topic: {topic}   Total: 100 Q × 1 mark = 100 marks   Time: 2 Hours
+Difficulty: {difficulty}   No negative marking at Stage 1
 {extra}
-Science breakdown: Physics ~13Q, Chemistry ~13Q, Biology ~14Q
-Social Science breakdown: History ~13Q, Geography ~13Q, Civics ~7Q, Economics ~7Q
-Mathematics: Class 10 syllabus — Number System, Algebra, Geometry, Mensuration, Statistics, Probability
+━━━ MANDATORY SECTION DISTRIBUTION ━━━━━━━━━━━━━━━━━━━━━
+SCIENCE    Q1–Q40   (40 questions)
+  Physics     Q1–Q13   13 questions — Motion, Force, Light, Electricity, Magnetism, Sound
+  Chemistry   Q14–Q26  13 questions — Matter, Atoms, Molecules, Reactions, Acids/Bases, Periodic Table
+  Biology     Q27–Q40  14 questions — Cell, Life Processes, Reproduction, Heredity, Environment
+SOCIAL SCI  Q41–Q80  (40 questions)
+  History     Q41–Q53  13 questions — Revolution, Nationalism, Industrialisation, World Wars
+  Geography   Q54–Q66  13 questions — Resources, Agriculture, Physical features, Climate
+  Civics      Q67–Q73   7 questions — Constitution, Parliament, Rights, Federalism
+  Economics   Q74–Q80   7 questions — Development, Poverty, Food Security, Globalisation
+MATHEMATICS Q81–Q100 (20 questions)
+  All Class 10 topics: Number, Algebra, Geometry, Trig, Mensuration, Stats, Probability
+TOTAL = 100 ✓
 {math_note}
+━━━ QUALITY RULES ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+• Use NCERT Class 10 terminology and facts exactly.
+• 30% recall, 50% understanding/application, 20% multi-step analysis.
+• Wrong options represent specific misconceptions or calculation errors.
 
-QUALITY RULES:
-- Every question is complete — a student reads it and can answer. No description or label in the question.
-- 4 options (A)(B)(C)(D) on one line. One correct. Three plausible distractors based on common errors.
-- Language matches NCERT Class 10 textbook terminology exactly.
-- Marks label at end: [1 Mark]
-- Answer key: number, correct letter, one-sentence explanation.
+FORMAT: Q[n]. [question] [1 Mark]
+(A) option   (B) option   (C) option   (D) option
 
-FORMAT EXAMPLES:
+ANSWER KEY: List Q1.(B) Q2.(C) ... (10 per line). Then explain all Maths answers (Q81–Q100) step by step.
 
-1. A body is moving with uniform velocity. The net force acting on it is: [1 Mark]
-   (A) Equal to its weight  (B) In the direction of motion  (C) Zero  (D) Equal to ma
+BEGIN the paper now:
 
-2. The French Revolution began in the year: [1 Mark]
-   (A) 1776  (B) 1789  (C) 1804  (D) 1815
+Exam: {exam_full} — SAT
+Class: {cls_str}   Topic: {topic}   Marks: 100   Time: 2 Hours   No Negative Marking
 
-3. If the roots of $x^{{2}} - 5x + 6 = 0$ are $\\alpha$ and $\\beta$, then $\\alpha + \\beta$ equals: [1 Mark]
-   (A) 6  (B) −5  (C) 5  (D) −6
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Write the complete SAT paper. Start with the header. Do NOT copy the examples.
-Write {n_sci} Science + {n_soc} Social Science + {n_mat} Mathematics questions, numbered 1–{total_q}.
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-Exam: {exam_full} — Scholastic Aptitude Test
-Class: {cls_str}   Topic: {topic}   Total Marks: {total_q}   Time: 2 Hours
-
-INSTRUCTIONS
-1. {total_q} questions: Science (1–{n_sci}), Social Science ({n_sci+1}–{n_sci+n_soc}), Mathematics ({n_sci+n_soc+1}–{total_q}).
-2. Each carries 1 mark. {marking}
-
-SCIENCE  (Questions 1–{n_sci})
+SCIENCE — Physics  (Q1–Q13)  [1 Mark each]
 
 """
 
 
-def _prompt_nso(comp, exam_full, subject, chap, cls_str, m, difficulty, extra, math_note):
-    patt  = comp.get("paper_structure", {}).get("Classes_6_10", {})
-    total_q = patt.get("total_questions", 50)
-    total_m = patt.get("total_marks", 60)
-    dur     = patt.get("duration", "1 Hour")
-    marking = comp.get("marking", "No negative marking.")
-    s1_q = 10; s2_q = 35; s3_q = 5
+# ═══════════════════════════════════════════════════════════════════════
+# NSO — 50 questions, 60 marks, 1 hour
+# ═══════════════════════════════════════════════════════════════════════
+def _prompt_nso(comp, exam_full, subject, chap, cls_str,
+                m, difficulty, extra, math_note):
     topic = chap if chap and chap != "as per syllabus" else f"Class {cls_str} Science"
+    return f"""You are an expert NSO (Science Olympiad Foundation) question setter. Generate a complete practice paper.
 
-    return f"""You are an expert NSO examiner. Write a complete NSO (National Science Olympiad) practice paper for Class {cls_str}.
-
-SPECIFICATIONS: {total_q} questions | {total_m} marks | Time: {dur} | {marking} | Difficulty: {difficulty}
-Topic: {topic}
+EXAM: {exam_full}   Class: {cls_str}   Topic: {topic}   Difficulty: {difficulty}
+Total: 50 questions | 60 marks | 1 hour | No negative marking
 {extra}
-STRUCTURE:
-Section 1 — Logical Reasoning: {s1_q} questions × 1 mark = 10 marks
-Section 2 — Science: {s2_q} questions × 1 mark = 35 marks (from Class {cls_str} {topic} syllabus)
-Section 3 — Achiever's Section: {s3_q} questions × 3 marks = 15 marks (high-difficulty HOT questions)
+━━━ MANDATORY STRUCTURE ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Section 1 — Logical Reasoning   Q1–Q10   10 × 1 mark = 10 marks
+Section 2 — Science             Q11–Q45  35 × 1 mark = 35 marks
+Section 3 — Achiever's Section  Q46–Q50   5 × 3 marks = 15 marks
+TOTAL = 60 marks ✓
 {math_note}
+━━━ SECTION RULES ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 1 (Q1–10): Pure reasoning — analogy, series, coding, odd-one-out, direction. NO science content.
+SECTION 2 (Q11–45): Strictly Class {cls_str} science syllabus on "{topic}".
+  • 30% easy (definition/fact), 50% conceptual application, 20% slightly challenging.
+  • Wrong options = plausible misconceptions, not obviously wrong distractors.
+SECTION 3 (Q46–50): HOT questions — significantly harder, 3 marks each.
+  • Multi-step inference, experimental scenarios, data interpretation.
+  • A student who only knows the topic cannot solve these by recall alone.
 
-QUALITY RULES:
-- Section 1: pure reasoning (analogy, series, mirror image, coding, direction, blood relation, Venn). No science content.
-- Section 2: direct Class {cls_str} science questions — concepts, definitions, applications, diagrams described in words.
-- Section 3: multi-step, data-based, or application questions. Significantly harder than Section 2. Wrong options arise from plausible misconceptions.
-- Every question is 100% complete. Never leave a description or label where the question should be.
-- Options (A)(B)(C)(D) on one line. [1 Mark] or [3 Marks] at end.
-- Answer key: number, correct letter, one-sentence explanation.
+FORMAT:
+Q[n]. [question] [marks]
+(A) opt   (B) opt   (C) opt   (D) opt
 
-FORMAT EXAMPLES (write all questions like these):
+ANSWER KEY: Q1.(B) Q2.(A) ... (10 per line). For Q46–50: explain why correct AND why the best wrong option is wrong.
 
-Section 1 example:
-1. MICROSCOPE : BIOLOGIST :: Telescope : ? [1 Mark]
-   (A) Astronomer  (B) Physicist  (C) Chemist  (D) Geologist
-
-2. Find the next term: 1, 4, 9, 16, 25, ? [1 Mark]
-   (A) 30  (B) 36  (C) 49  (D) 35
-
-Section 2 example (Class {cls_str} Science):
-11. In photosynthesis, the gas released during the light reaction is: [1 Mark]
-    (A) Carbon dioxide  (B) Nitrogen  (C) Oxygen  (D) Hydrogen
-
-Section 3 example:
-46. A plant was kept in a dark room for 48 hours, then one leaf was covered with black paper and the plant was exposed to sunlight for 6 hours. The iodine test was performed on both leaves. Which observation is CORRECT? [3 Marks]
-    (A) Both leaves turn blue-black  (B) Covered leaf turns blue-black, uncovered stays brown
-    (C) Uncovered leaf turns blue-black, covered stays brown  (D) Both leaves stay brown
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Write the complete NSO paper. Start with the header. Do NOT copy the examples.
-Write {s1_q} Section 1 + {s2_q} Section 2 + {s3_q} Section 3 questions about: {topic}
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+BEGIN:
 
 Exam: {exam_full}
-Class: {cls_str}   Topic: {topic}   Total Marks: {total_m}   Time: {dur}
+Class: {cls_str}   Topic: {topic}   Total Marks: 60   Time: 1 Hour
 
-INSTRUCTIONS
-1. {total_q} questions: Section 1 ({s1_q}Q × 1M), Section 2 ({s2_q}Q × 1M), Section 3 ({s3_q}Q × 3M). Total: {total_m} marks.
-2. All MCQ. 4 options. {marking}
-
-Section 1 — Logical Reasoning  (10 Marks)
+Section 1 — Logical Reasoning  [Q1–Q10 | 1 Mark each]
 
 """
 
 
-def _prompt_imo(comp, exam_full, subject, chap, cls_str, m, difficulty, extra, math_note):
-    patt    = comp.get("paper_structure", {}).get("Classes_6_10", {})
-    total_q = patt.get("total_questions", 50)
-    total_m = patt.get("total_marks", 60)
-    dur     = patt.get("duration", "1 Hour")
-    marking = comp.get("marking", "No negative marking.")
-    s1_q = 10; s2_q = 25; s3_q = 10; s4_q = 5
+# ═══════════════════════════════════════════════════════════════════════
+# IMO — 50 questions, 60 marks, 1 hour
+# ═══════════════════════════════════════════════════════════════════════
+def _prompt_imo(comp, exam_full, subject, chap, cls_str,
+                m, difficulty, extra, math_note):
     topic = chap if chap and chap != "as per syllabus" else f"Class {cls_str} Mathematics"
+    return f"""You are an expert IMO (Science Olympiad Foundation) question setter. Generate a complete practice paper.
 
-    return f"""You are an expert IMO examiner. Write a complete IMO (International Mathematics Olympiad, SOF) practice paper for Class {cls_str}.
-
-SPECIFICATIONS: {total_q} questions | {total_m} marks | Time: {dur} | {marking} | Difficulty: {difficulty}
-Topic: {topic}
+EXAM: {exam_full}   Class: {cls_str}   Topic: {topic}   Difficulty: {difficulty}
+Total: 50 questions | 60 marks | 1 hour | No negative marking
 {extra}
-STRUCTURE:
-Section 1 — Logical Reasoning: {s1_q} questions × 1 mark (number/letter/figure based reasoning)
-Section 2 — Mathematical Reasoning: {s2_q} questions × 1 mark (Class {cls_str} {topic} syllabus)
-Section 3 — Everyday Mathematics: {s3_q} questions × 1 mark (real-life word problems)
-Section 4 — Achiever's Section: {s4_q} questions × 3 marks (multi-step hard problems)
+━━━ MANDATORY STRUCTURE ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Section 1 — Logical Reasoning      Q1–Q10   10 × 1 mark = 10 marks
+Section 2 — Mathematical Reasoning Q11–Q35  25 × 1 mark = 25 marks
+Section 3 — Everyday Mathematics   Q36–Q45  10 × 1 mark = 10 marks
+Section 4 — Achiever's Section     Q46–Q50   5 × 3 marks = 15 marks
+TOTAL = 60 marks ✓
 {math_note}
+━━━ SECTION RULES ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SEC 1 (Q1–10): Number analogies, letter series, Venn diagrams, ranking. NO direct maths computation.
+SEC 2 (Q11–35): Class {cls_str} maths on "{topic}". 30% formula application, 50% two-step, 20% multi-step. Wrong options = arithmetic/sign/formula errors.
+SEC 3 (Q36–45): Real-life word problems. Contexts: shopping, measurement, speed-distance-time, profit-loss, percentage, area. One numeric answer per question.
+SEC 4 (Q46–50): 3 marks each. Require 3+ reasoning steps. Combinatorics, geometric deduction, number theory, or multi-concept integration.
 
-QUALITY RULES:
-- Section 1: number analogies, letter series, figure patterns, data interpretation. No algebra.
-- Section 2: direct Class {cls_str} maths questions — concepts, formulas, computations from {topic}.
-- Section 3: word problems where maths is applied to real situations (shopping, measurement, time, distance).
-- Section 4: deep multi-step problems — require 3+ steps. Wrong options from common algebraic/arithmetic errors.
-- Every question is 100% complete. Options (A)(B)(C)(D) on one line. Marks label at end.
-- Answer key: number, correct letter, one-sentence working hint.
+FORMAT:
+Q[n]. [question] [marks]
+(A) opt   (B) opt   (C) opt   (D) opt
 
-FORMAT EXAMPLES (write all questions like these):
+ANSWER KEY: Q1.(B) Q2.(A) ... (10 per line). For Q46–50: full step-by-step working.
 
-Section 1 example:
-1. 4 : 16 :: 7 : ? [1 Mark]
-   (A) 28  (B) 49  (C) 42  (D) 21
-
-2. In a certain code, MATHS = 13, 1, 20, 8, 19. What is the code for SCIENCE? [1 Mark]
-   (A) 19, 3, 9, 5, 14, 3, 5  (B) 18, 2, 8, 4, 13, 2, 4  (C) 20, 4, 10, 6, 15, 4, 6  (D) 19, 3, 9, 5, 13, 3, 5
-
-Section 2 example (Class {cls_str} Maths):
-11. The volume of a sphere of radius 6 cm is: [1 Mark]
-    (A) $72\\pi$ cm³  (B) $144\\pi$ cm³  (C) $288\\pi$ cm³  (D) $216\\pi$ cm³
-
-Section 3 example:
-36. A cylindrical tank of radius 7 m and height 5 m is to be painted on the outside (excluding base). The cost of painting at ₹12 per m² is: [1 Mark]
-    (A) ₹2,640  (B) ₹3,080  (C) ₹2,200  (D) ₹1,848
-
-Section 4 example:
-47. A cone and a hemisphere have the same base radius r and the same total surface area. Find the slant height of the cone in terms of r. [3 Marks]
-    (A) $r$  (B) $2r$  (C) $3r$  (D) $\\sqrt{{3}}r$
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Write the complete IMO paper. Start with the header. Do NOT copy the examples.
-Write {s1_q}+{s2_q}+{s3_q}+{s4_q} questions all about: {topic}
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+BEGIN:
 
 Exam: {exam_full}
-Class: {cls_str}   Topic: {topic}   Total Marks: {total_m}   Time: {dur}
+Class: {cls_str}   Topic: {topic}   Total Marks: 60   Time: 1 Hour
 
-INSTRUCTIONS
-1. {total_q} questions: Sec 1 ({s1_q}Q×1M), Sec 2 ({s2_q}Q×1M), Sec 3 ({s3_q}Q×1M), Sec 4 ({s4_q}Q×3M). Total: {total_m} marks.
-2. All MCQ. 4 options. {marking}
-
-Section 1 — Logical Reasoning  (10 Marks)
+Section 1 — Logical Reasoning  [Q1–Q10 | 1 Mark each]
 
 """
 
 
-def _prompt_ijso(comp, exam_full, subject, chap, cls_str, m, difficulty, extra, math_note):
-    s1      = comp.get("national_selection_stages", {}).get("Stage_1_NSEJS", {})
-    n_q     = s1.get("questions", 80)
-    dur     = "2 Hours"
-    n_phy   = 27; n_che = 27; n_bio = 26
-    topic   = chap if chap and chap != "as per syllabus" else "Integrated Physics, Chemistry and Biology (Class 9–10 level)"
+# ═══════════════════════════════════════════════════════════════════════
+# IJSO / NSEJS — 80 MCQ, +3/−1, 2 hours
+# ═══════════════════════════════════════════════════════════════════════
+def _prompt_ijso(comp, exam_full, subject, chap, cls_str,
+                 m, difficulty, extra, math_note):
+    topic = chap if chap and chap != "as per syllabus" else "Integrated Physics, Chemistry, Biology — Class 9-10 level"
+    return f"""You are a senior question setter at IAPT for NSEJS (National Standard Examination in Junior Science). Generate a complete Stage 1 practice paper.
 
-    return f"""You are an expert IJSO/NSEJS examiner. Write a complete NSEJS Stage 1 practice paper for Class {cls_str}.
-
-SPECIFICATIONS: {n_q} questions | Marking: +3 correct, −1 wrong | Time: {dur} | Difficulty: {difficulty}
-Physics {n_phy}Q + Chemistry {n_che}Q + Biology {n_bio}Q
-Topic: {topic}
+EXAM: {exam_full} (NSEJS Stage 1)   Class: {cls_str}   Difficulty: {difficulty}
+Topic focus: {topic}
+Total: 80 questions | Marking: +3 correct / −1 wrong / 0 unattempted | Time: 2 Hours
 {extra}
-LEVEL: Class 10 NCERT — but questions test deep understanding and application, not just recall.
-Multi-concept questions are encouraged (e.g. a question spanning both physics and chemistry).
+━━━ MANDATORY STRUCTURE ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PHYSICS    Q1–Q27    27 questions   [+3/−1 each]
+CHEMISTRY  Q28–Q54   27 questions   [+3/−1 each]
+BIOLOGY    Q55–Q80   26 questions   [+3/−1 each]
+TOTAL = 80 ✓
 {math_note}
+━━━ QUALITY STANDARDS (prestigious national olympiad) ━━
+LEVEL: Conceptual Class 9–10. Every question requires genuine understanding. Pure recall is insufficient.
+PHYSICS (Q1–27): Motion equations, Newton's laws, optics (lenses/mirrors), electricity (Ohm, circuits, power), magnetism. Include 5+ numericals requiring 2+ steps. At least 3 graph/data-reading questions.
+CHEMISTRY (Q28–54): Stoichiometry, mole concept, reaction types, acid-base indicators, periodic trends, carbon compounds. Include 3+ calculation questions. Balanced equations required.
+BIOLOGY (Q55–80): Cell organelles, nutrition/respiration/transport/excretion mechanisms, reproductive systems, heredity ratios, ecology. Include 4+ questions based on experimental observation ("If... then what is observed?").
+DISTRACTORS: Each wrong option must represent a specific, named misconception. No obviously wrong options.
 
-QUALITY RULES:
-- Every question is fully formed. A student reads it, thinks carefully, and picks one answer.
-- 4 options (A)(B)(C)(D) on one line. Exactly one is correct. Three distractors based on real misconceptions.
-- Questions must require thinking beyond direct textbook recall — apply, analyse, calculate.
-- Marks label: [+3/−1] at end of every question.
-- Answer key: number, correct letter, 2-sentence explanation (why correct + why top distractor is wrong).
+FORMAT:
+Q[n]. [full question] [+3/−1]
+(A) option   (B) option   (C) option   (D) option
 
-FORMAT EXAMPLES (write all questions like these):
+ANSWER KEY:
+Q1.(B) Q2.(C) ... (10 per line, all 80)
+Then for EVERY question: [correct letter] — one sentence: why correct + why best distractor is wrong.
 
-Physics example:
-1. A ball is thrown vertically upward with initial velocity $u$. The ratio of its KE at the point of projection to its KE when it has risen to half its maximum height is: [+3/−1]
-   (A) 1:2  (B) 2:1  (C) 1:4  (D) 4:1  ← wait wrong, actual answer should be (B) 2:1
-
-Chemistry example:
-28. When excess $Na_{{2}}CO_{{3}}$ solution is added to a solution of $CaCl_{{2}}$, the precipitate formed is: [+3/−1]
-   (A) $Ca(OH)_{{2}}$  (B) $CaCO_{{3}}$  (C) $Ca_{{3}}(CO_{{3}})_{{2}}$  (D) $NaCl$
-
-Biology example:
-55. In a normal adult human kidney, approximately what fraction of the glomerular filtrate is reabsorbed? [+3/−1]
-   (A) 99%  (B) 75%  (C) 50%  (D) 25%
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Write the complete paper. Start with the header. Do NOT copy the examples.
-Write {n_phy} Physics + {n_che} Chemistry + {n_bio} Biology questions, numbered 1–{n_q}.
-All must be original, challenging, and about: {topic}
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+BEGIN:
 
 Exam: {exam_full} — NSEJS Stage 1 Practice
-Class: {cls_str}   Topic: {topic}
-Total Questions: {n_q}   Marking: +3 / −1   Time: {dur}
+Class: {cls_str}   Topic: {topic}   Marking: +3/−1/0   Time: 2 Hours
 
-INSTRUCTIONS
-1. Each question has ONE correct answer. +3 for correct, −1 for wrong, 0 for unattempted.
-2. Questions cover Physics (1–{n_phy}), Chemistry ({n_phy+1}–{n_phy+n_che}), Biology ({n_phy+n_che+1}–{n_q}).
-
-PHYSICS  (Questions 1–{n_phy})
+PHYSICS  (Q1–Q27)  [+3/−1 each]
 
 """
 
 
-def _prompt_generic_comp(exam, subject, chap, cls_str, m, difficulty, extra, math_note):
-    n_q  = max(10, m // 4)
+# ═══════════════════════════════════════════════════════════════════════
+# GENERIC COMPETITIVE FALLBACK
+# ═══════════════════════════════════════════════════════════════════════
+def _prompt_generic_comp(exam, subject, chap, cls_str,
+                          m, difficulty, extra, math_note):
+    n_q   = max(25, m // 4)
     topic = chap if chap and chap != "as per syllabus" else f"Class {cls_str} {subject}"
-    return f"""Write a complete {exam} style MCQ practice paper.
-
-SPECIFICATIONS: {n_q} questions × 1 mark = {n_q} marks | Subject: {subject} | Class: {cls_str} | Topic: {topic} | Difficulty: {difficulty}
+    return f"""Generate a {exam} practice paper — {n_q} MCQ questions on {subject}, Class {cls_str}.
+Topic: {topic}   Difficulty: {difficulty}   Total marks: {n_q}
 {extra}{math_note}
+• 4 options per question (A)(B)(C)(D). Exactly one correct. Plausible distractors.
+• Questions numbered Q1–Q{n_q}. Each ends with [1 Mark].
+• Difficulty increases from Q1 to Q{n_q}.
 
-QUALITY RULES:
-- Every question is fully formed. Options (A)(B)(C)(D) on one line. [1 Mark] at end.
-- One correct answer. Three plausible distractors.
-- Complete answer key with correct letter and brief explanation.
+FORMAT: Q[n]. [question] [1 Mark]
+(A) opt   (B) opt   (C) opt   (D) opt
 
-EXAMPLES:
-1. A specific factual question about {topic} with a clear correct answer. [1 Mark]
-   (A) First option  (B) Second option  (C) Third option  (D) Fourth option
+ANSWER KEY after all questions: Q1.(B) Q2.(A) ... + one-sentence explanation per answer.
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Write all {n_q} questions. Do NOT copy examples. Start with the header.
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+BEGIN:
 
 Exam: {exam} Practice Paper
 Subject: {subject}   Class: {cls_str}   Topic: {topic}   Marks: {n_q}
 
-INSTRUCTIONS: All questions carry 1 mark. Choose the correct option.
-
 """
 
 
-# ═══════════════════════════════════════════════════════════════════════
+
 # SPLIT PAPER / KEY
 # ═══════════════════════════════════════════════════════════════════════
 def split_key(text):
@@ -1597,56 +1468,282 @@ def split_key(text):
 # ═══════════════════════════════════════════════════════════════════════
 # AI DIAGRAM GENERATION (SVG via Gemini)
 # ═══════════════════════════════════════════════════════════════════════
-def generate_diagram_svg(description: str):
-    prompt = f"""You are an expert scientific illustrator for school textbooks. Create a clean, accurate SVG diagram for:
 
-"{description}"
+# Subject-specific diagram prompt templates
+# ═══════════════════════════════════════════════════════════════════════
+# HIGH-QUALITY DIAGRAM ENGINE
+# Pipeline: Gemini SVG → wkhtmltoimage PNG @ 300dpi → embed in PDF
+# Falls back to pure ReportLab SVG renderer if wkhtmltoimage unavailable
+# ═══════════════════════════════════════════════════════════════════════
+import subprocess, tempfile, os
+from io import BytesIO
 
-STRICT RULES:
-1. Output ONLY the SVG code. No markdown, no explanation, no code fences.
-2. SVG must start with <svg and end with </svg>.
-3. Use: <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 260" width="400" height="260">
-4. Use ONLY black (#111111) and dark grey (#555555) for strokes. White (#ffffff) or very light grey (#f2f2f2) fills only.
-5. stroke-width="2" for main lines, stroke-width="1" for detail lines.
-6. Add clear text labels: font-size="12" font-family="Arial,sans-serif" fill="#111111"
-7. Geometrically accurate. Include all key parts a student needs.
-8. NO external resources, NO JavaScript, NO CSS, NO defs/filters — only: line, circle, rect, polygon, polyline, path, text, g.
-9. Every text element must have explicit x, y, font-size, font-family, fill attributes.
-10. Clean and suitable for a printed exam paper (black on white).
+# ── Check wkhtmltoimage availability once at startup ──────────────────
+def _has_wkhtmltoimage():
+    try:
+        r = subprocess.run(['which', 'wkhtmltoimage'], capture_output=True, timeout=3)
+        return r.returncode == 0
+    except Exception:
+        return False
 
-Output only the SVG:"""
-    text, err = call_gemini(prompt)
+_WKHTML_AVAILABLE = _has_wkhtmltoimage()
+
+
+# ── Subject → diagram type hints ─────────────────────────────────────
+_DIAG_CONTEXT = {
+    # Geometry
+    "tangent":      "circle geometry: external point P, two tangent lines PA and PB touching the circle at A and B, centre O, radius OA perpendicular to PA, all lengths and angles labelled",
+    "secant":       "circle with a secant line intersecting at two points and a tangent from an external point, all lengths labelled",
+    "circle":       "circle with centre O, radius, chord, tangent line, and relevant angles clearly labelled",
+    "triangle":     "triangle with labelled vertices A B C, sides a b c, angles, altitude or median as required",
+    "geometry":     "clean geometric figure with all vertices, sides, angles and relevant construction marks labelled",
+    "coordinate":   "coordinate plane with clearly marked x-axis and y-axis, origin O, labelled points, plotted line or curve",
+    "construction": "step-by-step geometric construction showing compass arcs (dashed), straight lines, and all labelled points",
+    "pythagoras":   "right-angled triangle with the right angle marked by a small square, sides labelled a, b, and hypotenuse c",
+    "similar":      "two similar triangles with corresponding sides and angles marked with tick marks and arcs",
+    "mensuration":  "3D solid (cylinder/cone/sphere/frustum) drawn in perspective with all dimensions r, h, l labelled",
+    # Physics
+    "circuit":      "electric circuit schematic using standard symbols: battery (long/short lines), resistor (rectangle), bulb (circle-X), switch, ammeter (A in circle), voltmeter (V in circle), connecting wires",
+    "ray":          "optics ray diagram: incident ray, normal (dashed), reflected or refracted ray, angles of incidence and reflection/refraction labelled with θ, lens or mirror surface",
+    "lens":         "convex or concave lens diagram showing principal axis, focal points F and 2F, object arrow, image arrow, three standard rays",
+    "mirror":       "concave or convex mirror diagram with principal axis, centre of curvature C, focal point F, object, image, and ray paths",
+    "motion":       "velocity-time or distance-time graph with clearly labelled axes, values on axes, and the plotted line or curve",
+    "force":        "free body diagram showing an object (rectangle or dot) with force arrows labelled: weight W downward, normal N upward, friction f horizontal, applied force F",
+    "magnet":       "bar magnet with field lines curving from N pole to S pole, arrowheads showing direction",
+    "refraction":   "glass slab or prism with incident ray, refracted ray inside the medium, emergent ray, normals (dashed) and angles i, r labelled",
+    # Biology
+    "cell":         "animal or plant cell (oval/rectangle outline) with organelles inside: nucleus (double circle), mitochondria, ribosomes, cell wall (plant only), vacuole, chloroplast (plant only), each labelled with leader lines",
+    "heart":        "human heart cross-section showing 4 chambers: left atrium (LA), right atrium (RA), left ventricle (LV), right ventricle (RV), aorta, pulmonary artery/vein, vena cava, bicuspid and tricuspid valves, all labelled",
+    "digestion":    "human digestive system: mouth → oesophagus → stomach → small intestine (duodenum, jejunum, ileum) → large intestine → rectum → anus, with liver and pancreas, all labelled",
+    "neuron":       "neuron showing: dendrites (branching), cell body (circle with nucleus), axon (long line), myelin sheath (oval segments), nodes of Ranvier, synaptic knob, direction of impulse arrow",
+    "eye":          "human eye cross-section: cornea, iris, pupil, lens, vitreous humour, retina, fovea, blind spot, optic nerve, ciliary muscles, all labelled",
+    "reproduction": "longitudinal section of a flower showing: sepal, petal, stamen (anther + filament), carpel (stigma + style + ovary), ovules, receptacle, all labelled",
+    "photosynthesis":"chloroplast structure: outer membrane, inner membrane, granum (stack of thylakoids), stroma, starch grain, labelled; with equation 6CO₂ + 6H₂O → C₆H₁₂O₆ + 6O₂ shown",
+    "respiration":  "mitochondrion cross-section: outer membrane, inner membrane, cristae (folds), matrix, ATP synthase, all labelled",
+    # Chemistry
+    "atom":         "Bohr atomic model: nucleus (circle) labelled with protons P and neutrons N, electron shells (concentric circles) with electrons (dots) on each shell, element symbol in centre",
+    "apparatus":    "laboratory glassware setup: stand with clamp holding a test tube or flask over a burner, beaker, thermometer, delivery tube, collecting jar over water trough, all labelled",
+    "molecule":     "structural formula or ball-and-stick model of a simple molecule with atoms as circles and bonds as lines, atom symbols labelled",
+    # Social Studies
+    "map":          "outline map of India showing state boundaries, major rivers (Ganga, Yamuna, Godavari, Krishna, Brahmaputra), mountain ranges (Himalayas, Western/Eastern Ghats), and key locations as required",
+}
+
+def _get_diag_context(desc: str) -> str:
+    dl = desc.lower()
+    # Score by how many context keywords appear in description
+    best_score, best_ctx = 0, "educational diagram for a school exam paper with all parts clearly labelled"
+    for key, ctx in _DIAG_CONTEXT.items():
+        if key in dl:
+            score = len(key)  # longer key = more specific match
+            if score > best_score:
+                best_score, best_ctx = score, ctx
+    return best_ctx
+
+
+# ── Master SVG generation prompt ──────────────────────────────────────
+def generate_diagram_svg(description: str) -> str | None:
+    """
+    Ask Gemini to produce a clean, accurate SVG for the given description.
+    Returns the SVG string or None on failure.
+    """
+    ctx = _get_diag_context(description)
+
+    prompt = f"""You are a professional technical illustrator producing diagrams for a Class 10 Indian school exam paper.
+
+DIAGRAM TO DRAW: "{description}"
+DIAGRAM TYPE: {ctx}
+
+═══════════════════════════════════════════════════
+OUTPUT RULES — follow every rule or the diagram is rejected
+═══════════════════════════════════════════════════
+1. Output ONLY the raw SVG code. No markdown code fences (``` or ```svg), no explanation, no comments outside SVG tags.
+2. SVG must start with exactly:
+   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 320" width="500" height="320">
+3. SVG must end with: </svg>
+4. Background: add <rect x="0" y="0" width="500" height="320" fill="white"/> as the very first element.
+
+VISUAL STYLE:
+5. Main structural lines: stroke="#111111" stroke-width="2"
+6. Secondary/dimension lines: stroke="#333333" stroke-width="1"
+7. Dashed/construction lines: stroke="#555555" stroke-width="1" stroke-dasharray="5,3"
+8. Arrow fill: fill="#111111"
+9. Shape fills: fill="white" for closed shapes (triangles, circles, rectangles)
+10. Shaded regions (if needed): fill="#e8e8e8"
+
+LABELLING — critical for educational quality:
+11. All labels: font-family="Arial, Helvetica, sans-serif" font-size="13" fill="#111111"
+12. Smaller secondary labels (angle names, dimension ticks): font-size="11"
+13. Place every label clearly AWAY from lines — never overlapping a line or another label
+14. Use text-anchor="middle" for centred labels, "start" for left-aligned, "end" for right-aligned
+15. Every important point, line, angle, and measurement MUST be labelled — this is an exam diagram
+16. For angles: draw a small arc near the vertex, label it clearly (θ, α, ∠A, 60°, etc.)
+17. Right angles: mark with a 6×6 square at the corner vertex
+
+ARROWS:
+18. Draw arrowheads as filled triangles: <polygon points="x1,y1 x2,y2 x3,y3" fill="#111111"/>
+19. Use arrows on dimension lines (both ends) and direction-of-flow indicators
+
+GEOMETRY ACCURACY:
+20. All measurements must be geometrically consistent — if you label a length or angle, draw it accurately to scale
+21. For circles: use <circle> elements. For arcs: use <path d="M... A..."/>
+22. For curves and bezier paths: use smooth <path> with C or Q commands
+23. Leave at least 25px padding on all four sides of the viewBox
+
+ALLOWED ELEMENTS ONLY:
+24. You may ONLY use: <svg>, <g>, <line>, <circle>, <ellipse>, <rect>, <polygon>, <polyline>, <path>, <text>, <tspan>
+25. Do NOT use: <image>, <use>, <defs>, <symbol>, <clipPath>, <filter>, <foreignObject>, <marker>, <pattern>, <mask>, CSS styles, JavaScript
+
+COMPLETENESS:
+26. The diagram must be COMPLETE and SELF-CONTAINED — a student can understand it without reading anything else
+27. Include all parts mentioned in the description. Do not omit any component.
+28. If the description mentions specific measurements (e.g. radius 5 cm), label those measurements on the diagram
+
+Generate the SVG now:"""
+
+    text, _ = call_gemini(prompt)
     if not text:
         return None
-    svg_match = re.search(r'<svg[\s\S]*?</svg>', text, re.IGNORECASE)
-    return svg_match.group(0) if svg_match else None
+
+    # Extract the SVG block — strip markdown fences if they crept in
+    text = re.sub(r'```(?:svg|xml|html)?', '', text).strip()
+    m = re.search(r'(<svg[\s\S]*?</svg>)', text, re.IGNORECASE)
+    if not m:
+        return None
+
+    svg = m.group(1).strip()
+    # Ensure background rect is present
+    if '<rect x="0" y="0"' not in svg and "white" not in svg[:200]:
+        svg = svg.replace(
+            '>', '><rect x="0" y="0" width="500" height="320" fill="white"/>', 1
+        )
+    return svg
 
 
-# ── Pure-Python SVG → ReportLab renderer ──────────────────────────────
+# ── High-quality SVG → PNG via wkhtmltoimage ──────────────────────────
+def svg_to_png_bytes(svg_str: str, target_width_px: int = 900) -> bytes | None:
+    """
+    Render SVG to PNG at high resolution using wkhtmltoimage.
+    Returns PNG bytes or None on failure.
+    """
+    if not _WKHTML_AVAILABLE:
+        return None
+
+    try:
+        # Parse viewBox to get aspect ratio
+        vb_match = re.search(r'viewBox=["\'][\d. ]+ ([\d.]+) ([\d.]+)["\']', svg_str)
+        if vb_match:
+            vb_w = float(vb_match.group(1))
+            vb_h = float(vb_match.group(2))
+        else:
+            vb_w, vb_h = 500.0, 320.0
+
+        target_height_px = int(target_width_px * vb_h / vb_w)
+
+        # Wrap SVG in minimal HTML so wkhtmltoimage renders it cleanly
+        html = f"""<!DOCTYPE html>
+<html><head>
+<meta charset="utf-8">
+<style>
+  * {{ margin: 0; padding: 0; box-sizing: border-box; }}
+  body {{ background: white; width: {target_width_px}px; height: {target_height_px}px; overflow: hidden; }}
+  svg {{ display: block; width: {target_width_px}px; height: {target_height_px}px; }}
+</style>
+</head><body>{svg_str}</body></html>"""
+
+        with tempfile.NamedTemporaryFile(suffix='.html', delete=False, mode='w', encoding='utf-8') as f:
+            f.write(html)
+            htmlfile = f.name
+
+        pngfile = htmlfile.replace('.html', '.png')
+
+        result = subprocess.run([
+            'wkhtmltoimage',
+            '--format', 'png',
+            '--width', str(target_width_px),
+            '--height', str(target_height_px),
+            '--disable-smart-width',
+            '--quality', '100',
+            '--quiet',
+            htmlfile, pngfile
+        ], capture_output=True, timeout=20)
+
+        if result.returncode == 0 and os.path.exists(pngfile):
+            with open(pngfile, 'rb') as f:
+                png_bytes = f.read()
+            os.unlink(pngfile)
+            os.unlink(htmlfile)
+            return png_bytes if len(png_bytes) > 500 else None
+
+        # Cleanup on failure
+        for fp in [htmlfile, pngfile]:
+            if os.path.exists(fp):
+                os.unlink(fp)
+        return None
+
+    except Exception:
+        return None
+
+
+# ── PNG bytes → ReportLab ImageFlowable ──────────────────────────────
+def png_to_rl_image(png_bytes: bytes, width_pt: float):
+    """Convert PNG bytes to a ReportLab flowable Image at the given width with correct height."""
+    from reportlab.platypus import Image as RLImage
+    from PIL import Image as PILImage
+
+    # Get actual PNG dimensions so we can calculate the correct height
+    pil_img = PILImage.open(BytesIO(png_bytes))
+    px_w, px_h = pil_img.size
+    aspect = px_h / px_w if px_w > 0 else 0.64
+    height_pt = width_pt * aspect
+
+    buf = BytesIO(png_bytes)
+    img = RLImage(buf, width=width_pt, height=height_pt)
+    img.hAlign = 'CENTER'
+    return img
+
+
+# ── Master function: SVG string → best available PDF flowable ─────────
+def svg_to_best_image(svg_str: str, width_pt: float = 380):
+    """
+    Convert an SVG string to the best available ReportLab flowable.
+    Priority: wkhtmltoimage PNG (high quality) → pure ReportLab renderer (fallback)
+    """
+    # Try high-quality PNG path first
+    target_px = int(width_pt * 2.2)  # 2.2x gives crisp output at half the size
+    png_bytes = svg_to_png_bytes(svg_str, target_width_px=target_px)
+    if png_bytes:
+        return png_to_rl_image(png_bytes, width_pt)
+
+    # Fallback: pure ReportLab SVG renderer
+    return svg_to_rl_drawing(svg_str, width_pt)
+
+
+# ── Pure-Python SVG → ReportLab Drawing (fallback renderer) ───────────
 def _svg_color(val, default=(0, 0, 0)):
-    if not val or val in ('none', 'transparent'):
+    if not val or val in ('none', 'transparent', ''):
         return None
     val = val.strip()
     named = {
-        'black': (0,0,0), 'white': (1,1,1), 'red': (1,0,0),
-        'blue': (0,0,1), 'green': (0,.5,0), 'grey': (.5,.5,.5),
-        'gray': (.5,.5,.5), 'lightgrey': (.83,.83,.83),
-        'lightgray': (.83,.83,.83), '#111111': (.067,.067,.067),
-        '#555555': (.333,.333,.333), '#f2f2f2': (.949,.949,.949),
-        '#f0f0f0': (.941,.941,.941), '#ffffff': (1,1,1),
-        '#000000': (0,0,0),
+        'black': (0,0,0), 'white': (1,1,1), 'red': (1,0,0), 'blue': (0,0,1),
+        'green': (0,.5,0), 'grey': (.5,.5,.5), 'gray': (.5,.5,.5),
+        'lightgrey': (.83,.83,.83), 'lightgray': (.83,.83,.83),
+        'darkgray': (.33,.33,.33), 'darkgrey': (.33,.33,.33),
+        '#111111': (.067,.067,.067), '#333333': (.2,.2,.2),
+        '#555555': (.333,.333,.333), '#888888': (.533,.533,.533),
+        '#e8e8e8': (.91,.91,.91), '#f5f5f5': (.961,.961,.961),
+        '#f0f0f0': (.941,.941,.941), '#ffffff': (1,1,1), '#000000': (0,0,0),
     }
     if val.lower() in named:
         return named[val.lower()]
     if val.startswith('#'):
         h = val[1:]
-        if len(h) == 3:
-            h = h[0]*2 + h[1]*2 + h[2]*2
+        if len(h) == 3: h = h[0]*2 + h[1]*2 + h[2]*2
         if len(h) == 6:
-            try:
-                return (int(h[0:2],16)/255, int(h[2:4],16)/255, int(h[4:6],16)/255)
-            except Exception:
-                pass
+            try: return (int(h[0:2],16)/255, int(h[2:4],16)/255, int(h[4:6],16)/255)
+            except Exception: pass
+    if val.startswith('rgb('):
+        nums = re.findall(r'\d+', val)
+        if len(nums) >= 3: return (int(nums[0])/255, int(nums[1])/255, int(nums[2])/255)
     return default
 
 
@@ -1655,19 +1752,177 @@ def _parse_points(pts_str):
     return [(float(nums[i]), float(nums[i+1])) for i in range(0, len(nums)-1, 2)]
 
 
-def svg_to_rl_image(svg_str: str, width_pt: float = 360):
+def _parse_style(style_str):
+    result = {}
+    for part in (style_str or '').split(';'):
+        if ':' in part:
+            k, v = part.split(':', 1)
+            result[k.strip()] = v.strip()
+    return result
+
+
+def _parse_path_d(d, scale_x, height_pt):
+    import math
+
+    def tx(x): return float(x) * scale_x
+    def ty(y): return height_pt - float(y) * scale_x
+
+    tokens = re.findall(
+        r'[MmLlHhVvZzAaCcQqSsTt]|[-+]?(?:\d+\.?\d*|\.\d+)(?:[eE][-+]?\d+)?', d)
+
+    paths = []
+    cur_pts = []
+    cur_x, cur_y = 0.0, 0.0
+    start_x, start_y = 0.0, 0.0
+    cmd = 'M'
+    i = 0
+
+    def consume(n):
+        nonlocal i
+        vals = []
+        for _ in range(n):
+            while i < len(tokens) and re.match(r'[A-Za-z]', tokens[i]):
+                break
+            if i < len(tokens):
+                vals.append(float(tokens[i])); i += 1
+        return vals
+
+    while i < len(tokens):
+        t = tokens[i]
+        if re.match(r'[A-Za-z]', t):
+            cmd = t; i += 1; continue
+
+        if cmd in 'Mm':
+            v = consume(2)
+            if len(v) < 2: continue
+            if cmd == 'm': cur_x += v[0]; cur_y += v[1]
+            else: cur_x, cur_y = v[0], v[1]
+            start_x, start_y = cur_x, cur_y
+            if cur_pts: paths.append((cur_pts, False))
+            cur_pts = [(tx(cur_x), ty(cur_y))]
+            cmd = 'l' if cmd == 'm' else 'L'
+
+        elif cmd in 'Ll':
+            v = consume(2)
+            if len(v) < 2: continue
+            if cmd == 'l': cur_x += v[0]; cur_y += v[1]
+            else: cur_x, cur_y = v[0], v[1]
+            cur_pts.append((tx(cur_x), ty(cur_y)))
+
+        elif cmd in 'Hh':
+            v = consume(1)
+            if not v: continue
+            if cmd == 'h': cur_x += v[0]
+            else: cur_x = v[0]
+            cur_pts.append((tx(cur_x), ty(cur_y)))
+
+        elif cmd in 'Vv':
+            v = consume(1)
+            if not v: continue
+            if cmd == 'v': cur_y += v[0]
+            else: cur_y = v[0]
+            cur_pts.append((tx(cur_x), ty(cur_y)))
+
+        elif cmd in 'Zz':
+            if cur_pts: cur_pts.append((tx(start_x), ty(start_y)))
+            paths.append((cur_pts, True))
+            cur_pts = []
+            cur_x, cur_y = start_x, start_y
+
+        elif cmd in 'Aa':
+            v = consume(7)
+            if len(v) < 7: continue
+            rx_a, ry_a, x_rot, laf, sf, ex, ey = v
+            if cmd == 'a': ex += cur_x; ey += cur_y
+            try:
+                x_rot_r = math.radians(x_rot)
+                cos_r, sin_r = math.cos(x_rot_r), math.sin(x_rot_r)
+                dx2, dy2 = (cur_x - ex) / 2, (cur_y - ey) / 2
+                x1p = cos_r*dx2 + sin_r*dy2
+                y1p = -sin_r*dx2 + cos_r*dy2
+                laf, sf = int(laf), int(sf)
+                rx_a, ry_a = abs(rx_a), abs(ry_a)
+                if rx_a > 0 and ry_a > 0:
+                    sq = max(0, (rx_a*ry_a)**2 - (rx_a*y1p)**2 - (ry_a*x1p)**2)
+                    dq = (rx_a*y1p)**2 + (ry_a*x1p)**2
+                    c = math.sqrt(sq / dq) if dq > 0 else 0
+                    if laf == sf: c = -c
+                    cxp = c * rx_a * y1p / ry_a
+                    cyp = -c * ry_a * x1p / rx_a
+                    cxc = cos_r*cxp - sin_r*cyp + (cur_x+ex)/2
+                    cyc = sin_r*cxp + cos_r*cyp + (cur_y+ey)/2
+                    ang1 = math.atan2((y1p - cyp) / ry_a, (x1p - cxp) / rx_a)
+                    ang2 = math.atan2((-y1p - cyp) / ry_a, (-x1p - cxp) / rx_a)
+                    if sf == 0 and ang2 > ang1: ang2 -= 2*math.pi
+                    if sf == 1 and ang2 < ang1: ang2 += 2*math.pi
+                    steps = max(12, int(abs(ang2 - ang1) * max(rx_a, ry_a) * scale_x / 3))
+                    for k in range(steps + 1):
+                        a = ang1 + (ang2 - ang1) * k / steps
+                        px = cxc + rx_a*math.cos(a)*cos_r - ry_a*math.sin(a)*sin_r
+                        py = cyc + rx_a*math.cos(a)*sin_r + ry_a*math.sin(a)*cos_r
+                        cur_pts.append((tx(px), ty(py)))
+                else:
+                    cur_pts.append((tx(ex), ty(ey)))
+            except Exception:
+                cur_pts.append((tx(ex), ty(ey)))
+            cur_x, cur_y = ex, ey
+
+        elif cmd in 'CcQqSsTt':
+            # Approximate bezier curves by sampling 8 intermediate points
+            import math
+            n_params = {'C':6,'c':6,'Q':4,'q':4,'S':4,'s':4,'T':2,'t':2}
+            n = n_params.get(cmd.upper(), 2)
+            v = consume(n)
+            if len(v) < 2: continue
+            # For cubic bezier, sample the curve
+            if cmd.upper() == 'C' and len(v) == 6:
+                bx0, by0 = cur_x, cur_y
+                if cmd == 'c':
+                    bx1,by1 = cur_x+v[0],cur_y+v[1]
+                    bx2,by2 = cur_x+v[2],cur_y+v[3]
+                    bx3,by3 = cur_x+v[4],cur_y+v[5]
+                else:
+                    bx1,by1 = v[0],v[1]
+                    bx2,by2 = v[2],v[3]
+                    bx3,by3 = v[4],v[5]
+                for k in range(1, 9):
+                    t_ = k / 8
+                    s_ = 1 - t_
+                    bx = s_**3*bx0 + 3*s_**2*t_*bx1 + 3*s_*t_**2*bx2 + t_**3*bx3
+                    by = s_**3*by0 + 3*s_**2*t_*by1 + 3*s_*t_**2*by2 + t_**3*by3
+                    cur_pts.append((tx(bx), ty(by)))
+                cur_x, cur_y = bx3, by3
+            else:
+                if cmd.islower(): cur_x += v[-2]; cur_y += v[-1]
+                else: cur_x, cur_y = v[-2], v[-1]
+                cur_pts.append((tx(cur_x), ty(cur_y)))
+        else:
+            i += 1
+
+    if cur_pts:
+        paths.append((cur_pts, False))
+    return paths
+
+
+def svg_to_rl_drawing(svg_str: str, width_pt: float = 380):
+    """Pure ReportLab SVG renderer — fallback when wkhtmltoimage unavailable."""
     from reportlab.graphics.shapes import Drawing, Line, Circle, Rect, Polygon, PolyLine, String, Group
     from reportlab.lib.colors import Color
+    import math
 
     try:
-        clean = re.sub(r'<(\/?)\\w+:', r'<\1', svg_str)
-        clean = re.sub(r'\\s\\w+:\\w+="[^"]*"', '', clean)
+        clean = re.sub(r'<(/?)[\w]+:', r'<\1', svg_str)
+        clean = re.sub(r'\s[\w]+:[\w-]+="[^"]*"', '', clean)
+        clean = re.sub(r'&(?!(?:amp|lt|gt|quot|apos|#\d+|#x[\da-fA-F]+);)', '&amp;', clean)
+
         root = ET.fromstring(clean)
 
-        vb = root.get('viewBox', '0 0 400 260')
+        vb = root.get('viewBox', '0 0 500 320')
         vb_parts = [float(x) for x in re.findall(r'[-\d.]+', vb)]
-        svg_w = vb_parts[2] if len(vb_parts) >= 3 else float(root.get('width', 400))
-        svg_h = vb_parts[3] if len(vb_parts) >= 4 else float(root.get('height', 260))
+        svg_w = vb_parts[2] if len(vb_parts) >= 3 else float(root.get('width', 500) or 500)
+        svg_h = vb_parts[3] if len(vb_parts) >= 4 else float(root.get('height', 320) or 320)
+        if svg_w <= 0: svg_w = 500
+        if svg_h <= 0: svg_h = 320
 
         scale_x = width_pt / svg_w
         height_pt = svg_h * scale_x
@@ -1676,127 +1931,170 @@ def svg_to_rl_image(svg_str: str, width_pt: float = 360):
         def tx(x): return float(x) * scale_x
         def ty(y): return height_pt - float(y) * scale_x
 
-        def get_attr(el, *names, default='0'):
-            for n in names:
-                v = el.get(n)
-                if v is not None:
-                    return v
-            return default
-
-        def make_color(val, default_rgb=(0,0,0), alpha=1.0):
+        def make_color(val, default_rgb=(0, 0, 0)):
+            if val in (None, 'none', 'transparent', ''): return None
             rgb = _svg_color(val, default_rgb)
-            if rgb is None:
-                return None
-            return Color(rgb[0], rgb[1], rgb[2], alpha)
+            return Color(rgb[0], rgb[1], rgb[2]) if rgb else None
 
-        def parse_sw(el):
-            sw = el.get('stroke-width', el.get('strokeWidth', '1.5'))
-            try:
-                return max(0.5, float(sw) * scale_x)
-            except Exception:
-                return 1.0
+        def parse_sw(val):
+            try: return max(0.3, float(re.findall(r'[\d.]+', str(val))[0]) * scale_x)
+            except Exception: return 1.0
 
         NS = '{http://www.w3.org/2000/svg}'
 
-        def render_element(el, group):
-            tag      = el.tag.replace(NS, '').lower()
-            stroke_c = make_color(el.get('stroke', '#111111'))
-            fill_c   = make_color(el.get('fill', 'none'))
-            sw       = parse_sw(el)
+        def _inh(el, attr, ps, default):
+            style = _parse_style(el.get('style', ''))
+            css = attr.replace('_', '-')
+            if css in style: return style[css]
+            v = el.get(attr)
+            if v is not None: return v
+            if attr in ps: return ps[attr]
+            return default
+
+        def render_el(el, group, ps=None):
+            if ps is None: ps = {}
+            tag = el.tag.replace(NS, '').lower()
+
+            my_stroke = _inh(el, 'stroke', ps, '#111111')
+            my_fill   = _inh(el, 'fill',   ps, 'none')
+            sw_raw    = _inh(el, 'stroke-width', ps, '1.5')
+            sw        = parse_sw(sw_raw)
+            dash_raw  = _inh(el, 'stroke-dasharray', ps, None)
+
+            stroke_c = make_color(my_stroke)
+            fill_c   = make_color(my_fill)
+
+            cs = dict(ps)
+            cs.update({'stroke': my_stroke, 'fill': my_fill, 'stroke-width': sw_raw})
+            if dash_raw: cs['stroke-dasharray'] = dash_raw
+
+            def set_dash(shape):
+                if dash_raw:
+                    try:
+                        dp = [float(v)*scale_x for v in re.findall(r'[\d.]+', dash_raw)]
+                        shape.strokeDashArray = dp
+                    except Exception: pass
 
             if tag == 'line':
-                shape = Line(tx(get_attr(el,'x1')), ty(get_attr(el,'y1')),
-                             tx(get_attr(el,'x2')), ty(get_attr(el,'y2')))
+                shape = Line(tx(el.get('x1','0')), ty(el.get('y1','0')),
+                             tx(el.get('x2','0')), ty(el.get('y2','0')))
                 shape.strokeColor = stroke_c or Color(0,0,0)
                 shape.strokeWidth = sw
+                set_dash(shape)
                 group.add(shape)
+
             elif tag == 'circle':
-                shape = Circle(tx(get_attr(el,'cx','0')), ty(get_attr(el,'cy','0')),
-                               float(get_attr(el,'r','5')) * scale_x)
+                shape = Circle(tx(el.get('cx','0')), ty(el.get('cy','0')),
+                               float(el.get('r','5')) * scale_x)
                 shape.fillColor   = fill_c or Color(1,1,1)
                 shape.strokeColor = stroke_c or Color(0,0,0)
                 shape.strokeWidth = sw
                 group.add(shape)
+
+            elif tag == 'ellipse':
+                cx = tx(el.get('cx','0')); cy = ty(el.get('cy','0'))
+                rx = float(el.get('rx','10')) * scale_x
+                ry = float(el.get('ry','10')) * scale_x
+                pts = []
+                for k in range(37):
+                    a = 2 * math.pi * k / 36
+                    pts += [cx + rx*math.cos(a), cy + ry*math.sin(a)]
+                shape = Polygon(pts)
+                shape.fillColor   = fill_c or Color(1,1,1)
+                shape.strokeColor = stroke_c or Color(0,0,0)
+                shape.strokeWidth = sw
+                group.add(shape)
+
             elif tag == 'rect':
-                x = tx(get_attr(el,'x','0'))
-                y = ty(float(get_attr(el,'y','0')) + float(get_attr(el,'height','10')))
-                w = float(get_attr(el,'width','10'))  * scale_x
-                h = float(get_attr(el,'height','10')) * scale_x
-                shape = Rect(x, y, w, h)
+                x_  = float(el.get('x','0')); y_  = float(el.get('y','0'))
+                rw  = float(el.get('width','10')); rh = float(el.get('height','10'))
+                shape = Rect(tx(x_), ty(y_+rh), rw*scale_x, rh*scale_x)
                 shape.fillColor   = fill_c or Color(1,1,1)
                 shape.strokeColor = stroke_c or Color(0,0,0)
                 shape.strokeWidth = sw
                 group.add(shape)
-            elif tag in ('polygon', 'polyline'):
-                pairs = _parse_points(el.get('points', ''))
+
+            elif tag in ('polygon','polyline'):
+                pairs = _parse_points(el.get('points',''))
                 if len(pairs) >= 2:
                     pts = []
-                    for (px, py) in pairs:
-                        pts += [tx(px), ty(py)]
-                    shape = Polygon(pts) if tag == 'polygon' else PolyLine(pts)
-                    shape.fillColor   = fill_c or (Color(1,1,1) if tag == 'polygon' else None)
+                    for (px, py) in pairs: pts += [tx(px), ty(py)]
+                    shape = Polygon(pts) if tag=='polygon' else PolyLine(pts)
+                    if tag == 'polygon': shape.fillColor = fill_c or Color(1,1,1)
                     shape.strokeColor = stroke_c or Color(0,0,0)
                     shape.strokeWidth = sw
+                    set_dash(shape)
                     group.add(shape)
+
             elif tag == 'path':
-                d = el.get('d', '')
-                tokens = re.findall(r'[MLZmlz]|[-+]?\d*\.?\d+', d)
-                pts, cmd, cur_x, cur_y = [], 'M', 0.0, 0.0
-                i2 = 0
-                while i2 < len(tokens):
-                    t = tokens[i2]
-                    if t in 'MLml': cmd = t; i2 += 1; continue
-                    if t in 'Zz':
-                        if len(pts) >= 4: pts += [pts[0], pts[1]]
-                        i2 += 1; continue
-                    try:
-                        vx = float(t); vy = float(tokens[i2+1]); i2 += 2
-                        if cmd == 'm': vx += cur_x; vy += cur_y
-                        if cmd == 'l': vx += cur_x; vy += cur_y
-                        cur_x, cur_y = vx, vy
-                        pts += [tx(vx), ty(vy)]
-                    except Exception:
-                        i2 += 1
-                if len(pts) >= 4:
-                    shape = Polygon(pts) if fill_c else PolyLine(pts)
-                    if fill_c: shape.fillColor = fill_c
-                    shape.strokeColor = stroke_c or Color(0,0,0)
-                    shape.strokeWidth = sw
-                    if not fill_c: shape.fillColor = None
+                d = el.get('d','')
+                if not d.strip(): return
+                for (pts, closed) in _parse_path_d(d, scale_x, height_pt):
+                    if len(pts) < 2: continue
+                    flat = [c for pt in pts for c in pt]
+                    if closed and fill_c:
+                        shape = Polygon(flat)
+                        shape.fillColor   = fill_c
+                        shape.strokeColor = stroke_c or Color(0,0,0)
+                        shape.strokeWidth = sw
+                    else:
+                        shape = PolyLine(flat)
+                        shape.strokeColor = stroke_c or Color(0,0,0)
+                        shape.strokeWidth = sw
+                        set_dash(shape)
                     group.add(shape)
+
             elif tag == 'text':
-                x = tx(float(get_attr(el,'x','0')))
-                y = ty(float(get_attr(el,'y','0')))
-                try:
-                    fs_raw = el.get('font-size', el.get('fontSize', '12'))
-                    fs = max(6, float(re.findall(r'[\d.]+', fs_raw)[0]) * scale_x)
-                except Exception:
-                    fs = 10
-                txt = (el.text or '').strip()
+                raw_x = float(el.get('x','0')); raw_y = float(el.get('y','0'))
+                anchor = el.get('text-anchor', _parse_style(el.get('style','')).get('text-anchor','start'))
+                fs_raw = _inh(el, 'font-size', ps, '13')
+                try: fs = max(6, float(re.findall(r'[\d.]+', str(fs_raw))[0]) * scale_x)
+                except Exception: fs = 11 * scale_x
+
+                parts_text = []
+                if el.text and el.text.strip():
+                    parts_text.append((raw_x, raw_y, el.text.strip()))
                 for tspan in el:
                     if tspan.tag.replace(NS,'').lower() == 'tspan':
-                        txt += (tspan.text or '')
-                if txt:
-                    fc = make_color(el.get('fill', '#111111'), (0,0,0))
-                    s = String(x, y - fs * 0.3, txt)
-                    s.fontSize  = fs
-                    s.fillColor = fc or Color(0,0,0)
-                    ff = el.get('font-family', 'Helvetica')
-                    s.fontName  = 'Helvetica-Bold' if 'bold' in ff.lower() else 'Helvetica'
+                        tx_ = float(tspan.get('x', raw_x))
+                        ty_ = float(tspan.get('y', raw_y))
+                        if tspan.text and tspan.text.strip():
+                            parts_text.append((tx_, ty_, tspan.text.strip()))
+                if not parts_text:
+                    all_txt = ''.join(el.itertext()).strip()
+                    if all_txt: parts_text.append((raw_x, raw_y, all_txt))
+
+                fc  = make_color(_inh(el,'fill',ps,'#111111')) or Color(0,0,0)
+                bold = 'bold' in (_inh(el,'font-weight',ps,'')+_parse_style(el.get('style','')).get('font-weight',''))
+                font_name = 'Helvetica-Bold' if bold else 'Helvetica'
+
+                for (px, py, txt) in parts_text:
+                    x_pos = tx(px); y_pos = ty(py) - fs * 0.15
+                    if anchor == 'middle': x_pos -= len(txt) * fs * 0.27
+                    elif anchor == 'end':  x_pos -= len(txt) * fs * 0.53
+                    s = String(x_pos, y_pos, txt)
+                    s.fontSize = fs; s.fillColor = fc; s.fontName = font_name
                     group.add(s)
+
             elif tag == 'g':
                 sub = Group()
-                for child in el:
-                    render_element(child, sub)
+                for child in el: render_el(child, sub, cs)
                 group.add(sub)
 
-        top_group = Group()
-        for child in root:
-            render_element(child, top_group)
-        drawing.add(top_group)
+        top = Group()
+        for child in root: render_el(child, top, {})
+        drawing.add(top)
         return drawing
+
     except Exception:
         return None
+
+
+# Keep old name as alias for backward compat
+def svg_to_rl_image(svg_str: str, width_pt: float = 380):
+    return svg_to_best_image(svg_str, width_pt)
+
+
 
 
 # ═══════════════════════════════════════════════════════════════════════
@@ -1876,15 +2174,32 @@ def download_pdf():
 
         diagrams = {}
         if GEMINI_KEY and GENAI_AVAILABLE:
+            # Collect diagram descriptions from both paper and answer key
+            full_text = paper_text + "\n" + (answer_key or "")
             diag_descs = re.findall(
                 r'\[DIAGRAM:\s*([^\]]+)\]|\[draw\s+([^\]]+)\]',
-                paper_text, re.IGNORECASE)
+                full_text, re.IGNORECASE)
+            unique_descs = []
+            seen = set()
             for d1, d2 in diag_descs:
                 desc = (d1 or d2).strip()
-                if desc and desc not in diagrams:
-                    svg = generate_diagram_svg(desc)
-                    if svg:
-                        diagrams[desc] = svg
+                if desc and desc not in seen:
+                    seen.add(desc)
+                    unique_descs.append(desc)
+
+            # Generate all diagrams in parallel for speed
+            if unique_descs:
+                from concurrent.futures import ThreadPoolExecutor, as_completed
+                with ThreadPoolExecutor(max_workers=min(4, len(unique_descs))) as ex:
+                    futures = {ex.submit(generate_diagram_svg, d): d for d in unique_descs}
+                    for future in as_completed(futures):
+                        desc = futures[future]
+                        try:
+                            svg = future.result(timeout=30)
+                            if svg:
+                                diagrams[desc] = svg
+                        except Exception:
+                            pass
 
         pdf_bytes = create_exam_pdf(
             paper_text, subject, chapter,
