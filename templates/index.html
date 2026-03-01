@@ -4,471 +4,356 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ExamCraft — AI Exam Paper Generator</title>
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/static/css/style.css">
 </head>
 <body>
 
-<!-- Grain texture overlay -->
-<div class="grain" aria-hidden="true"></div>
+<!-- ── Aurora background ── -->
+<div class="aurora" aria-hidden="true">
+  <div class="aurora-orb orb-1"></div>
+  <div class="aurora-orb orb-2"></div>
+  <div class="aurora-orb orb-3"></div>
+  <div class="aurora-orb orb-4"></div>
+  <div class="noise-overlay"></div>
+</div>
 
-<!-- ══════════════════════ SIDEBAR ══════════════════════ -->
-<aside class="sidebar" id="sidebar">
-
-  <div class="sb-brand">
-    <button id="toggleSidebar" class="sb-menu-btn" title="Toggle sidebar">
-      <span></span><span></span><span></span>
+<!-- ── Top nav bar ── -->
+<nav class="topnav">
+  <div class="nav-brand">
+    <div class="nav-logo">
+      <svg width="18" height="18" viewBox="0 0 32 32" fill="none">
+        <polygon points="16,2 30,9 30,23 16,30 2,23 2,9" stroke="currentColor" stroke-width="2" fill="none"/>
+        <polygon points="16,8 24,12 24,20 16,24 8,20 8,12" stroke="currentColor" stroke-width="1.5" fill="none" opacity=".5"/>
+        <circle cx="16" cy="16" r="3" fill="currentColor"/>
+      </svg>
+    </div>
+    <span class="nav-name">ExamCraft</span>
+    <span class="nav-badge">AI</span>
+  </div>
+  <div class="nav-center">
+    <span class="nav-pill">🏛️ 7 Boards</span>
+    <span class="nav-pill">🏆 Olympiads</span>
+    <span class="nav-pill">📄 PDF Export</span>
+  </div>
+  <div class="nav-right">
+    <button class="theme-toggle" id="themeBtn" onclick="toggleTheme()" title="Toggle theme">
+      <svg class="icon-sun" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+      <svg class="icon-moon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
     </button>
-    <div class="sb-logo">
-      <div class="sb-logo-mark">
-        <svg width="16" height="16" viewBox="0 0 32 32" fill="none">
-          <path d="M16 3 L29 10 L29 22 L16 29 L3 22 L3 10 Z" stroke="currentColor" stroke-width="2" fill="none"/>
-          <path d="M16 3 L16 29 M3 10 L29 22 M29 10 L3 22" stroke="currentColor" stroke-width="1.2" opacity="0.5"/>
-        </svg>
-      </div>
-      <span class="sb-logo-name">ExamCraft</span>
-    </div>
-    <p class="sb-tagline">AI Paper Generator</p>
   </div>
+</nav>
 
-  <div class="sb-divider"></div>
+<!-- ── Main layout ── -->
+<div class="app-shell">
 
-  <!-- Live config panel -->
-  <div class="sb-config">
-    <div class="sb-section-label">Current Paper</div>
-    <div class="sb-config-grid">
-      <div class="sb-row">
-        <span class="sb-key">Class</span>
-        <span class="sb-val" id="sb-class">—</span>
-      </div>
-      <div class="sb-row">
-        <span class="sb-key">Subject</span>
-        <span class="sb-val" id="sb-subject">—</span>
-      </div>
-      <div class="sb-row">
-        <span class="sb-key">Chapter</span>
-        <span class="sb-val" id="sb-chapter">—</span>
-      </div>
-      <div class="sb-row">
-        <span class="sb-key">Scope</span>
-        <span class="sb-val" id="sb-scope">—</span>
-      </div>
-      <div class="sb-row">
-        <span class="sb-key">Marks</span>
-        <span class="sb-val" id="sb-marks">—</span>
-      </div>
-      <div class="sb-row">
-        <span class="sb-key">Level</span>
-        <span class="sb-val" id="sb-difficulty">—</span>
-      </div>
-      <div class="sb-row">
-        <span class="sb-key">Board</span>
-        <span class="sb-val" id="sb-board">—</span>
-      </div>
-      <div class="sb-row">
-        <span class="sb-key">Ans. Key</span>
-        <span class="sb-val" id="sb-key">No</span>
-      </div>
-    </div>
-  </div>
+  <!-- ════ LEFT COLUMN — Hero + Live Config ════ -->
+  <aside class="left-col">
 
-  <div class="sb-divider"></div>
-
-  <!-- Tips -->
-  <div class="sb-tips">
-    <div class="sb-section-label">Quick Tips</div>
-    <ul>
-      <li>Mention "include diagrams" for science subjects</li>
-      <li>Ask for step-by-step solutions in maths</li>
-      <li>Specify "follow 2024 board pattern"</li>
-      <li>Hard difficulty = competitive-level rigor</li>
-    </ul>
-  </div>
-
-  <div class="sb-footer">
-    <button class="sb-theme-btn" id="themeBtn" onclick="toggleTheme()">
-      <svg class="icon-sun" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
-      <svg class="icon-moon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
-      <span id="themeLabel">Light Mode</span>
-    </button>
-    <div class="sb-credit">by Laxman Nimmagadda</div>
-  </div>
-
-</aside>
-
-<!-- ══════════════════════ MAIN ══════════════════════ -->
-<main class="main" id="mainContent">
-<div class="page-wrap">
-
-  <!-- ── HERO ── -->
-  <header class="hero">
-    <div class="hero-top-row">
-      <div>
-        <div class="hero-eyebrow">
-          <span class="eyebrow-dot"></span>
-          Powered by Gemini AI
-        </div>
-        <h1 class="hero-heading">
-          Craft Perfect <em>Exam Papers</em>
-        </h1>
-        <p class="hero-body">
-          Board-quality question papers, syllabus-accurate — generated in under 30 seconds.
-        </p>
+    <!-- Hero -->
+    <div class="hero-card glass-card">
+      <div class="hero-eyebrow">
+        <span class="pulse-dot"></span>
+        Gemini AI · Live
       </div>
-      <div class="hero-pills">
-        <span class="h-pill">📋 4 Sections</span>
-        <span class="h-pill">🏛️ 7 State Boards</span>
-        <span class="h-pill">🏆 NTSE / KVPY / IMO</span>
-        <span class="h-pill">📄 PDF Ready</span>
-      </div>
-    </div>
-  </header>
-
-  <!-- ── HINT BAR ── -->
-  <div id="fieldHint" class="hint-bar">
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-    <span id="hintText">Begin by selecting a paper type below.</span>
-  </div>
-
-  <!-- ════════════════════════════════════
-       STEP 1 — PAPER TYPE
-  ════════════════════════════════════ -->
-  <section class="form-block" id="step1">
-    <div class="block-header">
-      <div class="block-num">01</div>
-      <div class="block-title">Paper Type</div>
+      <h1 class="hero-title">Craft Perfect<br><em>Exam Papers</em></h1>
+      <p class="hero-sub">Board-aligned, syllabus-accurate question papers — generated in under 30 seconds.</p>
     </div>
 
-    <div class="type-grid">
-      <button type="button" class="type-tile" id="tile-state" onclick="selectType('state-board')">
-        <div class="tile-glyph">🏛️</div>
-        <div class="tile-name">State Board</div>
-        <div class="tile-sub">AP · TS · MH · KA · TN · KL · UP</div>
-        <div class="tile-check">
-          <svg width="10" height="10" viewBox="0 0 12 12"><polyline points="2,6 5,9 10,3" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/></svg>
-        </div>
-      </button>
-
-      <button type="button" class="type-tile" id="tile-comp" onclick="selectType('competitive')">
-        <div class="tile-glyph">🏆</div>
-        <div class="tile-name">Competitive</div>
-        <div class="tile-sub">NTSE · KVPY · IMO · NSO · IJSO</div>
-        <div class="tile-check">
-          <svg width="10" height="10" viewBox="0 0 12 12"><polyline points="2,6 5,9 10,3" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/></svg>
-        </div>
-      </button>
-    </div>
-
-    <!-- Hidden select for JS compat -->
-    <select id="examType" name="examType" style="display:none">
-      <option value="">Select paper type</option>
-      <option value="state-board">State Board</option>
-      <option value="competitive">Competitive Exam</option>
-    </select>
-  </section>
-
-  <!-- ════════════════════════════════════
-       STEP 2 — BOARD / EXAM
-  ════════════════════════════════════ -->
-  <section class="form-block collapsed" id="stateCard">
-    <div class="block-header">
-      <div class="block-num">02</div>
-      <div class="block-title">Select State</div>
-    </div>
-    <div class="field-wrap">
-      <label class="field-label">State Board</label>
-      <div class="select-shell">
-        <select id="stateSelect" name="state" class="styled-select">
-          <option value="">Choose your state…</option>
-          <option value="Andhra Pradesh">Andhra Pradesh (BSEAP)</option>
-          <option value="Telangana">Telangana (BSETS)</option>
-          <option value="Maharashtra">Maharashtra (SSC)</option>
-          <option value="Karnataka">Karnataka (KSEEB)</option>
-          <option value="Tamil Nadu">Tamil Nadu (TN Board)</option>
-          <option value="Kerala">Kerala (SCERT)</option>
-          <option value="Uttar Pradesh">Uttar Pradesh (UPMSP)</option>
-        </select>
-        <svg class="select-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+    <!-- Live Config Panel -->
+    <div class="config-card glass-card">
+      <div class="config-label">Current Paper</div>
+      <div class="config-grid">
+        <div class="cfg-row"><span class="cfg-k">Board</span><span class="cfg-v" id="sb-board">—</span></div>
+        <div class="cfg-row"><span class="cfg-k">Class</span><span class="cfg-v" id="sb-class">—</span></div>
+        <div class="cfg-row"><span class="cfg-k">Subject</span><span class="cfg-v" id="sb-subject">—</span></div>
+        <div class="cfg-row"><span class="cfg-k">Chapter</span><span class="cfg-v" id="sb-chapter">—</span></div>
+        <div class="cfg-row"><span class="cfg-k">Scope</span><span class="cfg-v" id="sb-scope">—</span></div>
+        <div class="cfg-row"><span class="cfg-k">Marks</span><span class="cfg-v" id="sb-marks">—</span></div>
+        <div class="cfg-row"><span class="cfg-k">Level</span><span class="cfg-v" id="sb-difficulty">—</span></div>
+        <div class="cfg-row"><span class="cfg-k">Answer Key</span><span class="cfg-v" id="sb-key">No</span></div>
       </div>
     </div>
-  </section>
 
-  <section class="form-block collapsed" id="competitiveCard">
-    <div class="block-header">
-      <div class="block-num">02</div>
-      <div class="block-title">Competitive Exam</div>
+    <!-- Tips -->
+    <div class="tips-card glass-card">
+      <div class="config-label">Pro Tips</div>
+      <ul class="tips-list">
+        <li>Say "include labelled diagrams" for science</li>
+        <li>Ask for step-by-step solutions in maths</li>
+        <li>Specify "follow 2024 board pattern"</li>
+        <li>Hard difficulty = competitive-level rigor</li>
+      </ul>
     </div>
-    <div class="field-wrap">
-      <label class="field-label">Examination</label>
-      <div class="select-shell">
-        <select id="competitiveExam" name="competitiveExam" class="styled-select">
-          <option value="">Choose exam…</option>
-          <option value="NTSE">NTSE — National Talent Search</option>
-          <option value="KVPY">KVPY — Kishore Vaigyanik</option>
-          <option value="NSO">NSO — National Science Olympiad</option>
-          <option value="IMO">IMO — Maths Olympiad</option>
-          <option value="IJSO">IJSO — Junior Science Olympiad</option>
-        </select>
-        <svg class="select-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+
+    <div class="left-credit">by Laxman Nimmagadda · © 2026</div>
+  </aside>
+
+  <!-- ════ RIGHT COLUMN — Form ════ -->
+  <main class="right-col">
+
+    <!-- Hint bar -->
+    <div class="hint-bar" id="fieldHint">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      <span id="hintText">Begin by selecting a paper type below.</span>
+    </div>
+
+    <!-- STEP 1 — Paper Type -->
+    <div class="form-card glass-card">
+      <div class="card-step">01</div>
+      <div class="card-title">Paper Type</div>
+      <div class="type-grid">
+        <button class="type-tile" id="tile-state" onclick="selectType('state-board')">
+          <div class="tile-icon">🏛️</div>
+          <div class="tile-name">State Board</div>
+          <div class="tile-sub">AP · TS · MH · KA · TN · KL · UP</div>
+          <div class="tile-check"><svg width="10" height="10" viewBox="0 0 12 12"><polyline points="2,6 5,9 10,3" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/></svg></div>
+        </button>
+        <button class="type-tile" id="tile-comp" onclick="selectType('competitive')">
+          <div class="tile-icon">🏆</div>
+          <div class="tile-name">Competitive</div>
+          <div class="tile-sub">NTSE · KVPY · IMO · NSO · IJSO</div>
+          <div class="tile-check"><svg width="10" height="10" viewBox="0 0 12 12"><polyline points="2,6 5,9 10,3" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/></svg></div>
+        </button>
       </div>
-    </div>
-  </section>
-
-  <!-- ════════════════════════════════════
-       STEP 3 — SCOPE
-  ════════════════════════════════════ -->
-  <section class="form-block collapsed" id="scopeCard">
-    <div class="block-header">
-      <div class="block-num">03</div>
-      <div class="block-title">Paper Scope</div>
-    </div>
-    <div class="scope-row">
-      <button type="button" class="scope-btn active" id="scope-single" onclick="selectScope('single')">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
-        Single Chapter
-        <span class="scope-hint">Focused chapter paper</span>
-      </button>
-      <button type="button" class="scope-btn" id="scope-all" onclick="selectScope('all')">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
-        Full Syllabus
-        <span class="scope-hint">All chapters covered</span>
-      </button>
-    </div>
-    <!-- Hidden select for JS compat -->
-    <select id="scopeSelect" name="scope" style="display:none">
-      <option value="single">Single Chapter</option>
-      <option value="all">Full Syllabus</option>
-    </select>
-  </section>
-
-  <!-- ════════════════════════════════════
-       STEP 4 — CLASS / SUBJECT / CHAPTER
-  ════════════════════════════════════ -->
-  <section class="form-block">
-    <div class="block-header">
-      <div class="block-num">04</div>
-      <div class="block-title">Paper Details</div>
+      <select id="examType" name="examType" style="display:none">
+        <option value="">Select paper type</option>
+        <option value="state-board">State Board</option>
+        <option value="competitive">Competitive Exam</option>
+      </select>
     </div>
 
-    <div class="three-col">
-
-      <!-- Class always visible -->
+    <!-- STEP 2a — State Board -->
+    <div class="form-card glass-card collapsed" id="stateCard">
+      <div class="card-step">02</div>
+      <div class="card-title">Select State</div>
       <div class="field-wrap">
-        <label class="field-label" for="class">Class / Grade</label>
+        <label class="field-label">State Board</label>
         <div class="select-shell">
-          <select id="class" name="class" required class="styled-select">
-            <option value="">Select class…</option>
-            <option value="10">Class 10 (X)</option>
-            <option value="9">Class 9 (IX)</option>
-            <option value="8">Class 8 (VIII)</option>
-            <option value="7">Class 7 (VII)</option>
-            <option value="6">Class 6 (VI)</option>
+          <select id="stateSelect" name="state" class="glass-select">
+            <option value="">Choose your state…</option>
+            <option value="Andhra Pradesh">Andhra Pradesh (BSEAP)</option>
+            <option value="Telangana">Telangana (BSETS)</option>
+            <option value="Maharashtra">Maharashtra (SSC)</option>
+            <option value="Karnataka">Karnataka (KSEEB)</option>
+            <option value="Tamil Nadu">Tamil Nadu (TN Board)</option>
+            <option value="Kerala">Kerala (SCERT)</option>
+            <option value="Uttar Pradesh">Uttar Pradesh (UPMSP)</option>
           </select>
-          <svg class="select-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+          <svg class="chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
         </div>
       </div>
-
-      <!-- Subject — shown/hidden by JS via #subjectCard -->
-      <div class="field-wrap" id="subjectCard">
-        <label class="field-label" for="subject">Subject</label>
-        <div class="select-shell">
-          <select id="subject" name="subject" class="styled-select">
-            <option value="">Select subject…</option>
-          </select>
-          <svg class="select-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
-        </div>
-      </div>
-
-      <!-- Chapter — shown/hidden by JS via #chapterCard -->
-      <div class="field-wrap" id="chapterCard">
-        <label class="field-label" for="chapter">Chapter</label>
-        <div class="select-shell">
-          <select id="chapter" name="chapter" class="styled-select">
-            <option value="">Select chapter…</option>
-          </select>
-          <svg class="select-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
-        </div>
-      </div>
-
-    </div>
-  </section>
-
-  <!-- ════════════════════════════════════
-       STEP 5 — MARKS & DIFFICULTY
-  ════════════════════════════════════ -->
-  <section class="form-block">
-    <div class="block-header">
-      <div class="block-num">05</div>
-      <div class="block-title">Marks &amp; Difficulty</div>
     </div>
 
-    <div class="two-col">
-
-      <div class="field-wrap" id="marksCard">
-        <label class="field-label">Total Marks</label>
-        <div class="chip-row" id="markChips">
-          <button type="button" class="chip active" data-val="100" onclick="selectMark(this)">100</button>
-          <button type="button" class="chip" data-val="80"  onclick="selectMark(this)">80</button>
-          <button type="button" class="chip" data-val="60"  onclick="selectMark(this)">60</button>
-          <button type="button" class="chip" data-val="50"  onclick="selectMark(this)">50</button>
-          <button type="button" class="chip" data-val="25"  onclick="selectMark(this)">25</button>
-        </div>
-        <select id="totalMarks" name="marks" style="display:none">
-          <option value="100">100</option>
-          <option value="80">80</option>
-          <option value="60">60</option>
-          <option value="50">50</option>
-          <option value="25">25</option>
-        </select>
-      </div>
-
-      <div class="field-wrap" id="difficultyCard">
-        <label class="field-label">Difficulty Level</label>
-        <div class="diff-row">
-          <button type="button" class="diff-btn easy" id="diff-easy" onclick="selectDiff('Easy', this)">
-            <span class="diff-icon">🌱</span>
-            <span>Easy</span>
-          </button>
-          <button type="button" class="diff-btn medium active" id="diff-med" onclick="selectDiff('Medium', this)">
-            <span class="diff-icon">⚡</span>
-            <span>Medium</span>
-          </button>
-          <button type="button" class="diff-btn hard" id="diff-hard" onclick="selectDiff('Hard', this)">
-            <span class="diff-icon">🔥</span>
-            <span>Hard</span>
-          </button>
-        </div>
-        <!-- Hidden radio for JS getDifficulty() compat -->
-        <div style="display:none">
-          <input type="radio" name="difficulty" value="Easy" id="r-easy">
-          <input type="radio" name="difficulty" value="Medium" id="r-med" checked>
-          <input type="radio" name="difficulty" value="Hard" id="r-hard">
+    <!-- STEP 2b — Competitive -->
+    <div class="form-card glass-card collapsed" id="competitiveCard">
+      <div class="card-step">02</div>
+      <div class="card-title">Competitive Exam</div>
+      <div class="field-wrap">
+        <label class="field-label">Examination</label>
+        <div class="select-shell">
+          <select id="competitiveExam" name="competitiveExam" class="glass-select">
+            <option value="">Choose exam…</option>
+            <option value="NTSE">NTSE — National Talent Search</option>
+            <option value="KVPY">KVPY — Kishore Vaigyanik</option>
+            <option value="NSO">NSO — National Science Olympiad</option>
+            <option value="IMO">IMO — Maths Olympiad</option>
+            <option value="IJSO">IJSO — Junior Science Olympiad</option>
+          </select>
+          <svg class="chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
         </div>
       </div>
-
     </div>
-  </section>
 
-  <!-- ════════════════════════════════════
-       STEP 6 — INSTRUCTIONS + GENERATE
-  ════════════════════════════════════ -->
-  <form id="paperForm" novalidate>
-    <section class="form-block">
-      <div class="block-header">
-        <div class="block-num">06</div>
-        <div class="block-title">
+    <!-- STEP 3 — Scope -->
+    <div class="form-card glass-card collapsed" id="scopeCard">
+      <div class="card-step">03</div>
+      <div class="card-title">Paper Scope</div>
+      <div class="scope-row">
+        <button class="scope-btn active" id="scope-single" onclick="selectScope('single')">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+          Single Chapter
+          <span class="scope-hint">Focused paper</span>
+        </button>
+        <button class="scope-btn" id="scope-all" onclick="selectScope('all')">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+          Full Syllabus
+          <span class="scope-hint">All chapters</span>
+        </button>
+      </div>
+      <select id="scopeSelect" name="scope" style="display:none">
+        <option value="single">Single Chapter</option>
+        <option value="all">Full Syllabus</option>
+      </select>
+    </div>
+
+    <!-- STEP 4 — Paper Details -->
+    <div class="form-card glass-card">
+      <div class="card-step">04</div>
+      <div class="card-title">Paper Details</div>
+      <div class="three-col">
+        <div class="field-wrap">
+          <label class="field-label" for="class">Class / Grade</label>
+          <div class="select-shell">
+            <select id="class" name="class" required class="glass-select">
+              <option value="">Select class…</option>
+              <option value="10">Class 10 (X)</option>
+              <option value="9">Class 9 (IX)</option>
+              <option value="8">Class 8 (VIII)</option>
+              <option value="7">Class 7 (VII)</option>
+              <option value="6">Class 6 (VI)</option>
+            </select>
+            <svg class="chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+          </div>
+        </div>
+        <div class="field-wrap" id="subjectCard">
+          <label class="field-label" for="subject">Subject</label>
+          <div class="select-shell">
+            <select id="subject" name="subject" class="glass-select">
+              <option value="">Select subject…</option>
+            </select>
+            <svg class="chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+          </div>
+        </div>
+        <div class="field-wrap" id="chapterCard">
+          <label class="field-label" for="chapter">Chapter</label>
+          <div class="select-shell">
+            <select id="chapter" name="chapter" class="glass-select">
+              <option value="">Select chapter…</option>
+            </select>
+            <svg class="chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 5 — Marks & Difficulty -->
+    <div class="form-card glass-card">
+      <div class="card-step">05</div>
+      <div class="card-title">Marks &amp; Difficulty</div>
+      <div class="two-col">
+        <div class="field-wrap" id="marksCard">
+          <label class="field-label">Total Marks</label>
+          <div class="chip-row" id="markChips">
+            <button type="button" class="chip active" data-val="100" onclick="selectMark(this)">100</button>
+            <button type="button" class="chip" data-val="80" onclick="selectMark(this)">80</button>
+            <button type="button" class="chip" data-val="60" onclick="selectMark(this)">60</button>
+            <button type="button" class="chip" data-val="50" onclick="selectMark(this)">50</button>
+            <button type="button" class="chip" data-val="25" onclick="selectMark(this)">25</button>
+          </div>
+          <select id="totalMarks" name="marks" style="display:none">
+            <option value="100">100</option><option value="80">80</option>
+            <option value="60">60</option><option value="50">50</option>
+            <option value="25">25</option>
+          </select>
+        </div>
+        <div class="field-wrap" id="difficultyCard">
+          <label class="field-label">Difficulty Level</label>
+          <div class="diff-row">
+            <button type="button" class="diff-btn easy" id="diff-easy" onclick="selectDiff('Easy', this)"><span>🌱</span> Easy</button>
+            <button type="button" class="diff-btn medium active" id="diff-med" onclick="selectDiff('Medium', this)"><span>⚡</span> Medium</button>
+            <button type="button" class="diff-btn hard" id="diff-hard" onclick="selectDiff('Hard', this)"><span>🔥</span> Hard</button>
+          </div>
+          <div style="display:none">
+            <input type="radio" name="difficulty" value="Easy" id="r-easy">
+            <input type="radio" name="difficulty" value="Medium" id="r-med" checked>
+            <input type="radio" name="difficulty" value="Hard" id="r-hard">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 6 — Instructions + Generate -->
+    <form id="paperForm" novalidate>
+      <div class="form-card glass-card">
+        <div class="card-step">06</div>
+        <div class="card-title">
           Custom Instructions
-          <span class="opt-badge">optional</span>
+          <span class="opt-tag">optional</span>
         </div>
+        <textarea
+          id="suggestions"
+          name="suggestions"
+          rows="3"
+          class="glass-ta"
+          placeholder="e.g. Include 2 labelled diagrams · Follow AP Board 2024 pattern · Step-by-step solutions for all long answers"
+        ></textarea>
+        <label class="toggle-row" for="includeKey">
+          <div class="toggle-wrap">
+            <input type="checkbox" id="includeKey" name="includeKey" class="toggle-cb">
+            <div class="toggle-track"><div class="toggle-knob"></div></div>
+          </div>
+          <div>
+            <div class="toggle-title">Include Answer Key in PDF</div>
+            <div class="toggle-desc">Appends a full answer key as the final page</div>
+          </div>
+        </label>
       </div>
 
-      <textarea
-        id="suggestions"
-        name="suggestions"
-        rows="4"
-        class="instr-ta"
-        placeholder="Add extra directions — e.g:&#10;• Include 2 labelled diagrams in Section B&#10;• Add step-by-step solutions for all long answers&#10;• Follow AP Board 2024 marking scheme"
-      ></textarea>
-
-      <label class="toggle-row" for="includeKey">
-        <div class="toggle-body">
-          <input type="checkbox" id="includeKey" name="includeKey" class="toggle-checkbox">
-          <div class="toggle-track"><div class="toggle-knob"></div></div>
-        </div>
-        <div class="toggle-copy">
-          <div class="toggle-title">Include Answer Key in PDF</div>
-          <div class="toggle-desc">Appends a full, detailed answer key as the final page of the PDF</div>
-        </div>
-      </label>
-    </section>
-
-    <!-- GENERATE CTA -->
-    <div class="cta-wrap">
+      <!-- CTA -->
       <button type="submit" class="cta-btn" id="generateBtn">
+        <span class="cta-glow"></span>
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
         Generate &amp; Download PDF
       </button>
       <p class="cta-note">Gemini AI · ~15–30 seconds · No account needed</p>
-    </div>
-  </form>
+    </form>
 
-  <!-- ════════════════════════════════════
-       RESULTS PANEL
-  ════════════════════════════════════ -->
-  <section id="resultsPanel" class="results" style="display:none">
-
-    <div class="results-header">
-      <div class="results-title">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-        Paper Ready
+    <!-- Results Panel -->
+    <div id="resultsPanel" class="results-card glass-card" style="display:none">
+      <div class="results-header">
+        <div class="results-title">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+          Paper Ready
+        </div>
+        <div class="results-btns">
+          <button class="res-btn primary" onclick="downloadPDF(false)">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Download PDF
+          </button>
+          <button class="res-btn gold" onclick="downloadPDF(true)">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
+            PDF + Answer Key
+          </button>
+          <button class="res-btn ghost" onclick="copyPaper()">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            Copy Text
+          </button>
+        </div>
       </div>
-      <div class="results-btns">
-        <button class="res-btn res-primary" onclick="downloadPDF(false)">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-          Download PDF
+      <div class="preview-tabs">
+        <button class="p-tab active" id="ptab-paper" onclick="switchPreviewTab('paper', this)">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          Question Paper
         </button>
-        <button class="res-btn res-gold" onclick="downloadPDF(true)">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
-          PDF + Answer Key
+        <button class="p-tab" id="ptab-key" onclick="switchPreviewTab('key', this)" style="display:none">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
+          Answer Key
         </button>
-        <button class="res-btn res-ghost" onclick="copyPaper()">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-          Copy Text
-        </button>
+      </div>
+      <div id="tab-paper">
+        <textarea id="paperOutput" readonly class="preview-ta" placeholder="Your generated paper will appear here…"></textarea>
+      </div>
+      <div id="tab-key" style="display:none">
+        <textarea id="answerKeyOutput" readonly class="preview-ta preview-ta--key" placeholder="Answer key will appear here…"></textarea>
       </div>
     </div>
 
-    <!-- Tab bar -->
-    <div class="preview-tabs">
-      <button class="p-tab active" id="ptab-paper" onclick="switchPreviewTab('paper', this)">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-        Question Paper
-      </button>
-      <button class="p-tab" id="ptab-key" onclick="switchPreviewTab('key', this)" style="display:none">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
-        Answer Key
-      </button>
-    </div>
+  </main>
+</div><!-- /app-shell -->
 
-    <div id="tab-paper">
-      <textarea id="paperOutput" readonly class="preview-ta" placeholder="Your generated paper will appear here…"></textarea>
-    </div>
-    <div id="tab-key" style="display:none">
-      <textarea id="answerKeyOutput" readonly class="preview-ta preview-ta--key" placeholder="Answer key will appear here…"></textarea>
-    </div>
-
-  </section>
-
-  <!-- Footer -->
-  <footer class="footer">
-    <span class="footer-brand">ExamCraft</span>
-    <span class="footer-sep">·</span>
-    <span>Built by <strong>Laxman Nimmagadda</strong></span>
-    <span class="footer-sep">·</span>
-    <span><strong>Any Bugs please mail to laxmanchowdary159@gmail.com</strong></span>
-    <span class="footer-sep">·</span>
-    <span>© 2026</span>
-  </footer>
-
-</div>
-</main>
-
-<!-- ════════════════════════════════════
-     LOADING OVERLAY
-════════════════════════════════════ -->
+<!-- Loading Overlay -->
 <div id="loadingModal" class="loader-overlay" style="display:none">
-  <div class="loader-box">
-    <div class="loader-spinner">
-      <svg class="spinner-svg" viewBox="0 0 60 60">
-        <circle class="sp-track" cx="30" cy="30" r="24" fill="none" stroke-width="3"/>
-        <circle class="sp-arc sp-arc-1" cx="30" cy="30" r="24" fill="none" stroke-width="3"/>
-        <circle class="sp-arc sp-arc-2" cx="30" cy="30" r="18" fill="none" stroke-width="2"/>
-        <circle class="sp-arc sp-arc-3" cx="30" cy="30" r="12" fill="none" stroke-width="2"/>
+  <div class="loader-glass">
+    <div class="loader-ring">
+      <svg class="ring-svg" viewBox="0 0 80 80">
+        <circle class="ring-track" cx="40" cy="40" r="32" fill="none" stroke-width="3"/>
+        <circle class="ring-arc arc1" cx="40" cy="40" r="32" fill="none" stroke-width="3"/>
+        <circle class="ring-arc arc2" cx="40" cy="40" r="22" fill="none" stroke-width="2"/>
+        <circle class="ring-arc arc3" cx="40" cy="40" r="12" fill="none" stroke-width="2"/>
       </svg>
-      <div class="spinner-icon">
-        <svg width="20" height="20" viewBox="0 0 32 32" fill="none">
-          <path d="M16 3 L29 10 L29 22 L16 29 L3 22 L3 10 Z" stroke="currentColor" stroke-width="2" fill="none"/>
-        </svg>
+      <div class="ring-icon">
+        <svg width="20" height="20" viewBox="0 0 32 32" fill="none"><polygon points="16,2 30,9 30,23 16,30 2,23 2,9" stroke="currentColor" stroke-width="2" fill="none"/><circle cx="16" cy="16" r="4" fill="currentColor"/></svg>
       </div>
     </div>
     <h3 class="loader-title">Crafting your paper…</h3>
