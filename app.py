@@ -1044,7 +1044,7 @@ def _prompt_ap_ts(subject, chap, board, cls_str, cls_n,
         return _prompt_ap_ts_6_8(subject, chap, board, cls_str,
                                   m, difficulty, extra, math_note, pat)
     return _prompt_ap_ts_9_10(subject, chap, board, cls_str,
-                               m, difficulty, extra, math_note, pat)
+                               m, difficulty, extra, math_note, pat, user_marks=m)
 
 
 
@@ -1613,7 +1613,7 @@ QUALITY RULES:
 
 
 def _prompt_ap_ts_9_10(subject, chap, board, cls_str,
-                        m, difficulty, extra, math_note, pat):
+                        m, difficulty, extra, math_note, pat, user_marks=100):
     subj_l = (subject or "").lower()
 
     diff_mix = {
@@ -1668,7 +1668,7 @@ PAPER SPECIFICATION
 Subject  : {subject}
 Chapter  : {chap}
 Class    : {cls_str}    Board: {board}
-Total    : 100 marks    Difficulty: {difficulty}
+Total    : {user_marks} marks    Difficulty: {difficulty}
 Cognitive: {diff_mix}
 
 MANDATORY PAPER STRUCTURE -- MUST BE REPRODUCED EXACTLY:
@@ -1684,7 +1684,7 @@ PART B -- WRITTEN (80 marks):
   Section VI    6 LA given, attempt any 4 x 6 marks = 24 marks  [Q17-Q22, each with OR]
   Section VII   3 Application, attempt any 2 x 10 marks = 20 marks  [Q23-Q25]
                               Subtotal = 80 marks
-                         GRAND TOTAL = 100 marks
+                         GRAND TOTAL = {user_marks} marks
 
 SUBJECT AND CHAPTER GUIDANCE:
 {subject_guidance}
@@ -1737,7 +1737,7 @@ Write "ANSWER KEY" then:
 BEGIN. No preamble. Write paper header then Part A directly.
 
 Mathematics -- {chap}
-{board} | Class {cls_str}   Total Marks: 100   Time: 3 Hours 15 Minutes
+{board} | Class {cls_str}   Total Marks: {user_marks}   Time: 3 Hours 15 Minutes
 
 PART A -- OBJECTIVE  (20 Marks)
 (Answer on this question paper itself. Hand in after 30 minutes.)

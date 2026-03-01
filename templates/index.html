@@ -8,14 +8,10 @@
 <link rel="stylesheet" href="/static/css/style.css">
 </head>
 <body>
-
 <div class="aurora" aria-hidden="true">
-  <div class="aurora-orb orb-1"></div>
-  <div class="aurora-orb orb-2"></div>
-  <div class="aurora-orb orb-3"></div>
-  <div class="aurora-orb orb-4"></div>
-  <div class="aurora-orb orb-5"></div>
-  <div class="noise-overlay"></div>
+  <div class="aurora-orb orb-1"></div><div class="aurora-orb orb-2"></div>
+  <div class="aurora-orb orb-3"></div><div class="aurora-orb orb-4"></div>
+  <div class="aurora-orb orb-5"></div><div class="noise-overlay"></div>
 </div>
 
 <nav class="topnav">
@@ -28,7 +24,7 @@
       </svg>
     </div>
     <span class="nav-name">ExamCraft</span>
-    <span class="nav-badge">AI</span>
+    <span class="nav-badge" id="themeLabel">AI</span>
   </div>
   <div class="nav-center">
     <span class="nav-pill">🏛️ AP &amp; TS Boards</span>
@@ -36,7 +32,11 @@
     <span class="nav-pill">📄 PDF Export</span>
   </div>
   <div class="nav-right">
-    <button class="theme-toggle" id="themeBtn" onclick="toggleTheme()" title="Toggle theme">
+    <button class="theme-cycle-btn" onclick="cycleTheme()" title="Change theme">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+      Theme
+    </button>
+    <button class="theme-toggle" id="themeBtn" onclick="toggleDark()" title="Light / Dark">
       <svg class="icon-sun" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
       <svg class="icon-moon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
     </button>
@@ -44,14 +44,11 @@
 </nav>
 
 <div class="app-shell">
-
-  <!-- ════ LEFT COLUMN ════ -->
   <aside class="left-col">
-
     <div class="hero-card glass-card">
       <div class="hero-eyebrow"><span class="pulse-dot"></span>Gemini AI · Live</div>
       <h1 class="hero-title">Craft Perfect<br><em>Exam Papers</em></h1>
-      <p class="hero-sub">AP &amp; TS board-accurate question papers and competitive exam practice sets — with AI-generated diagrams, in under 60 seconds.</p>
+      <p class="hero-sub">AP &amp; TS board-accurate papers and competitive practice sets — AI-generated, in under 60 seconds.</p>
       <div class="hero-stats">
         <div class="hero-stat"><span class="hero-stat-num">AP·TS</span><span class="hero-stat-lbl">State Boards</span></div>
         <div class="hero-stat"><span class="hero-stat-num">4</span><span class="hero-stat-lbl">Olympiads</span></div>
@@ -59,14 +56,13 @@
       </div>
     </div>
 
-    <!-- Live Config -->
     <div class="config-card glass-card">
       <div class="config-label">Current Paper</div>
       <div class="config-grid">
         <div class="cfg-row"><span class="cfg-k">Board</span><span class="cfg-v" id="sb-board">—</span></div>
         <div class="cfg-row"><span class="cfg-k">Class</span><span class="cfg-v" id="sb-class">—</span></div>
         <div class="cfg-row"><span class="cfg-k">Subject</span><span class="cfg-v" id="sb-subject">—</span></div>
-        <div class="cfg-row"><span class="cfg-k">Chapter</span><span class="cfg-v" id="sb-chapter">—</span></div>
+        <div class="cfg-row"><span class="cfg-k">Topic</span><span class="cfg-v" id="sb-chapter">—</span></div>
         <div class="cfg-row"><span class="cfg-k">Scope</span><span class="cfg-v" id="sb-scope">—</span></div>
         <div class="cfg-row"><span class="cfg-k">Marks</span><span class="cfg-v" id="sb-marks">—</span></div>
         <div class="cfg-row"><span class="cfg-k">Level</span><span class="cfg-v" id="sb-difficulty">—</span></div>
@@ -74,7 +70,6 @@
       </div>
     </div>
 
-    <!-- History Panel -->
     <div class="history-card glass-card">
       <div class="history-header">
         <div class="config-label" style="margin-bottom:0">Recent Papers</div>
@@ -84,18 +79,15 @@
       </div>
       <div id="historyList" class="history-list">
         <div class="history-empty">
-          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" opacity=".3"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" opacity=".3"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
           <span>No papers yet</span>
         </div>
       </div>
     </div>
-
     <div class="left-credit">by Laxman Nimmagadda · © 2026</div>
   </aside>
 
-  <!-- ════ RIGHT COLUMN ════ -->
   <main class="right-col">
-
     <div class="hint-bar" id="fieldHint">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
       <span id="hintText">Begin by selecting a paper type below.</span>
@@ -133,7 +125,7 @@
       <div class="field-wrap">
         <label class="field-label">State Board</label>
         <div class="select-shell">
-          <select id="stateSelect" name="state" class="glass-select">
+          <select id="stateSelect" name="state" class="glass-select" onchange="updateSidebar()">
             <option value="">Choose your state…</option>
             <option value="Andhra Pradesh">Andhra Pradesh (BSEAP)</option>
             <option value="Telangana">Telangana (BSETS)</option>
@@ -150,7 +142,7 @@
       <div class="field-wrap">
         <label class="field-label">Examination</label>
         <div class="select-shell">
-          <select id="competitiveExam" name="competitiveExam" class="glass-select">
+          <select id="competitiveExam" name="competitiveExam" class="glass-select" onchange="updateCompInfo(); updateSidebar();">
             <option value="">Choose exam…</option>
             <option value="NTSE">NTSE — National Talent Search Examination</option>
             <option value="NSO">NSO — National Science Olympiad (SOF)</option>
@@ -160,43 +152,66 @@
           <svg class="chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
         </div>
       </div>
-      <!-- Competitive exam info box -->
       <div class="comp-info-box" id="compInfoBox" style="display:none">
         <div class="comp-info-text" id="compInfoText"></div>
       </div>
     </div>
 
-    <!-- STEP 3 — Scope -->
+    <!-- STEP 3 — Scope (different UI for board vs competitive) -->
     <div class="form-card glass-card collapsed" id="scopeCard">
       <div class="card-step">03</div>
-      <div class="card-title">Paper Scope</div>
-      <div class="scope-row">
-        <button class="scope-btn active" id="scope-single" onclick="selectScope('single')">
+      <div class="card-title" id="scopeCardTitle">Paper Scope</div>
+
+      <!-- Board scope: One Chapter / All Chapters -->
+      <div id="boardScopeRow" class="scope-row" style="display:none">
+        <button class="scope-btn active" id="bscope-single" onclick="selectBoardScope('single')">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
-          Single Chapter
+          One Chapter
           <span class="scope-hint">Focused paper</span>
         </button>
-        <button class="scope-btn" id="scope-all" onclick="selectScope('all')">
+        <button class="scope-btn" id="bscope-all" onclick="selectBoardScope('all')">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
-          Full Syllabus
-          <span class="scope-hint">All chapters</span>
+          All Chapters
+          <span class="scope-hint">Full syllabus</span>
         </button>
       </div>
+
+      <!-- Competitive scope: One Topic / Full Subject / All Subjects -->
+      <div id="compScopeRow" style="display:none">
+        <div class="scope-row scope-row--three">
+          <button class="scope-btn active" id="cscope-topic" onclick="selectCompScope('topic')">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            One Topic
+            <span class="scope-hint">Single subject + topic</span>
+          </button>
+          <button class="scope-btn" id="cscope-subject" onclick="selectCompScope('subject')">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+            Full Subject
+            <span class="scope-hint">All topics in one subject</span>
+          </button>
+          <button class="scope-btn" id="cscope-all" onclick="selectCompScope('all')">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+            All Subjects
+            <span class="scope-hint">Complete syllabus</span>
+          </button>
+        </div>
+      </div>
+
       <select id="scopeSelect" name="scope" style="display:none">
-        <option value="single">Single Chapter</option>
-        <option value="all">Full Syllabus</option>
+        <option value="single">single</option>
+        <option value="all">all</option>
       </select>
     </div>
 
     <!-- STEP 4 — Details -->
-    <div class="form-card glass-card">
+    <div class="form-card glass-card" id="detailsCard">
       <div class="card-step">04</div>
       <div class="card-title">Paper Details</div>
-      <div class="three-col">
+      <div class="three-col" id="detailsCols">
         <div class="field-wrap">
           <label class="field-label" for="class">Class / Grade</label>
           <div class="select-shell">
-            <select id="class" name="class" required class="glass-select">
+            <select id="class" name="class" required class="glass-select" onchange="onClassChange()">
               <option value="">Select class…</option>
               <option value="10">Class 10 (X)</option>
               <option value="9">Class 9 (IX)</option>
@@ -208,19 +223,19 @@
           </div>
         </div>
         <div class="field-wrap" id="subjectCard">
-          <label class="field-label" for="subject">Subject</label>
+          <label class="field-label" for="subject" id="subjectLabel">Subject</label>
           <div class="select-shell">
-            <select id="subject" name="subject" class="glass-select">
+            <select id="subject" name="subject" class="glass-select" onchange="onSubjectChange()">
               <option value="">Select subject…</option>
             </select>
             <svg class="chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
           </div>
         </div>
         <div class="field-wrap" id="chapterCard">
-          <label class="field-label" for="chapter">Chapter</label>
+          <label class="field-label" for="chapter" id="chapterLabel">Chapter / Topic</label>
           <div class="select-shell">
-            <select id="chapter" name="chapter" class="glass-select">
-              <option value="">Select chapter…</option>
+            <select id="chapter" name="chapter" class="glass-select" onchange="updateSidebar()">
+              <option value="">Select topic…</option>
             </select>
             <svg class="chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
           </div>
@@ -234,7 +249,7 @@
       <div class="card-title">Marks &amp; Difficulty</div>
       <div class="two-col">
         <div class="field-wrap" id="marksCard">
-          <label class="field-label">Total Marks <span class="marks-auto-hint" id="marksAutoHint" style="font-size:10px;color:var(--accent-2);font-family:var(--font-mono);margin-left:6px;opacity:.8;"></span></label>
+          <label class="field-label">Total Marks <span class="marks-auto-hint" id="marksAutoHint"></span></label>
           <div class="chip-row" id="markChips">
             <button type="button" class="chip" data-val="20" onclick="selectMark(this)">20</button>
             <button type="button" class="chip" data-val="50" onclick="selectMark(this)">50</button>
@@ -243,13 +258,11 @@
           </div>
           <div id="customMarkWrap" class="custom-mark-wrap" style="display:none;">
             <input type="number" id="customMarkInput" class="custom-mark-input glass-select"
-              placeholder="Enter marks…" min="1" max="500"
-              oninput="applyCustomMark(this.value)">
+              placeholder="Enter marks…" min="1" max="500" oninput="applyCustomMark(this.value)">
             <span class="custom-mark-unit">marks</span>
           </div>
           <select id="totalMarks" name="marks" style="display:none">
-            <option value="100">100</option><option value="20">20</option>
-            <option value="50">50</option>
+            <option value="100">100</option><option value="20">20</option><option value="50">50</option>
           </select>
         </div>
         <div class="field-wrap" id="difficultyCard">
@@ -277,7 +290,7 @@
           placeholder="e.g. Focus on numerical problems · Include 2 labelled diagrams · Step-by-step solutions for all long answers"></textarea>
         <label class="toggle-row" for="includeKey">
           <div class="toggle-wrap">
-            <input type="checkbox" id="includeKey" name="includeKey" class="toggle-cb">
+            <input type="checkbox" id="includeKey" name="includeKey" class="toggle-cb" onchange="updateSidebar()">
             <div class="toggle-track"><div class="toggle-knob"></div></div>
           </div>
           <div>
@@ -302,11 +315,11 @@
           Paper Ready
         </div>
         <div class="results-btns">
-          <button class="res-btn primary" id="dlPaperBtn" onclick="downloadPDF(false)">
+          <button class="res-btn primary" onclick="downloadPDF(false)">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
             Download PDF
           </button>
-          <button class="res-btn gold" id="dlKeyBtn" onclick="downloadPDF(true)">
+          <button class="res-btn gold" onclick="downloadPDF(true)">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
             PDF + Answer Key
           </button>
@@ -333,11 +346,9 @@
         <textarea id="answerKeyOutput" readonly class="preview-ta preview-ta--key" placeholder="Answer key will appear here…"></textarea>
       </div>
     </div>
-
   </main>
 </div>
 
-<!-- Loading Overlay -->
 <div id="loadingModal" class="loader-overlay" style="display:none">
   <div class="loader-glass">
     <div class="loader-ring">
@@ -363,7 +374,6 @@
 </div>
 
 <div id="notificationToast" class="toast-msg"></div>
-
 <script src="/static/js/app.js"></script>
 </body>
 </html>

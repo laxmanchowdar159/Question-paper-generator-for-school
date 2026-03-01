@@ -574,3 +574,34 @@ body {
 [data-theme="light"] .comp-info-box {
   background: rgba(99,102,241,.06);
 }
+/* ── Three-way scope row ─────────────────────────────────── */
+.scope-row--three {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 10px;
+}
+.scope-row--three .scope-btn {
+  flex: unset;
+  font-size: 12.5px;
+  padding: 13px 10px;
+}
+@media (max-width: 620px) {
+  .scope-row--three { grid-template-columns: 1fr; }
+}
+
+/* ── Theme cycle button ──────────────────────────────────── */
+.theme-cycle-btn {
+  display: flex; align-items: center; gap: 6px;
+  height: 38px; padding: 0 14px; border-radius: 10px;
+  border: 1px solid var(--glass-border); background: var(--glass-bg);
+  backdrop-filter: blur(12px); color: var(--text-b);
+  font-family: var(--font-mono); font-size: 11px; font-weight: 500;
+  cursor: pointer; transition: all .2s var(--ease); letter-spacing: .04em;
+  margin-right: 6px;
+}
+.theme-cycle-btn:hover {
+  background: var(--glass-hover); color: var(--text-a);
+  border-color: rgba(var(--accent),0.3);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
