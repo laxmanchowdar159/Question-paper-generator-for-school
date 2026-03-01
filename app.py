@@ -1047,52 +1047,574 @@ def _prompt_ap_ts(subject, chap, board, cls_str, cls_n,
                                m, difficulty, extra, math_note, pat)
 
 
-# ═══════════════════════════════════════════════════════════════════════
-# AP/TS CLASS 9–10  SSC  (100-mark official pattern)
-# Technique: Role + CoT self-verification + few-shot anchors + strict counts
-# ═══════════════════════════════════════════════════════════════════════
+
+# ========================================================================
+# AP/TS CLASS 9-10  SSC  (100-mark official pattern)
+# Board-accurate: exact section counts, topic-locked, chapter content banks
+# ========================================================================
+
+# Per-chapter content banks for Mathematics
+_MATH_CHAPTER_TOPICS = {
+    "trigonometry": {
+        "concepts": [
+            "sin, cos, tan, cot, sec, cosec as ratios in a right triangle",
+            "Trigonometric ratios of standard angles: 0 deg, 30 deg, 45 deg, 60 deg, 90 deg",
+            "Fundamental identities: sin2+cos2=1, 1+tan2=sec2, 1+cot2=cosec2",
+            "Complementary angle relations: sin(90-T)=cosT, tan(90-T)=cotT, etc.",
+            "Finding one ratio given another using identities",
+            "Evaluating expressions using standard angle values",
+            "Proving trigonometric identities algebraically",
+        ],
+        "mcq": [
+            ("The value of sin 30 + cos 60 is", ["1", "0", "1/2", "sq3/2"], 0),
+            ("tan 45 equals", ["0", "1", "sq3", "1/sq3"], 1),
+            ("If sin T = 3/5, then cos T equals", ["4/5", "3/4", "5/4", "5/3"], 0),
+            ("sin2 60 + cos2 60 equals", ["1", "0", "3/4", "1/4"], 0),
+            ("The value of sec2 45 - tan2 45 is", ["1", "0", "2", "sq2"], 0),
+            ("(1 - sin2 T) equals", ["cos2 T", "tan2 T", "sec2 T", "cosec2 T"], 0),
+            ("tan T in terms of sin T and cos T is", ["sinT/cosT", "cosT/sinT", "1/sinT", "1/cosT"], 0),
+            ("cosec 30 equals", ["2", "1", "1/2", "sq3"], 0),
+            ("The value of sin 0 + cos 90 is", ["0", "1", "2", "sq2"], 0),
+            ("If tan T = 1 then T equals", ["45 deg", "30 deg", "60 deg", "90 deg"], 0),
+        ],
+        "fill": [
+            "sin2 T + cos2 T = __________",
+            "tan(90 deg - T) = __________",
+            "The value of cos 0 deg is __________",
+            "sec2 T - tan2 T = __________",
+            "sin 60 deg = __________",
+        ],
+        "match_a": ["sin2 T + cos2 T", "1 + tan2 T", "sin(90 deg - T)", "tan T", "cosec T"],
+        "match_b": ["1", "sec2 T", "cos T", "sinT / cosT", "1 / sin T"],
+        "vsq": [
+            "If sin A = 1/2, find the values of cos A and tan A. [2 Marks]",
+            "Evaluate: 2 tan2 45 + cos2 30 - sin2 60 [2 Marks]",
+            "If tan T = 3/4, find sin T and cos T. [2 Marks]",
+            "Show that sin 30 cos 60 + cos 30 sin 60 = sin 90. [2 Marks]",
+            "Find the value of (sin 30 + cos 30) - (sin 60 + cos 60). [2 Marks]",
+            "If A = 45 deg, verify that sin 2A = 2 sin A cos A. [2 Marks]",
+            "Evaluate: cos2 45 / sin2 30 [2 Marks]",
+            "If tan(A+B) = sq3 and tan(A-B) = 1/sq3, 0 < A+B <= 90, A > B, find A and B. [2 Marks]",
+            "Prove that cosec2 T - cot2 T = 1. [2 Marks]",
+            "Evaluate: (sin 45 + cos 45)^2 [2 Marks]",
+        ],
+        "sa": [
+            "Prove that (sin T + cosec T)^2 + (cos T + sec T)^2 = 7 + tan2 T + cot2 T. [4 Marks]",
+            "If tan T + cot T = 5, find the value of tan2 T + cot2 T. [4 Marks]",
+            "Prove: (1 + tan2 T)/(1 + cot2 T) = tan2 T [4 Marks]",
+            "If sin T + cos T = sq2 cos T, prove that cos T - sin T = sq2 sin T. [4 Marks]",
+            "If sin T = cos T, find the value of 2 tan T + cos2 T. [4 Marks]",
+            "Prove: sinT/(1 - cosT) + sinT/(1 + cosT) = 2 cosecT [4 Marks]",
+        ],
+        "la": [
+            "Prove that (sinA - cosecA)^2 + (cosA - secA)^2 = cot2 A + tan2 A - 1. [6 Marks]",
+            "Prove: (sinT + cosT)(tanT + cotT) = secT + cosecT [6 Marks]",
+            "If cosecT - sinT = m and secT - cosT = n, prove that (m^2 n)^(2/3) + (mn^2)^(2/3) = 1. [6 Marks]",
+            "If tanA = n tanB and sinA = m sinB, prove that cos2 A = (m^2 - 1)/(n^2 - 1). [6 Marks]",
+            "Prove: cosA/(1 - tanA) + sinA/(1 - cotA) = sinA + cosA [6 Marks]",
+            "If x = a secT + b tanT and y = a tanT + b secT, prove that x^2 - y^2 = a^2 - b^2. [6 Marks]",
+        ],
+        "app": [
+            ("Verify the three fundamental identities for T = 30 deg, 45 deg and 60 deg.",
+             ["Calculate sin2(30)+cos2(30), and comment.", "Calculate 1+tan2(45) and sec2(45) and compare.", "Calculate 1+cot2(60) and cosec2(60) and compare.", "State the three identities proved."]),
+            ("Evaluate without using tables:",
+             ["sin2 30 + cos2 60", "cos2 45 + sin2 30 + sin2 60", "sin30 cos60 + cos30 sin60", "(tan2 60 - tan2 45)/(1 + tan2 60 tan2 45)"]),
+        ],
+    },
+    "applications of trigonometry": {
+        "concepts": [
+            "Angle of elevation: angle measured upward from horizontal to line of sight",
+            "Angle of depression: angle measured downward from horizontal to line of sight",
+            "Height and distance problems using tan T = opposite/adjacent",
+            "Problems with two angles of elevation from two positions",
+            "Problems with an observer at a height above ground",
+            "Use of sq3 = 1.732 in numerical answers",
+        ],
+        "mcq": [
+            ("The angle of elevation of the top of a tower from a point 20 m away is 45 deg. Height of tower is", ["20 m","10 m","40 m","20sq3 m"], 0),
+            ("A ladder 10 m long makes 60 deg with the ground. Height reached on the wall is", ["5sq3 m","5 m","10 m","5sq2 m"], 0),
+            ("Angle of depression of a boat from top of 50 m cliff is 30 deg. Distance of boat from base is", ["50sq3 m","50 m","100 m","25sq3 m"], 0),
+            ("Shadow of a 6 m pole is 6sq3 m. Angle of elevation of sun is", ["30 deg","45 deg","60 deg","90 deg"], 0),
+            ("A kite flies at 60 m. String makes 60 deg with horizontal. String length is", ["40sq3 m","60sq2 m","120 m","40 m"], 0),
+            ("From top of 50 m tower, angle of depression of point is 45 deg. Distance of point from base is", ["50 m","25 m","100 m","50sq3 m"], 0),
+            ("Pole casts 2sq3 m shadow when sun elevation is 60 deg. Height of pole is", ["6 m","2 m","4 m","2sq3 m"], 0),
+            ("From a point 40 m from base, elevation of top of pole is 30 deg. Height of pole is", ["40/sq3 m","40sq3 m","20 m","80 m"], 0),
+            ("Observer 1.5 m tall, 28.5 m from building, elevation of top is 45 deg. Building height is", ["30 m","28.5 m","31.5 m","29 m"], 0),
+            ("From top of cliff 150 m high, depression of ship is 30 deg. Distance of ship from base is", ["150sq3 m","150 m","75sq3 m","300 m"], 0),
+        ],
+        "fill": [
+            "The angle of elevation is measured __________ from the horizontal line of sight",
+            "The angle of depression is measured __________ from the horizontal line of sight",
+            "If angle of elevation of sun is 45 deg, shadow of a pole equals __________ its height",
+            "tan(angle of elevation) = height / __________",
+            "When the angle of depression equals the angle of elevation, the two points are at __________ height",
+        ],
+        "match_a": ["Angle of elevation", "Angle of depression", "tan 30 deg", "tan 60 deg", "tan 45 deg"],
+        "match_b": ["1", "1/sq3", "sq3", "Angle above horizontal", "Angle below horizontal"],
+        "vsq": [
+            "From a point 15 m away, angle of elevation of top of a tower is 60 deg. Find height. [2 Marks]",
+            "A ladder 10 m leans against a wall at 30 deg with the wall. Find distance of foot from wall. [2 Marks]",
+            "Angle of depression of car from top of 50 m cliff is 30 deg. Find distance of car from base. [2 Marks]",
+            "From a point, angles of elevation of bottom and top of a transmission tower on a 20 m building are 45 deg and 60 deg. Find tower height. [2 Marks]",
+            "A 1.5 m boy stands from a 30 m building with angle of elevation 30 deg. Find his distance from building. [2 Marks]",
+            "A kite flies at 75 m. String makes 60 deg with horizontal. Find length of string. [2 Marks]",
+            "Shadow of a building is 20 m when sun elevation is 60 deg. Find height of building. [2 Marks]",
+            "From a 7 m building, elevation of top of tower is 60 deg and depression of foot is 45 deg. Find height of tower. [2 Marks]",
+            "Two poles of equal height stand 80 m apart. From a point between them, elevations are 60 deg and 30 deg. Find height of poles. [2 Marks]",
+            "A statue 1.6 m stands on a pedestal. Elevation of top of statue is 60 deg and of top of pedestal is 45 deg. Find height of pedestal. [2 Marks]",
+        ],
+        "sa": [
+            "From top of a hill, angles of depression of two consecutive km stones due east are 45 deg and 30 deg. Find height of hill. [4 Marks]",
+            "Two ships on either side of 200 m lighthouse. Angles of depression are 60 deg and 45 deg. Find distance between ships. [4 Marks]",
+            "A man on deck 10 m above water observes top of hill at 60 deg elevation and base at 30 deg depression. Find distance and height of hill. [4 Marks]",
+            "Angles of elevation of a tower from points P and Q, 4 m and 9 m from base, are complementary. Find height. [4 Marks]",
+            "From two points A and B on same side of tower, elevations are 30 deg and 60 deg. AB = 48 m. Find height of tower. [4 Marks]",
+            "A boy at A observes top of building at 60 deg. Walks 40 m to B, angle becomes 75 deg. Find height of building. [4 Marks]",
+        ],
+        "la": [
+            "A man on tower observes car at 30 deg depression. Six seconds later angle is 60 deg. Find time for car to reach base. [6 Marks]",
+            "Elevation of jet from point A due north is 60 deg. From B due west of A, it is 30 deg. AB = 1800 m. Find height of jet. [6 Marks]",
+            "From window 10 m above street, elevation of top of building across is 60 deg and depression of foot is 45 deg. Find width of road and height of building. [6 Marks]",
+            "A round balloon of radius r subtends angle a at eye of observer. Elevation of centre is T. Prove distance of centre = r cosecT sin(a/2). [6 Marks]",
+            "Two poles AB and CD of heights a and b stand on ground. P between them: angles of elevation of tops are equal. Find height and position of P. [6 Marks]",
+            "From a point P on ground, elevation of top of tower is T. On walking a metres towards tower, elevation is phi. Prove height = a tanT tan phi / (tan phi - tanT). [6 Marks]",
+        ],
+        "app": [
+            ("A student uses angles of elevation from two points to find building height.",
+             ["Draw a neat labelled diagram showing points A, B and the building.", "From A the angle is 30 deg and from B (20 m closer) it is 60 deg. Find height of building.", "Find distance of B from base.", "Verify distance AB = 20 m using your answers."]),
+            ("A lighthouse 80 m tall. Two boats on opposite sides. Angles of depression 45 deg and 30 deg.",
+             ["Draw a neat labelled diagram.", "Find distance of boat 1 from base.", "Find distance of boat 2 from base.", "Find total distance between the two boats."]),
+        ],
+    },
+    "similar triangles": {
+        "concepts": [
+            "Basic Proportionality Theorem (Thales): DE || BC => AD/DB = AE/EC",
+            "Converse of BPT",
+            "AA, SSS, SAS similarity criteria",
+            "Ratio of areas of similar triangles = square of ratio of corresponding sides",
+            "Pythagoras theorem and its converse",
+            "Altitude on hypotenuse of right triangle creates similar triangles",
+        ],
+        "mcq": [
+            ("In △ABC, DE || BC. If AD=3 cm, DB=6 cm, AE=4 cm, then EC is", ["8 cm","6 cm","2 cm","12 cm"], 0),
+            ("Ratio of areas of two similar triangles is 25:36. Ratio of corresponding sides is", ["5:6","25:36","6:5","sq25:sq36"], 0),
+            ("△ABC~△PQR and AB/PQ=2/3. Ratio Area(ABC):Area(PQR) is", ["4:9","2:3","9:4","3:2"], 0),
+            ("Which criterion CANNOT prove similarity?", ["RHS","AA","SSS","SAS"], 0),
+            ("Hypotenuse 13 cm, one side 5 cm. Third side is", ["12 cm","8 cm","10 cm","11 cm"], 0),
+            ("Perimeters of similar triangles are 30 cm and 20 cm. Side of first is 12 cm. Corresponding side of second is", ["8 cm","10 cm","15 cm","6 cm"], 0),
+            ("△ABC~△DEF, angle A=47 deg, angle E=83 deg. Angle C equals", ["50 deg","47 deg","83 deg","90 deg"], 0),
+            ("A 6 m pole casts 4 m shadow. Tower casts 28 m shadow. Height of tower is", ["42 m","36 m","24 m","18 m"], 0),
+            ("In △PQR, PS=2 cm, PQ=6 cm, ST||QR. Ratio PT:TR is", ["1:2","2:1","1:3","3:1"], 0),
+            ("Ratio of areas of two similar triangles is 16:25. Ratio of altitudes is", ["4:5","16:25","2:5","8:25"], 0),
+        ],
+        "fill": [
+            "If DE || BC in triangle ABC, then AD/DB = __________ (BPT)",
+            "Ratio of areas of similar triangles = ratio of __________ of corresponding sides",
+            "In a right triangle, square of hypotenuse = __________ of squares of other two sides",
+            "If △ABC~△PQR, AB=3 cm, PQ=6 cm, ratio of perimeters is __________",
+            "All congruent figures are similar but similar figures are not necessarily __________",
+        ],
+        "match_a": ["Basic Proportionality Theorem", "Area theorem for similar triangles", "Pythagoras theorem", "AAA similarity", "Altitude on hypotenuse"],
+        "match_b": ["All three angles equal", "AD/DB = AE/EC", "c^2 = a^2 + b^2", "Area ratio = (side ratio)^2", "Creates triangles similar to original"],
+        "vsq": [
+            "In △PQR, ST||QR. PS=x, SQ=x-2, PT=x+2, TR=x-1. Find x. [2 Marks]",
+            "△ABC: angle A=50, angle B=60. △DEF: angle D=50, angle F=70. Are they similar? State criterion. [2 Marks]",
+            "Areas of two similar triangles are 100 cm2 and 49 cm2. Side of larger is 15 cm. Find corresponding side of smaller. [2 Marks]",
+            "In right-angled △ABC at B, AB=8 cm, BC=6 cm. Find AC. [2 Marks]",
+            "△ABC~△PQR, perimeters 48 cm and 32 cm. Find ratio of corresponding medians. [2 Marks]",
+            "D on AB, E on AC: AD=5, DB=10, AE=4, EC=8. Show DE||BC. [2 Marks]",
+            "Girl height 90 cm walks from 3.6 m lamp at 1.2 m/s. Find shadow length after 4 s. [2 Marks]",
+            "In △PQR, MN||QR. PM=4, MQ=6, PN=2. Find NR. [2 Marks]",
+            "Isosceles △ABC right-angled at C. Prove AB^2 = 2AC^2. [2 Marks]",
+            "State AAA similarity criterion for triangles. [2 Marks]",
+        ],
+        "sa": [
+            "Prove BPT: line parallel to one side divides other two sides in same ratio. [4 Marks]",
+            "ABCD trapezium, AD||BC, diagonals meet at O. Prove AO/OC = BO/OD. [4 Marks]",
+            "△PQR right-angled at P, M on QR, PM perpendicular to QR. Show PM^2 = QM x MR. [4 Marks]",
+            "Areas of △ABC and △PQR are 64 cm2 and 121 cm2. QR=15.4 cm. Find BC. [4 Marks]",
+            "D on BC of △ABC with angle ADC = angle BAC. Show CA^2 = CB x CD. [4 Marks]",
+            "AD is altitude of △ABC. AD^2 = BD x CD. Prove △ABC is right-angled at A. [4 Marks]",
+        ],
+        "la": [
+            "State and prove Basic Proportionality Theorem with neat diagram. [6 Marks]",
+            "State and prove converse of BPT. [6 Marks]",
+            "Prove: ratio of areas of similar triangles = ratio of squares of corresponding sides. [6 Marks]",
+            "State and prove Pythagoras theorem with neat diagram. [6 Marks]",
+            "In △ABC, AD median, E midpoint of AD, BE produced meets AC at F. Prove AF = (1/3)AC. [6 Marks]",
+            "ABCD trapezium AB||DC, diagonals meet at O, EF through O parallel to AB. Prove EO = FO. [6 Marks]",
+        ],
+        "app": [
+            ("Construct △ABC: BC=6 cm, AB=5 cm, angle ABC=60 deg. Construct similar triangle with sides (3/4) of △ABC.",
+             ["Draw △ABC with given measurements. Write all steps.", "Mark ray BX at acute angle to BC.", "Mark 4 equal parts on BX, join B4 to C.", "Draw B3C' parallel to B4C. Draw C'A' parallel to CA. Measure and state ratio of sides."]),
+            ("A 1.6 m girl stands 3.2 m from lamp post, shadow 4.8 m.",
+             ["Draw a neat labelled diagram.", "Identify the two similar triangles and state why they are similar.", "Set up the proportion and find height of lamp post.", "Verify your answer."]),
+            ("In △ABC, right angle at B. D on AB, E on BC. Prove AE^2 + CD^2 = AC^2 + DE^2.",
+             ["Draw a neat diagram.", "Apply Pythagoras in right △ABE.", "Apply Pythagoras in right △DBC.", "Add the equations and simplify to get the result."]),
+        ],
+    },
+    "tangents and secants to a circle": {
+        "concepts": [
+            "Tangent to a circle: perpendicular to radius at point of contact",
+            "Length of tangent from external point = sqrt(d^2 - r^2)",
+            "Two tangents from an external point are equal in length",
+            "Angle between tangent and chord = angle in alternate segment",
+            "Secant-tangent relation: PA^2 = PB x PC",
+            "Quadrilateral circumscribing a circle: AB + CD = BC + DA",
+        ],
+        "mcq": [
+            ("Tangent to a circle is __________ to the radius at point of contact", ["perpendicular","parallel","equal","bisecting"], 0),
+            ("From point 13 cm from centre, radius 5 cm. Tangent length is", ["12 cm","8 cm","10 cm","13 cm"], 0),
+            ("Two tangents PA and PB from P. PA = 10 cm. PB equals", ["10 cm","5 cm","20 cm","15 cm"], 0),
+            ("If angle APB = 80 deg (tangents PA PB), then angle AOB equals", ["100 deg","80 deg","40 deg","160 deg"], 0),
+            ("Number of tangents from a point inside a circle is", ["0","1","2","infinite"], 0),
+            ("TP and TQ tangents from T, angle PTQ = 70 deg. Angle POQ equals", ["110 deg","70 deg","140 deg","35 deg"], 0),
+            ("Tangent PT and secant PAB from P: PA=4 cm, PB=9 cm. PT equals", ["6 cm","5 cm","36 cm","13 cm"], 0),
+            ("Circle touches all four sides of quadrilateral ABCD. AB=12, CD=8, BC=10. AD equals", ["10 cm","6 cm","8 cm","14 cm"], 0),
+            ("Two concentric circles radii 5 cm and 3 cm. Length of chord of outer tangent to inner circle is", ["8 cm","4 cm","6 cm","10 cm"], 0),
+            ("Angle between tangent to circle and chord through contact point equals angle in", ["alternate segment","same segment","semicircle","major segment"], 0),
+        ],
+        "fill": [
+            "The tangent to a circle is __________ to the radius at the point of contact",
+            "Two tangents drawn from an external point to a circle are __________ in length",
+            "From a point 5 cm from a circle of radius 3 cm, tangent length = __________",
+            "PA^2 = PB x PC where PA is tangent and PBC is a __________ from P",
+            "If a quadrilateral circumscribes a circle: AB + CD = __________",
+        ],
+        "match_a": ["Tangent-radius relationship", "Tangents from external point", "Tangent-chord angle", "Secant-tangent theorem", "Cyclic quadrilateral circumscribing circle"],
+        "match_b": ["AB + CD = BC + DA", "PA^2 = PB x PC", "Angle in alternate segment", "Equal lengths", "90 degrees"],
+        "vsq": [
+            "Find tangent length from point 13 cm from centre of circle of radius 5 cm. [2 Marks]",
+            "PA and PB tangents from P to circle. PA = 10 cm. Find PB. State the theorem used. [2 Marks]",
+            "OQ = 13 cm, radius = 5 cm, PQ tangent at P. Find PQ. [2 Marks]",
+            "Two concentric circles radii 5 cm and 3 cm. Find length of chord of outer tangent to inner. [2 Marks]",
+            "State and prove: tangent is perpendicular to radius at point of contact. [2 Marks]",
+            "Tangent PT and secant PAB from P: PA=6, PB=4. Find PB and PC. [2 Marks]",
+            "Quadrilateral ABCD circumscribes circle. AB=12, BC=10, CD=8. Find AD. [2 Marks]",
+            "PA and PB tangents from P. Angle APB = 70 deg. Find angle AOB. [2 Marks]",
+            "Chord of circle of radius 10 cm makes 30 deg at centre. Find tangent length at one end. [2 Marks]",
+            "Tangent PT and secant PAB from P: PT=8 cm, PA=4 cm. Find AB. [2 Marks]",
+        ],
+        "sa": [
+            "Prove tangents from an external point to a circle are equal in length. [4 Marks]",
+            "Circle inscribed in △ABC touches BC at D, CA at E, AB at F. AB=12, BC=8, CA=10. Find AF, BD, CE. [4 Marks]",
+            "Prove: if two circles touch internally/externally, point of contact lies on line joining centres. [4 Marks]",
+            "PA and PB tangents from P. Prove angle APB + angle AOB = 180 deg. [4 Marks]",
+            "Tangent PT and secant PAB from external P. Prove PT^2 = PA x PB. [4 Marks]",
+            "Two tangents PA and PB from P to circle, angle APB = 60 deg, radius = r. Find OP and tangent length. [4 Marks]",
+        ],
+        "la": [
+            "State and prove: tangent at any point of circle is perpendicular to radius through that point. [6 Marks]",
+            "State and prove: tangents from external point are equal. Draw neat diagram. [6 Marks]",
+            "Prove: if circle touches all four sides of quadrilateral, sum of opposite sides are equal. [6 Marks]",
+            "Prove: angle between tangent to circle and chord through contact = angle in alternate segment. [6 Marks]",
+            "Draw tangents to circle of radius 4 cm from point 8 cm away. Write steps and find tangent length. [6 Marks]",
+            "Two tangents PA and PB from P, angle between them 60 deg, radius r. Find OP, tangent length, and area of quadrilateral PAOB. [6 Marks]",
+        ],
+        "app": [
+            ("Circle of radius 5 cm inscribed in right triangle with sides 12 cm, 13 cm, 5 cm.",
+             ["Find tangent lengths from each vertex using tangent properties.", "Verify tangent lengths add to side lengths correctly.", "Find area of triangle using base and height.", "Verify: Area = inradius x semi-perimeter. What is the inradius here?"]),
+            ("Two circles of radii 7 cm and 3 cm touch externally.",
+             ["Draw the configuration and mark all tangent lines.", "Find length of common external tangent.", "Find length of common internal tangent.", "Find distance between centres and verify."]),
+        ],
+    },
+    "mensuration": {
+        "concepts": [
+            "Surface area and volume: cube, cuboid, cylinder, cone, sphere, hemisphere",
+            "Frustum of cone: l = sqrt(h^2+(r1-r2)^2), LSA = pi(r1+r2)l, V = (pi*h/3)(r1^2+r2^2+r1*r2)",
+            "Combination of solids (cone + cylinder, hemisphere + cylinder, etc.)",
+            "Conversion of solids: melting and recasting -- volumes are equal",
+            "Cost problems: cost = rate x area or volume",
+        ],
+        "mcq": [
+            ("Volume of sphere of radius r is", ["(4/3)pi*r^3","(2/3)pi*r^3","4*pi*r^2","pi*r^3"], 0),
+            ("CSA of cone of radius r and slant height l is", ["pi*r*l","pi*r^2","2*pi*r*l","pi*r*(r+l)"], 0),
+            ("TSA of cylinder of radius r height h is", ["2*pi*r*(r+h)","2*pi*r*h","pi*r^2*h","pi*r*(r+2h)"], 0),
+            ("Volume of hemisphere of radius r is", ["(2/3)pi*r^3","(4/3)pi*r^3","(1/3)pi*r^3","(3/2)pi*r^3"], 0),
+            ("Volume of cone of radius r and height h is", ["(1/3)pi*r^2*h","pi*r^2*h","(2/3)pi*r^3","(1/2)pi*r^2*h"], 0),
+            ("Slant height of frustum: h=8, r1=10, r2=6. Slant height l is", ["sqrt(80)","sqrt(100)","sqrt(116)","10"], 0),
+            ("TSA of hemisphere of radius r is", ["3*pi*r^2","2*pi*r^2","4*pi*r^2","pi*r^2"], 0),
+            ("A solid sphere of radius 3 cm melted into small spheres of radius 0.5 cm. Number of small spheres is", ["216","27","72","108"], 0),
+            ("Volume of frustum: r1=6, r2=3, h=4. Volume is", ["84*pi","76*pi","36*pi","108*pi"], 0),
+            ("Cylinder r=7 cm, h=20 cm. Volume (pi=22/7) is", ["3080 cm3","2200 cm3","4400 cm3","1540 cm3"], 0),
+        ],
+        "fill": [
+            "Volume of a sphere = __________",
+            "Curved surface area of a cone = __________",
+            "Volume of frustum = (pi*h/3)(r1^2 + r2^2 + r1*r2) where h is the __________",
+            "Total surface area of a hemisphere = __________",
+            "When one solid is melted and recast as another, their __________ remain equal",
+        ],
+        "match_a": ["Volume of sphere", "CSA of cylinder", "Volume of cone", "TSA of hemisphere", "CSA of cone"],
+        "match_b": ["pi*r*l", "3*pi*r^2", "(1/3)*pi*r^2*h", "2*pi*r*h", "(4/3)*pi*r^3"],
+        "vsq": [
+            "Find volume of sphere of radius 7 cm. (pi=22/7) [2 Marks]",
+            "Cone radius 7 cm, slant height 25 cm. Find CSA. [2 Marks]",
+            "Cylinder radius 7 cm, height 20 cm. Find volume. [2 Marks]",
+            "Hemisphere radius 10.5 cm. Find TSA. [2 Marks]",
+            "Solid sphere radius 3 cm melted into small spheres radius 0.5 cm. Find number. [2 Marks]",
+            "Frustum: r1=8, r2=4, h=6 cm. Find volume. [2 Marks]",
+            "Cone: volume=1570 cm3, height=15 cm. Find radius. [2 Marks]",
+            "Two spheres radii 1 cm and 6 cm melted into one. Find radius of new sphere. [2 Marks]",
+            "Cuboid 8x5x3 cm melted to form cylinder radius 2 cm. Find height. [2 Marks]",
+            "Metallic sphere radius 4.2 cm recast into cylinders radius 0.7 cm, height 2.4 cm. Find number. [2 Marks]",
+        ],
+        "sa": [
+            "Solid = cone (height 12 cm, radius 3 cm) on hemisphere (radius 3 cm). Find TSA and volume. [4 Marks]",
+            "Tent: cylindrical up to 3 m height, conical top slant height 5 m, diameter 14 m. Find canvas needed. [4 Marks]",
+            "Bucket (frustum): radii 15 cm and 5 cm, depth 24 cm. Find capacity and metal sheet needed. [4 Marks]",
+            "A wooden article: hemisphere scooped from each end of cylinder (h=10, r=3.5 cm). Find TSA. [4 Marks]",
+        ],
+        "la": [
+            "Solid = cone (h=4 cm) on hemisphere (r=2.1 cm). Find volume and TSA of solid. [6 Marks]",
+            "45 gulab jamuns, each = cylinder with 2 hemispherical ends, length 5 cm, diameter 2.8 cm. 30% syrup by volume. Find total syrup. [6 Marks]",
+            "Frustum (r1=12, r2=3, h=12) full of ice cream for 10 children in cones (r=3, h=12) with hemispherical tops. Find depth of ice cream in each cone. [6 Marks]",
+            "Water flows through cylindrical pipe (diameter 1.4 cm) at 3 km/h into rectangular tank 1.1m x 44cm. Time to fill 40 cm deep. [6 Marks]",
+        ],
+        "app": [
+            ("A building = cuboid (8m x 6m x 4m) with conical top (r=4m, slant h=5m). Sheet metal needed.",
+             ["Find TSA of cuboidal portion (exclude top face).", "Find CSA of cone.", "Find total sheet metal required.", "If sheet costs Rs 80 per m2, find total cost."]),
+        ],
+    },
+    "statistics": {
+        "concepts": [
+            "Mean of grouped data: direct method, assumed mean method, step-deviation method",
+            "Mode formula: l + [(f1-f0)/(2f1-f0-f2)] x h",
+            "Median formula: l + [(n/2 - cf)/f] x h",
+            "Ogive: less-than and more-than cumulative frequency curves",
+            "Empirical relation: Mode = 3 Median - 2 Mean",
+        ],
+        "mcq": [
+            ("Class mark of class interval 10-20 is", ["15","10","20","12.5"], 0),
+            ("Mean of first 10 natural numbers is", ["5.5","5","10","6"], 0),
+            ("In mode formula l+[(f1-f0)/(2f1-f0-f2)]xh, f1 is", ["frequency of modal class","frequency before modal class","frequency after modal class","total frequency"], 0),
+            ("In median formula, cf stands for", ["cumulative frequency before median class","class frequency","cumulative frequency of median class","total frequency"], 0),
+            ("Empirical relation between mean, median and mode is", ["Mode = 3 Median - 2 Mean","Mode = 2 Median - 3 Mean","Mean = 3 Mode - 2 Median","Median = 3 Mode - 2 Mean"], 0),
+            ("If mean=25 and mode=22, then median is", ["24","23","25","26"], 0),
+            ("A less-than ogive is drawn using", ["upper class limits","lower class limits","class marks","mid-values"], 0),
+            ("Modal class for data 0-10(f=5), 10-20(f=12), 20-30(f=8), 30-40(f=3) is", ["10-20","20-30","0-10","30-40"], 0),
+            ("For median, n/2 = 20, cf = 14, f = 12, l = 30, h = 10. Median is", ["35","30","34","40"], 0),
+            ("An ogive is a graph of", ["cumulative frequency","frequency","relative frequency","class marks"], 0),
+        ],
+        "fill": [
+            "Class mark of 20-30 is __________",
+            "Mode = 3 Median - __________ x Mean",
+            "In median formula, h is the __________",
+            "If mean=25 and mode=22, then median = __________",
+            "An ogive is a __________ frequency curve",
+        ],
+        "match_a": ["Direct method", "Step-deviation method", "Mode formula", "Median formula", "Empirical relation"],
+        "match_b": ["Mode = 3 Median - 2 Mean", "l + [(f1-f0)/(2f1-f0-f2)]xh", "l + [(n/2-cf)/f]xh", "Sum(fi*xi)/Sum(fi)", "Sum(fi*ui)/Sum(fi) x h + a"],
+        "vsq": [
+            "Find mean of 5, 10, 15, 20, 25. [2 Marks]",
+            "Find mode of: 2, 3, 5, 2, 7, 3, 2. [2 Marks]",
+            "Mean=30, Median=27. Find mode using empirical formula. [2 Marks]",
+            "Find class marks of intervals: 0-8, 8-16, 16-24, 24-32. [2 Marks]",
+            "Modal class: l=20, f0=5, f1=8, f2=3, h=10. Find mode. [2 Marks]",
+            "Median: l=25, n/2=20, cf=15, f=10, h=5. Find median. [2 Marks]",
+            "Find mean by step-deviation: 0-10(f=5), 10-20(f=10), 20-30(f=15). a=15, h=10. [2 Marks]",
+            "Mode=36, Mean=30. Find median using empirical relation. [2 Marks]",
+            "n=40, cumulative frequencies: 5, 15, 25, 35, 40. Identify the median class. [2 Marks]",
+            "Define: (a) class mark (b) modal class (c) cumulative frequency [2 Marks]",
+        ],
+        "sa": [
+            "Find mean weight: 40-45(f=5), 45-50(f=15), 50-55(f=20), 55-60(f=8), 60-65(f=2). Use assumed mean method. [4 Marks]",
+            "Find mode: 0-20(f=5), 20-40(f=10), 40-60(f=12), 60-80(f=9), 80-100(f=4). [4 Marks]",
+            "Find median of marks: 0-10(5), 10-20(10), 20-30(25), 30-40(30), 40-50(15), 50-60(10), 60-70(5). [4 Marks]",
+            "Draw less-than ogive: 0-10(5), 10-20(8), 20-30(12), 30-40(10), 40-50(5). [4 Marks]",
+        ],
+        "la": [
+            "Find mean, median and mode for: 0-20(6), 20-40(8), 40-60(10), 60-80(9), 80-100(7). Verify empirical relation. [6 Marks]",
+            "Draw less-than and more-than ogives and find median from their intersection for: 10-20(5), 20-30(8), 30-40(20), 40-50(15), 50-60(7), 60-70(5). [6 Marks]",
+        ],
+        "app": [
+            ("Daily wages of 50 workers given in table. Find:",
+             ["Mean wage by step-deviation method.", "Modal wage (identify modal class, apply formula).", "Median wage using formula.", "Verify empirical relation: Mode ~= 3 Median - 2 Mean."]),
+        ],
+    },
+    "probability": {
+        "concepts": [
+            "Classical probability = number of favourable outcomes / total equally likely outcomes",
+            "Complementary events: P(E) + P(not E) = 1",
+            "Range: 0 <= P(E) <= 1; impossible event P=0, certain event P=1",
+            "Sample space for dice, coins, cards, numbered balls",
+            "Events involving two dice, two coins simultaneously",
+        ],
+        "mcq": [
+            ("A die thrown once. Probability of a prime number is", ["1/2","1/3","2/3","1/6"], 0),
+            ("Card drawn from 52. Probability of a red ace is", ["1/26","1/13","2/52","1/52"], 0),
+            ("Two coins tossed. Probability of at least one head is", ["3/4","1/4","1/2","2/4"], 0),
+            ("Probability of number > 4 on a die is", ["1/3","2/3","1/6","1/2"], 0),
+            ("Bag has 3 red, 4 blue balls. Probability of drawing red is", ["3/7","4/7","3/4","1/2"], 0),
+            ("Cards 1-25 shuffled. Probability of a multiple of 5 is", ["1/5","5/25","4/25","6/25"], 0),
+            ("Two dice thrown. Probability of sum = 7 is", ["1/6","7/36","6/36","5/36"], 0),
+            ("Letters of MATHEMATICS on cards. Probability of a vowel is", ["4/11","5/11","3/11","2/5"], 0),
+            ("Probability of getting a face card from 52 is", ["3/13","1/13","12/52","4/13"], 0),
+            ("A bag has 5 red, 7 blue, 3 green. One drawn. Probability of not blue is", ["8/15","7/15","5/15","1/3"], 0),
+        ],
+        "fill": [
+            "Probability of an impossible event is __________",
+            "P(E) + P(not E) = __________",
+            "Probability of a certain event is __________",
+            "Total number of outcomes when a die is rolled = __________",
+            "Probability that drawn card from 52 is a king = __________",
+        ],
+        "match_a": ["Probability range", "Complementary events", "Impossible event", "Certain event", "Classical probability"],
+        "match_b": ["Favourable/Total outcomes", "P = 0", "P = 1", "0 <= P <= 1", "P(E) + P(E') = 1"],
+        "vsq": [
+            "A die thrown. P(number < 3) and P(factor of 6). [2 Marks]",
+            "Card drawn from 52. P(king) and P(red card). [2 Marks]",
+            "Two coins tossed. P(two heads) and P(at least one tail). [2 Marks]",
+            "Bag has 5 red, 7 blue. Ball drawn. P(red) and P(not red). [2 Marks]",
+            "Number chosen from 1-20. P(prime) and P(composite). [2 Marks]",
+            "Die thrown twice. P(same number both times). [2 Marks]",
+            "Cards 1-25 shuffled. Card drawn. P(multiple of 5). [2 Marks]",
+            "Wheel numbered 1-10 spun. P(even), P(prime), P(multiple of 3). [2 Marks]",
+            "From 52 cards: P(heart) and P(face card). [2 Marks]",
+            "MATHEMATICS letters on cards. Card picked. P(vowel). [2 Marks]",
+        ],
+        "sa": [
+            "Cards numbered 1-50. P(prime), P(multiple of 7), P(perfect square), P(two-digit number). [4 Marks]",
+            "Die thrown once. P(prime), P(not prime), P(odd prime), P(factor of 12). [4 Marks]",
+            "Two dice thrown. P(sum=7), P(sum>=10), P(doublet), P(sum<5). [4 Marks]",
+            "Cards of one suit removed from 52. From remaining: P(red card), P(king), P(queen of removed suit). [4 Marks]",
+        ],
+        "la": [
+            "From 52 well-shuffled cards: P(face card), P(not face card), P(red face card), P(black king), P(diamond), P(numbered card). [6 Marks]",
+            "Box has discs 1-90. P(two-digit), P(perfect square), P(divisible by 5), P(not divisible by 10). [6 Marks]",
+        ],
+        "app": [
+            ("Spinner has 8 equal sectors numbered 1-8.",
+             ["List the complete sample space.", "Find P(prime number on spinner).", "Find P(factor of 8).", "Are the events 'prime' and 'factor of 8' mutually exclusive? Explain with working."]),
+        ],
+    },
+}
+
+
+def _get_chapter_bank(chap: str) -> dict:
+    """Return content bank for given chapter.
+    Strategy: exact match first, then longest-key substring match (prevents
+    'trigonometry' matching 'applications of trigonometry')."""
+    cl = chap.lower().strip()
+    # 1. Exact match
+    if cl in _MATH_CHAPTER_TOPICS:
+        return _MATH_CHAPTER_TOPICS[cl]
+    # 2. Check if chap IS a key (case-insensitive already handled above)
+    # 3. Longest-key-first substring: the INPUT must contain the key
+    #    (e.g. "applications of trigonometry" contains "trigonometry" but we
+    #     want to match it to its specific longer key first)
+    keys_longest_first = sorted(_MATH_CHAPTER_TOPICS.keys(), key=len, reverse=True)
+    for key in keys_longest_first:
+        if key in cl:  # key is substring of chapter name
+            return _MATH_CHAPTER_TOPICS[key]
+    # 4. Key contains chapter name as substring
+    for key in keys_longest_first:
+        if cl in key:
+            return _MATH_CHAPTER_TOPICS[key]
+    # 5. Word overlap fallback
+    chap_words = set(cl.split())
+    best_key, best_score = None, 0
+    for key in _MATH_CHAPTER_TOPICS:
+        score = len(chap_words & set(key.split()))
+        if score > best_score:
+            best_score, best_key = score, key
+    return _MATH_CHAPTER_TOPICS.get(best_key, {}) if best_score >= 1 else {}
+
+
+def _build_math_guidance(chap, cls_str, board, bank):
+    """Build fully-expanded subject guidance with real sample questions."""
+    if not bank:
+        return (f"SUBJECT: Mathematics  |  CHAPTER: {chap}  |  Class {cls_str}  |  {board}\n\n"
+                f"TOPIC RULE: Every question MUST be exclusively about \"{chap}\" as per {board} "
+                f"Class {cls_str} textbook. Any off-topic question = paper rejected.\n\n"
+                f"Cover: definitions, formulae, theorems, numericals, proofs, applications "
+                f"within \"{chap}\" only.\nNumericals: Formula -> Substitution -> Steps -> Answer with unit.\n"
+                f"Proofs: Given / To Prove / Steps with Reasons numbered.\n"
+                f"MCQ options: all 4 distinct, plausible from student errors.")
+
+    concepts_str = "\n".join(f"  * {c}" for c in bank["concepts"])
+
+    # MCQ samples
+    mcq_lines = []
+    for i, (stem, opts, ans) in enumerate(bank["mcq"]):
+        opt_str = "   ".join(f"({chr(65+j)}) {o}" for j, o in enumerate(opts))
+        mcq_lines.append(f"  {i+1}. {stem} [1 Mark]\n     {opt_str}   (   )")
+    mcq_block = "\n".join(mcq_lines)
+
+    # Fill blank samples
+    fill_block = "\n".join(f"  {i+11}. {q} [1 Mark]" for i, q in enumerate(bank["fill"]))
+
+    # Match samples
+    match_block = "  | Group A | Group B |\n  |---|---|\n"
+    match_block += "\n".join(f"  | {a} | {b} |" for a, b in zip(bank["match_a"], bank["match_b"]))
+
+    # VSQ samples
+    vsq_block = "\n".join(f"  {i+1}. {q}" for i, q in enumerate(bank["vsq"]))
+
+    # SA samples
+    sa_block = "\n".join(f"  {i+11}. {q}" for i, q in enumerate(bank["sa"]))
+
+    # LA samples
+    la_pairs = []
+    for i, q in enumerate(bank["la"]):
+        n = 17 + i
+        la_pairs.append(f"  {n}. (i) {q}\n       OR\n      (ii) [Alternative {chap} proof/problem] [6 Marks]")
+    la_block = "\n".join(la_pairs)
+
+    # App samples
+    app_lines = []
+    for i, item in enumerate(bank["app"]):
+        n = 23 + i
+        if isinstance(item, tuple):
+            intro, parts = item
+            sub = "\n".join(f"       ({chr(97+j)}) {p}" for j, p in enumerate(parts))
+            app_lines.append(f"  {n}. {intro} [10 Marks]\n{sub}")
+        else:
+            app_lines.append(f"  {n}. {item} [10 Marks]")
+    app_block = "\n".join(app_lines)
+
+    return f"""SUBJECT: Mathematics  |  CHAPTER: {chap}  |  Class {cls_str}  |  {board}
+
+CORE CONCEPTS TO COVER (spread across all sections):
+{concepts_str}
+
+ABSOLUTE TOPIC RULE:
+  Every question in the paper (all 36 slots) MUST test "{chap}" ONLY.
+  Questions from any other chapter will cause the paper to be REJECTED.
+
+USE THESE READY QUESTION STARTERS (modify values/wording as needed):
+
+-- SECTION I: MCQ (choose these 10, adjust numbers for difficulty) --
+{mcq_block}
+
+-- SECTION II: FILL IN THE BLANKS (use these 5) --
+{fill_block}
+
+-- SECTION III: MATCH THE FOLLOWING --
+{match_block}
+
+-- SECTION IV: VSQ (use these 10) --
+{vsq_block}
+
+-- SECTION V: SA (6 questions given) --
+{sa_block}
+
+-- SECTION VI: LA WITH OR (6 questions given) --
+{la_block}
+
+-- SECTION VII: APPLICATION (3 questions given) --
+{app_block}
+
+QUALITY RULES:
+  * Numericals: Formula -> Substitution (show values + units) -> Steps -> Final answer
+  * Proofs: Given | To Prove | Construction (if needed) | Numbered steps with Reasons
+  * MCQ wrong options: answers from a specific named error, not random values
+  * All 4 MCQ options must be numerically distinct"""
+
+
 def _prompt_ap_ts_9_10(subject, chap, board, cls_str,
                         m, difficulty, extra, math_note, pat):
     subj_l = (subject or "").lower()
-
-    if "math" in subj_l:
-        subject_guidance = """\
-SUBJECT — MATHEMATICS:
-• Every numerical: write formula first, substitute values with units, show EACH arithmetic step, box the final answer.
-• Theorems/proofs: state what is Given, what To Prove, then write numbered Steps each with a Reason.
-• Constructions (Section VII): list steps one by one — "Step 1: Draw AB = 5 cm", "Step 2: ..."
-• Wrong options in MCQ must correspond to common student errors (sign slip, formula confusion, wrong formula chosen)."""
-
-    elif any(k in subj_l for k in ["physics","chemistry","science","biology"]):
-        subject_guidance = """\
-SUBJECT — SCIENCE:
-• Physics/Chemistry numericals: Given → Formula → Substitution → Working → Answer with unit.
-• Chemical equations must be balanced with state symbols: (s) (l) (g) (aq).
-• Biology questions needing diagrams: write [DIAGRAM: description with every label] on its own line.
-• Section VII: application/experiment questions. Show full working. Don't skip steps."""
-
-    elif any(k in subj_l for k in ["social","history","geography","civics","economics"]):
-        subject_guidance = """\
-SUBJECT — SOCIAL STUDIES:
-• VSQ: one crisp factual sentence per mark. No waffle.
-• SA: 4–5 distinct points with sub-headings where helpful.
-• LA: structured essay — intro, 5–6 points, conclusion.
-• Section VII must include one map question: ask students to mark exactly 5 items on an outline map of India."""
-
-    elif "english" in subj_l:
-        subject_guidance = """\
-SUBJECT — ENGLISH (no Part A objective section):
-Section A — Reading (20 marks): unseen passage ~250 words + 5 comprehension questions.
-Section B — Writing (20 marks): formal letter OR essay (150-200 words) OR notice.
-Section C — Grammar (20 marks): gap-fill, sentence transformation, editing.
-Section D — Literature (40 marks): questions from prescribed Class texts (prose + poetry).
-Do NOT generate any Part A objective section for English."""
-
-    else:
-        subject_guidance = f"""\
-SUBJECT — {subject.upper()}:
-• Questions must follow the official board textbook for Class {cls_str}.
-• Progress from simple recall (Part A) to deep application (Section VII)."""
 
     diff_mix = {
         "Easy":   "Bloom's: 50% Remember/Understand, 30% Apply, 20% Analyse",
@@ -1100,106 +1622,131 @@ SUBJECT — {subject.upper()}:
         "Hard":   "Bloom's: 10% Remember, 20% Understand, 35% Apply, 25% Analyse, 10% Evaluate",
     }.get(difficulty, "Bloom's: 25% Remember/Understand, 40% Apply, 25% Analyse, 10% Evaluate")
 
-    return f"""You are a senior question-paper setter for {board}, Class {cls_str}, with 15 years of experience.
-Your papers are used as official model papers by the board. Quality, accuracy, and correct marks are non-negotiable.
+    if "math" in subj_l:
+        bank = _get_chapter_bank(chap)
+        subject_guidance = _build_math_guidance(chap, cls_str, board, bank)
+
+    elif any(k in subj_l for k in ["physics","chemistry","science","biology"]):
+        subject_guidance = (
+            f"SUBJECT: {subject}  |  CHAPTER: {chap}  |  Class {cls_str}  |  {board}\n\n"
+            f"TOPIC RULE: Every question MUST be exclusively about \"{chap}\".\n"
+            f"* Numericals: Given -> Formula -> Substitution -> Working -> Answer with unit\n"
+            f"* Chemical equations: balanced with state symbols (s) (l) (g) (aq)\n"
+            f"* Diagrams: write [DIAGRAM: full description] only -- no extra text\n"
+            f"* Section VII: full working required, no steps skipped")
+
+    elif any(k in subj_l for k in ["social","history","geography","civics","economics"]):
+        subject_guidance = (
+            f"SUBJECT: {subject}  |  CHAPTER: {chap}  |  Class {cls_str}  |  {board}\n\n"
+            f"TOPIC RULE: Every question must be about \"{chap}\" only.\n"
+            f"* VSQ: one precise factual answer per mark\n"
+            f"* SA: 4-5 distinct points, sub-headings helpful\n"
+            f"* LA: intro -> 5-6 substantive points -> conclusion\n"
+            f"* Section VII: include one map-marking question (5 specific items on outline map)")
+
+    elif "english" in subj_l:
+        subject_guidance = (
+            f"SUBJECT: English  |  {board} Class {cls_str}\n"
+            f"NOTE: English papers have NO Part A (no objective section).\n"
+            f"Full 80-mark written paper:\n"
+            f"  Section A -- Reading Comprehension (20 marks): unseen passage + 5 questions\n"
+            f"  Section B -- Writing (20 marks): formal letter OR essay OR notice/report\n"
+            f"  Section C -- Grammar (20 marks): gap-fill, transformation, editing\n"
+            f"  Section D -- Literature (40 marks): prescribed {board} Class {cls_str} texts\n"
+            f"DO NOT generate Part A for English.")
+
+    else:
+        subject_guidance = (
+            f"SUBJECT: {subject}  |  CHAPTER: {chap}  |  Class {cls_str}  |  {board}\n"
+            f"TOPIC RULE: Every question must be about \"{chap}\" as per the {board} Class {cls_str} textbook.")
+
+    return f"""You are an experienced senior question-paper setter for {board} Class {cls_str} SSC.
+You have 15+ years setting official board papers. Financial penalties apply for off-topic or mis-formatted papers.
+Accuracy, topic adherence, and correct marks are non-negotiable.
 {extra}
-━━━ PAPER SPECIFICATION ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Subject : {subject}
-Topic   : {chap}
-Class   : {cls_str}   Board: {board}
-Marks   : 100 total   Difficulty: {difficulty}
-{diff_mix}
-━━━ MANDATORY SECTION STRUCTURE ━━━━━━━━━━━━━━━━━━━━━━━
-Before writing any question, think through the section counts:
+PAPER SPECIFICATION
+Subject  : {subject}
+Chapter  : {chap}
+Class    : {cls_str}    Board: {board}
+Total    : 100 marks    Difficulty: {difficulty}
+Cognitive: {diff_mix}
 
-PART A — OBJECTIVE (20 marks, given separately, collected after 30 min)
-  Section I   — 10 MCQ       × 1 mark  = 10 marks
-  Section II  — 5  Fill-blank × 1 mark =  5 marks
-  Section III — 1  Match (5 pairs) × 1 = 5 marks
-                                Subtotal = 20 marks ✓
+MANDATORY PAPER STRUCTURE -- MUST BE REPRODUCED EXACTLY:
+PART A -- OBJECTIVE (20 marks) -- collected after 30 minutes:
+  Section I    10 MCQ x 1 mark  = 10 marks   [Q1-Q10]
+  Section II    5 Fill x 1 mark  =  5 marks   [Q11-Q15]
+  Section III   1 Match (5 pairs) = 5 marks   [Q16]
+                              Subtotal = 20 marks
 
-PART B — WRITTEN (80 marks, continued in answer booklet)
-  Section IV  — 10 VSQ        ALL compulsory  × 2 marks =  20 marks
-  Section V   — 6 SA given,   attempt any 4   × 4 marks =  16 marks
-  Section VI  — 6 LA given,   attempt any 4   × 6 marks =  24 marks
-                (each LA must have an OR alternative of equal marks)
-  Section VII — 3 Application, attempt any 2  × 10 marks = 20 marks
-                                        TOTAL = 100 marks ✓
+PART B -- WRITTEN (80 marks):
+  Section IV   10 VSQ ALL compulsory x 2 marks = 20 marks  [Q1-Q10]
+  Section V     6 SA given, attempt any 4 x 4 marks = 16 marks  [Q11-Q16]
+  Section VI    6 LA given, attempt any 4 x 6 marks = 24 marks  [Q17-Q22, each with OR]
+  Section VII   3 Application, attempt any 2 x 10 marks = 20 marks  [Q23-Q25]
+                              Subtotal = 80 marks
+                         GRAND TOTAL = 100 marks
 
+SUBJECT AND CHAPTER GUIDANCE:
 {subject_guidance}
 {math_note}
-━━━ FEW-SHOT FORMAT EXAMPLES ━━━━━━━━━━━━━━━━━━━━━━━━━━
-Study these EXACT formats. Your paper must match them precisely.
 
---- MCQ (Section I) ---
-1. The tangent to a circle is always __________ to the radius at the point of contact. [1 Mark]
-   (A) parallel   (B) perpendicular   (C) equal   (D) bisected   (   )
+MANDATORY FORMAT RULES:
+R1. MARKS TAG: Every question ends with [1 Mark], [2 Marks], [4 Marks], [6 Marks], or [10 Marks].
+R2. MCQ: Exactly 4 options (A)(B)(C)(D). Last item on line is (   ).
+    Example:  1. The value of sin 30 is [1 Mark]
+              (A) 1/2   (B) 1   (C) sq3/2   (D) 1/sq2   (   )
+R3. FILL-BLANK: Use ten underscores __________ for blank.
+R4. MATCH: Pipe table, exactly 5 data rows.
+    16. Match the following: [5 Marks]
+    | Group A | Group B |
+    |---|---|
+    | term1 | value1 |
+    ... (5 rows total)
+R5. LA: Every LA question (Q17-Q22) MUST have an OR alternative.
+R6. DIAGRAMS: [DIAGRAM: description] on its own line only. No other figure text.
+R7. NO REPETITION: All 36 question slots unique.
+R8. SECTION HEADERS must be exactly:
+    Section I -- Multiple Choice Questions [1 Mark each]
+    Section II -- Fill in the Blanks [1 Mark each]
+    Section III -- Match the Following [5 Marks]
+    Section IV -- Very Short Answer Questions [2 Marks each]
+    Section V -- Short Answer Questions [4 Marks each]
+    Section VI -- Long Answer Questions [6 Marks each]
+    Section VII -- Application Questions [10 Marks each]
 
---- Fill-in-blank (Section II) ---
-11. The sum of the first n natural numbers is given by the formula __________. [1 Mark]
+VERIFY BEFORE OUTPUTTING:
+  Section I   = exactly 10 MCQ, each 4 options, ends (   )
+  Section II  = exactly 5 fill-blanks
+  Section III = exactly 1 match with 5 rows
+  Section IV  = exactly 10 VSQ
+  Section V   = exactly 6 SA
+  Section VI  = exactly 6 LA each with OR
+  Section VII = exactly 3 application questions
+  ALL questions about "{chap}" -- zero from other chapters
+  Marks: 10+5+5+20+16+24+20 = 100
 
---- Match (Section III) ---
-16. Match the following: [5 Marks]
-   Group A                        |  Group B
-   --------------------------------|------------------
-   Tangent from external point     |  $\\sqrt{{d^{{2}}-r^{{2}}}}$
-   Area of sector                  |  $\\frac{{\\theta}}{{360}}\\pi r^{{2}}$
-   Pythagoras theorem              |  $AB^{{2}}+BC^{{2}}=AC^{{2}}$
-   Volume of cylinder              |  $\\pi r^{{2}}h$
-   Curved surface area of cone     |  $\\pi r l$
+ANSWER KEY FORMAT (write after all questions, on a new page):
+Write "ANSWER KEY" then:
+  Section I:   1.(B)  2.(A)  3.(C) ... 10.(D)    [one line]
+  Section II:  11. answer  12. answer ... 15. answer
+  Section III: Match: (1)->(d) (2)->(a) (3)->(e) (4)->(b) (5)->(c)
+  Section IV:  Q1 through Q10 -- full worked solution, 3-6 lines each
+  Section V-VII: Full step-by-step working for all questions.
+  Total answer entries = exactly 36.
 
---- VSQ (Section IV) ---
-1. Find the length of the tangent drawn from a point 13 cm away from the centre of a circle of radius 5 cm. [2 Marks]
+BEGIN. No preamble. Write paper header then Part A directly.
 
---- SA (Section V) ---
-11. Prove that the tangents drawn from an external point to a circle are equal in length. [4 Marks]
+Mathematics -- {chap}
+{board} | Class {cls_str}   Total Marks: 100   Time: 3 Hours 15 Minutes
 
---- LA with OR (Section VI) ---
-17. (i) Prove Pythagoras theorem: In a right triangle, the square on the hypotenuse equals the sum of squares on the other two sides. Draw a neat diagram. [6 Marks]
-    OR
-   (ii) In a right triangle ABC with $\\angle B = 90^{{\\circ}}$, D is the midpoint of BC. Prove that $4AD^{{2}} = 4AB^{{2}} + BC^{{2}}$. [6 Marks]
+PART A -- OBJECTIVE  (20 Marks)
+(Answer on this question paper itself. Hand in after 30 minutes.)
 
---- Application (Section VII) ---
-23. A solid is formed by placing a cone of radius 3.5 cm and slant height 7 cm on top of a cylinder of the same radius and height 10 cm. [10 Marks]
-   (a) Find the curved surface area of the cone. [2 Marks]
-   (b) Find the curved surface area of the cylinder. [3 Marks]
-   (c) Find the total surface area of the solid. [2 Marks]
-   (d) Find the volume of the solid. (Use $\\pi = \\frac{{22}}{{7}}$) [3 Marks]
-
-━━━ STRICT RULES ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-1. MARKS LABEL: Every question MUST end with its exact marks in square brackets — [1 Mark], [2 Marks], [4 Marks], [6 Marks], [10 Marks]. The number must match the section it belongs to. This is non-negotiable.
-2. QUESTION NUMBERS: Section I: Q1–Q10. Section II: Q11–Q15. Section III: Q16 (single match question). Section IV: renumber Q1–Q10. Section V: Q11–Q16. Section VI: Q17–Q22. Section VII: Q23–Q25.
-3. MCQ ANSWER BRACKET: Every MCQ must end with (   ) on the same line after option D.
-4. SECTION HEADERS: Write exactly as shown — "Section I — Multiple Choice Questions [1 Mark each]" etc.
-5. DIAGRAMS: When a question requires a diagram (geometry proof, biology structure, physics setup), put [DIAGRAM: full description with all required labels] on its own line immediately after the question. Do NOT write any additional figure description lines such as "Figure: ...", "Triangle ABC", angle labels, or other diagram metadata — these cause formatting errors. The [DIAGRAM:] tag is sufficient.
-6. DO NOT write instructions, do not add a preamble, do not explain your choices. Output the paper directly.
-7. SELF-CHECK: After writing all sections, mentally count: 10 MCQ ✓, 5 fill-blank ✓, 1 match ✓, 10 VSQ ✓, 6 SA ✓, 6 LA ✓, 3 App ✓. Then write the answer key.
-
-━━━ ANSWER KEY FORMAT ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-After all questions, write exactly: ANSWER KEY
-
-Section I:   1.(  )  2.(  )  ... 10.(  )   — fill in the letter
-Section II:  11. answer   12. answer  ... 15. answer
-Section III: Match: 1→ , 2→ , 3→ , 4→ , 5→
-Section IV:  For each VSQ, write the key answer in 2–4 lines.
-Section V–VII: Show FULL WORKING — every step, not just the final answer.
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-BEGIN THE PAPER. Write the header line first, then start Section I.
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-Subject: {subject}   Class: {cls_str}   Total Marks: 100
-Board: {board}
-
-PART A — OBJECTIVE  (20 Marks)
-
-Section I — Multiple Choice Questions  [1 Mark each]
+Section I -- Multiple Choice Questions  [1 Mark each]
 
 """
 
 
-# ═══════════════════════════════════════════════════════════════════════
-# AP/TS CLASSES 6–8  Summative Assessment (50 marks)
 # ═══════════════════════════════════════════════════════════════════════
 def _prompt_ap_ts_6_8(subject, chap, board, cls_str,
                        m, difficulty, extra, math_note, pat):
