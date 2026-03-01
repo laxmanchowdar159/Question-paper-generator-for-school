@@ -341,24 +341,40 @@ async function generatePaper() {
     if (scope === "all") payload.all_chapters = true;
     payload.examType = examType;
 
+    showLoading(true);
+
     try {
         const res = await fetch("/generate", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(payload)
         });
+
         const result = await res.json();
         showLoading(false);
+
         if (!result.success) {
-            showToast("Generation failed");
+            const msg = result.error || "Generation failed";
+            showToast(msg);
+            console.error("Generation error:", result.api_error || result.error);
             return;
         }
-        currentPaper = result.paper || "";
-        currentAnswerKey = result.answer_key || "";
-        showToast("Paper generated");
-    } catch {
+
+        currentPaper     = result.paper      || "";
+        currentAnswerKey = result.answer_key  || "";
+
+        // Render into output areas if they exist
+        const outputEl = document.getElementById("paperOutput");
+        if (outputEl) { outputEl.value = currentPaper; outputEl.style.display = "block"; }
+        const keyEl = document.getElementById("answerKeyOutput");
+        if (keyEl && currentAnswerKey) { keyEl.value = currentAnswerKey; }
+
+        showToast("Paper generated successfully!");
+
+    } catch (err) {
         showLoading(false);
-        showToast("Server error");
+        showToast("Server error: " + err.message);
+        console.error("generatePaper error:", err);
     }
 }
 
@@ -369,81 +385,74 @@ async function generatePaper() {
 
 async function downloadPDF() {
 
-    if (!currentPaper) {
-
-        showToast("Generate paper first");
-
-        return;
-
-    }
-    // safeguard: sometimes paper is just whitespace
-    if (!currentPaper.trim()) {
-        showToast("📄 Paper text is empty, generate again");
+    if (!currentPaper || !currentPaper.trim()) {
+        showToast("Generate a paper first before downloading");
         return;
     }
 
-    // check scope for chapter
     const scope = document.getElementById("scopeSelect")?.value || "single";
+    const subject = document.getElementById("subject").value || "Question Paper";
+    const chapter = scope === "all" ? "" : (document.getElementById("chapter").value || "");
+    const includeKey = document.getElementById("includeKey")?.checked || false;
+
+    // Build payload — send the already-generated text directly.
+    // This calls /download-pdf, NOT /generate, so no Gemini quota is used.
+    const payload = {
+        paper:       currentPaper,
+        answer_key:  currentAnswerKey || "",
+        subject:     subject,
+        chapter:     chapter,
+        includeKey:  includeKey
+    };
 
     showLoading(true);
 
-    const payload = {
-        pdf_only: true,
-        class: document.getElementById("class").value,
-        subject: document.getElementById("subject").value,
-        chapter: scope === "all" ? "" : document.getElementById("chapter").value,
-        marks: document.getElementById("totalMarks")?.value || "100",
-        difficulty: getDifficulty(),
-        suggestions: document.getElementById("suggestions")?.value || "",
-        examType: document.getElementById("examType")?.value || "",
-        state: document.getElementById("stateSelect")?.value || "",
-        competitiveExam: document.getElementById("competitiveExam")?.value || "",
-        includeKey: document.getElementById("includeKey")?.checked || false,
-        answer_key: document.getElementById("answerKey")?.value || currentAnswerKey
-    };
+    try {
+        const res = await fetch("/download-pdf", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+        });
 
-    const res = await fetch("/generate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
-    });
-    // Also include exam type and conditional fields by sending them as query metadata
-    const meta = {
-        examType: document.getElementById("examType")?.value || "",
-        state: document.getElementById("stateSelect")?.value || "",
-        competitiveExam: document.getElementById("competitiveExam")?.value || ""
-    };
+        if (!res.ok) {
+            // Try to read error JSON
+            let errMsg = `Server error ${res.status}`;
+            try {
+                const errJson = await res.json();
+                errMsg = errJson.error || errMsg;
+            } catch (_) {}
+            showToast("PDF error: " + errMsg);
+            showLoading(false);
+            return;
+        }
 
-    // If server needs these for logging/filename etc. we can send a quick notify (optional)
-    // Currently PDF generation prefers the supplied `paper` text so metadata is informational.
+        const blob = await res.blob();
 
+        if (blob.size === 0) {
+            showToast("PDF was empty — try generating again");
+            showLoading(false);
+            return;
+        }
 
-    const blob =
-        await res.blob();
+        // Trigger browser download
+        const url = URL.createObjectURL(blob);
+        const a   = document.createElement("a");
+        const safeName = (subject + "_" + (chapter || "Paper")).replace(/\s+/g, "_").replace(/[\/\\]/g, "-");
+        a.href     = url;
+        a.download = safeName + "_Question_Paper.pdf";
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
 
+        showLoading(false);
+        showToast("PDF downloaded successfully");
 
-    const url =
-        URL.createObjectURL(blob);
-
-
-    const a =
-        document.createElement("a");
-
-
-    a.href = url;
-
-    a.download = "ExamPaper.pdf";
-
-    document.body.appendChild(a);
-
-    a.click();
-
-    a.remove();
-
-    showLoading(false);
-
-    showToast("PDF downloaded");
-
+    } catch (err) {
+        showLoading(false);
+        showToast("Download failed: " + err.message);
+        console.error("downloadPDF error:", err);
+    }
 }
 
 

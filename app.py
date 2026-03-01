@@ -250,8 +250,9 @@ def create_exam_pdf(
     buffer = BytesIO()
 
     # ---- Font registration (idempotent) ----
-    font_path = os.path.join("static", "fonts", "DejaVuSans.ttf")
-    font_bold_path = os.path.join("static", "fonts", "DejaVuSans-Bold.ttf")
+    _base = os.path.dirname(os.path.abspath(__file__))
+    font_path = os.path.join(_base, "static", "fonts", "DejaVuSans.ttf")
+    font_bold_path = os.path.join(_base, "static", "fonts", "DejaVuSans-Bold.ttf")
 
     try:
         pdfmetrics.registerFont(TTFont("DejaVu", font_path))
