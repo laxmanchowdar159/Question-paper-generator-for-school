@@ -868,7 +868,7 @@ def call_gemini(prompt):
             try:
                 model = genai.GenerativeModel(
                     model_name,
-                    generation_config={"temperature": 0.7, "max_output_tokens": 8192, "top_p": 0.9})
+                    generation_config={"temperature": 0.3, "max_output_tokens": 8192, "top_p": 0.8})
                 response = model.generate_content(prompt)
                 if response and hasattr(response, "text") and response.text.strip():
                     return response.text.strip(), None
@@ -1010,28 +1010,258 @@ def _class_int(cls_str):
 # ═══════════════════════════════════════════════════════════════════════
 # MASTER ROUTER
 # ═══════════════════════════════════════════════════════════════════════
+# ═══════════════════════════════════════════════════════════════════════
+# SIMPLE, CLEAN PROMPT BUILDER  (replaces the old 800-line monster)
+# One function, no hallucination-inducing chapter banks.
+# The LLM generates from its own knowledge; we just tell it the rules.
+# ═══════════════════════════════════════════════════════════════════════
+
 def build_prompt(class_name, subject, chapter, board, exam_type,
                  difficulty, marks, suggestions):
-    m       = max(10, int(marks) if str(marks).isdigit() else 100)
-    cls_str = class_name or "10"
-    cls_n   = _class_int(cls_str)
-    chap    = chapter or "as per syllabus"
-    extra   = f"TEACHER NOTES: {suggestions.strip()}\n" if (suggestions or "").strip() else ""
+
+    m   = max(10, int(marks) if str(marks).isdigit() else 100)
+    cls = class_name or "10"
+
+    extra = f"\nTEACHER NOTES: {suggestions.strip()}\n" if (suggestions or "").strip() else ""
+
     board_l = (board or "").lower()
     subj_l  = (subject or "").lower()
-    is_stem = any(k in subj_l for k in [
-        "math","maths","science","physics","chemistry","biology",
-        "algebra","geometry","trigonometry","statistics"
-    ])
-    math_note = _math_rules() if is_stem else ""
 
-    comp_map = {"ntse":"NTSE","nso":"NSO","imo":"IMO","ijso":"IJSO"}
+    is_stem = any(k in subj_l for k in [
+        "math", "maths", "science", "physics", "chemistry",
+        "biology", "algebra", "geometry", "trigonometry", "statistics"
+    ])
+    math_notation = (
+        "\nMATH NOTATION — use $...$ for every expression:\n"
+        "  Powers: $x^{2}$   Fractions: $\\frac{a}{b}$   Roots: $\\sqrt{2}$\n"
+        "  Greek: $\\theta$ $\\alpha$ $\\pi$   Trig: $\\sin\\theta$ $\\cos 60^{\\circ}$\n"
+        "  Subscripts: $H_{2}O$ $v_{0}$   Blanks: __________\n"
+    ) if is_stem else ""
+
+    # --- Competitive exam ---
+    comp_map = {"ntse": "NTSE", "nso": "NSO", "imo": "IMO", "ijso": "IJSO"}
     for key, val in comp_map.items():
         if key in board_l:
-            return _prompt_competitive(val, subject, chap, cls_str,
-                                       m, difficulty, extra, math_note)
-    return _prompt_ap_ts(subject, chap, board, cls_str, cls_n,
-                         m, difficulty, extra, math_note)
+            return _simple_competitive(val, subject, chapter, cls, m, difficulty, extra, math_notation)
+
+    # --- State board 9-10 ---
+    cls_n = int(re.search(r'\d+', str(cls)).group()) if re.search(r'\d+', str(cls)) else 10
+    if cls_n >= 9:
+        return _simple_state_board(subject, chapter, board, cls, m, difficulty, extra, math_notation)
+    else:
+        return _simple_lower_class(subject, chapter, board, cls, m, difficulty, extra, math_notation)
+
+
+def _simple_state_board(subject, chapter, board, cls, marks, difficulty, extra, math_notation):
+    chap_str = chapter or "as per syllabus"
+    diff_mix = {
+        "Easy":   "50% recall/understand, 30% apply, 20% analyse",
+        "Medium": "25% recall, 40% apply, 25% analyse, 10% evaluate",
+        "Hard":   "10% recall, 20% understand, 35% apply, 25% analyse, 10% evaluate",
+    }.get(difficulty, "25% recall, 40% apply, 25% analyse, 10% evaluate")
+
+    return f"""You are an experienced {board} Class {cls} examiner. Generate a complete, ready-to-print exam paper.
+{extra}
+PAPER DETAILS
+Subject   : {subject}
+Chapter   : {chap_str}
+Class     : {cls}   Board: {board}
+Total     : {marks} marks   Difficulty: {difficulty} ({diff_mix})
+
+STRUCTURE (follow exactly, question counts are fixed):
+
+PART A — OBJECTIVE (20 marks)
+Section I   — 10 MCQ × 1 mark [Q1–Q10]
+Section II  — 5 Fill-in-the-blank × 1 mark [Q11–Q15]
+Section III — 1 Match-the-following (5 pairs) = 5 marks [Q16]
+
+PART B — WRITTEN (80 marks)
+Section IV  — 10 Very Short Answer (all compulsory) × 2 marks [Q1–Q10]
+Section V   — 6 Short Answer (attempt any 4) × 4 marks [Q11–Q16]
+Section VI  — 6 Long Answer (attempt any 4) × 6 marks [Q17–Q22]  ← each MUST have an OR option
+Section VII — 3 Application/Problem (attempt any 2) × 10 marks [Q23–Q25]
+
+Total: 10+5+5+20+16+24+20 = 100 marks ✓
+{math_notation}
+FORMATTING RULES:
+- Every question ends with its mark tag: [1 Mark] [2 Marks] [4 Marks] [6 Marks] [10 Marks]
+- MCQ: exactly 4 options (A)(B)(C)(D), line ends with (   ) for student to write answer
+- Fill-blank: use __________ for the blank
+- Match: pipe table with exactly 5 data rows:
+  | Group A | Group B |
+  |---|---|
+  | item | match |
+- Every Section VI question needs an OR alternative
+- Diagrams: write [DIAGRAM: description] on its own line, nothing else
+- All questions must be about "{chap_str}" only
+- No two questions should test the same thing
+
+After all questions, write:
+
+ANSWER KEY
+
+Then give complete answers:
+- Section I: list as  1.(B)  2.(A)  ... 10.(D)
+- Section II: 11. answer  ...  15. answer
+- Section III: Match: (1)→(d) (2)→(a) etc.
+- Section IV–VII: full worked solutions with steps
+
+BEGIN the paper now. Write the header then Part A directly.
+
+{subject} — {chap_str}
+{board} | Class {cls}   Total Marks: {marks}   Time: 3 Hours 15 Minutes
+
+PART A — OBJECTIVE  (20 Marks)
+(Answer on this sheet. Submit after 30 minutes.)
+
+Section I — Multiple Choice Questions  [1 Mark each]
+"""
+
+
+def _simple_lower_class(subject, chapter, board, cls, marks, difficulty, extra, math_notation):
+    chap_str = chapter or "as per syllabus"
+    return f"""You are a {board} Class {cls} examiner. Generate a complete exam paper.
+{extra}
+Subject: {subject}  |  Chapter: {chap_str}  |  Class: {cls}  |  Total: 50 marks
+Difficulty: {difficulty}
+{math_notation}
+STRUCTURE:
+Section A — Objective (10 marks): 5 MCQ [Q1–5] + 3 Fill-blank [Q6–8] + 1 Match 2-pair [Q9] = 10 marks
+Section B — Very Short Answer (20 marks): 10 questions × 2 marks [ALL compulsory, Q1–10]
+Section C — Short Answer (10 marks): 4 questions, attempt any 2 × 5 marks [Q11–14]
+Section D — Long Answer (10 marks): 2 questions, attempt any 1 × 10 marks [Q15–16]
+Total = 50 marks
+
+RULES:
+- All questions about "{chap_str}" only
+- MCQ: 4 options (A)(B)(C)(D), line ends with (   )
+- Fill-blank: use __________ for the blank
+- Every question ends with mark tag [1 Mark] [2 Marks] [5 Marks] [10 Marks]
+
+After questions, write ANSWER KEY with full answers.
+
+BEGIN:
+
+Subject: {subject}   Class: {cls}   Total: 50 Marks   Board: {board}
+
+Section A — Objective  (10 Marks)
+"""
+
+
+def _simple_competitive(exam, subject, chapter, cls, marks, difficulty, extra, math_notation):
+    chap_str = chapter or "full syllabus"
+
+    if exam == "NTSE":
+        subj_l = (subject or "").lower()
+        if "mat" in subj_l or "mental" in subj_l or "reasoning" in subj_l:
+            return f"""Generate a complete NTSE MAT (Mental Ability Test) practice paper.
+{extra}Class: {cls}   Total: 100 questions × 1 mark = 100 marks   Time: 2 hours   No negative marking
+Difficulty: {difficulty}
+
+QUESTION TYPE DISTRIBUTION (must total 100):
+Q1–12: Verbal Analogy (12)
+Q13–22: Number/Letter Series (10)
+Q23–32: Non-Verbal Analogy — describe figures in text (10)
+Q33–40: Coding-Decoding (8)
+Q41–46: Blood Relations (6)
+Q47–52: Direction & Distance (6)
+Q53–58: Ranking & Ordering (6)
+Q59–64: Clock & Calendar (6)
+Q65–70: Venn Diagrams (6)
+Q71–76: Mirror/Water Image — describe in text (6)
+Q77–82: Classification/Odd-One-Out (6)
+Q83–88: Pattern Completion — describe in text (6)
+Q89–94: Mathematical Operations (6)
+Q95–100: Mixed Reasoning (6)
+
+FORMAT: Q[n]. [question] [1 Mark]
+(A) opt   (B) opt   (C) opt   (D) opt
+
+ANSWER KEY after all 100 questions: Q1.(B) Q2.(A) ... (10 per line). Then explain Q1–Q20 reasoning.
+
+BEGIN:
+Exam: NTSE MAT Practice   Class: {cls}   Marks: 100   Time: 2 Hours
+
+Q1–Q12 — Verbal Analogy  [1 Mark each]
+"""
+        return f"""Generate a complete NTSE SAT practice paper.
+{extra}Class: {cls}   Topic: {chap_str}   Total: 100 × 1 mark = 100 marks   Time: 2 hours
+{math_notation}
+SECTION DISTRIBUTION:
+Science Q1–Q40: Physics Q1–13, Chemistry Q14–26, Biology Q27–40
+Social Science Q41–Q80: History Q41–53, Geography Q54–66, Civics Q67–73, Economics Q74–80
+Mathematics Q81–Q100: all Class {cls} topics
+
+FORMAT: Q[n]. [question] [1 Mark]
+(A) opt   (B) opt   (C) opt   (D) opt
+
+ANSWER KEY after all 100 questions. Explain Maths answers Q81–Q100 step by step.
+
+BEGIN:
+Exam: NTSE SAT Practice   Class: {cls}   Marks: 100   Time: 2 Hours
+
+Science — Physics (Q1–Q13)  [1 Mark each]
+"""
+
+    if exam in ("NSO", "IMO"):
+        label = "Science" if exam == "NSO" else "Mathematics"
+        struct = (
+            "Section 1 — Logical Reasoning Q1–10 (10 × 1M)\n"
+            f"Section 2 — {label} Q11–45 (35 × 1M)\n"
+            "Section 3 — Achiever's Section Q46–50 (5 × 3M)\n"
+            "Total = 60 marks"
+        ) if exam == "NSO" else (
+            "Section 1 — Logical Reasoning Q1–10 (10 × 1M)\n"
+            "Section 2 — Mathematical Reasoning Q11–35 (25 × 1M)\n"
+            "Section 3 — Everyday Mathematics Q36–45 (10 × 1M)\n"
+            "Section 4 — Achiever's Section Q46–50 (5 × 3M)\n"
+            "Total = 60 marks"
+        )
+        return f"""Generate a complete {exam} practice paper.
+{extra}Class: {cls}   Topic: {chap_str}   60 marks   1 hour   No negative marking
+Difficulty: {difficulty}
+{math_notation}
+STRUCTURE:
+{struct}
+
+Section 1: Pure reasoning only — no direct subject content.
+Achiever's Section: Hard HOT questions, 3 marks each, need 3+ reasoning steps.
+
+FORMAT: Q[n]. [question] [mark]
+(A) opt   (B) opt   (C) opt   (D) opt
+
+ANSWER KEY: Q1.(B) Q2.(A) ... (10 per line). For Achiever's questions explain why correct and why best wrong option is wrong.
+
+BEGIN:
+Exam: {exam} Practice   Class: {cls}   Topic: {chap_str}   Marks: 60   Time: 1 Hour
+
+Section 1 — Logical Reasoning  [Q1–Q10 | 1 Mark each]
+"""
+
+    # IJSO
+    return f"""Generate a complete IJSO/NSEJS Stage 1 practice paper.
+{extra}Class: {cls}   Topic: {chap_str}   80 questions   Marking: +3 correct / −1 wrong   Time: 2 hours
+Difficulty: {difficulty}
+{math_notation}
+STRUCTURE:
+Physics Q1–Q27 (27 questions)
+Chemistry Q28–Q54 (27 questions)
+Biology Q55–Q80 (26 questions)
+Total = 80 questions
+
+Every question requires conceptual understanding, not just recall.
+Wrong options must represent specific named misconceptions.
+
+FORMAT: Q[n]. [question] [+3/−1]
+(A) opt   (B) opt   (C) opt   (D) opt
+
+ANSWER KEY: list all 80. Then for each: correct letter + one sentence why correct + why best distractor is wrong.
+
+BEGIN:
+Exam: IJSO/NSEJS Stage 1 Practice   Class: {cls}   Marking: +3/−1/0   Time: 2 Hours
+
+Physics (Q1–Q27)  [+3/−1 each]
+"""
 
 
 # ═══════════════════════════════════════════════════════════════════════

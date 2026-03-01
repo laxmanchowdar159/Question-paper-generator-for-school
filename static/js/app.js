@@ -49,10 +49,23 @@ function applyTheme(themeIdx, dark) {
   localStorage.setItem('themeDark', dark ? '1' : '0');
 }
 
+// ── Auto theme rotation every 45 seconds ─────────────────────────────
+let _autoThemeTimer = null;
+
+function startAutoThemeRotation() {
+  clearInterval(_autoThemeTimer);
+  _autoThemeTimer = setInterval(() => {
+    currentThemeIdx = (currentThemeIdx + 1) % THEMES.length;
+    applyTheme(currentThemeIdx, isDark);
+  }, 45000);
+}
+
 window.cycleTheme = function() {
+  clearInterval(_autoThemeTimer); // reset auto timer on manual click
   currentThemeIdx = (currentThemeIdx + 1) % THEMES.length;
   applyTheme(currentThemeIdx, isDark);
   showToast(`Theme: ${THEMES[currentThemeIdx].name}`);
+  startAutoThemeRotation();
 };
 
 window.toggleDark = function() {
@@ -563,6 +576,7 @@ document.addEventListener('DOMContentLoaded', () => {
   currentThemeIdx = Math.min(savedIdx, THEMES.length - 1);
   isDark = savedDark;
   applyTheme(currentThemeIdx, isDark);
+  startAutoThemeRotation();
 
   renderHistory();
   initCurriculum();

@@ -163,12 +163,13 @@ body {
 }
 .nav-pill:hover { border-color: rgba(109,91,255,0.3); color: var(--text-a); }
 .theme-toggle {
-  width: 38px; height: 38px; border-radius: 10px;
-  border: 1px solid var(--glass-border); background: var(--glass-bg);
-  backdrop-filter: blur(12px); color: var(--text-b); cursor: pointer;
-  display: flex; align-items: center; justify-content: center; transition: all .2s var(--ease);
+  width: 42px; height: 38px;
+  border: none; background: transparent;
+  color: var(--text-b); cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: all .2s var(--ease);
 }
-.theme-toggle:hover { background: var(--glass-hover); color: var(--text-a); border-color: rgba(109,91,255,0.3); }
+.theme-toggle:hover { background: var(--glass-hover); color: var(--text-a); }
 [data-theme="dark"]  .icon-sun  { display: block; }
 [data-theme="dark"]  .icon-moon { display: none; }
 [data-theme="light"] .icon-sun  { display: none; }
@@ -590,18 +591,22 @@ body {
 }
 
 /* ── Theme cycle button ──────────────────────────────────── */
+/* Theme button group — keeps cycle + dark toggle together, no overlap */
+.nav-theme-group {
+  display: flex; align-items: center;
+  background: var(--glass-bg); border: 1px solid var(--glass-border);
+  border-radius: 12px; overflow: hidden; backdrop-filter: blur(12px);
+}
+.nav-theme-divider {
+  width: 1px; height: 22px; background: var(--glass-border); flex-shrink: 0;
+}
 .theme-cycle-btn {
   display: flex; align-items: center; gap: 6px;
-  height: 38px; padding: 0 14px; border-radius: 10px;
-  border: 1px solid var(--glass-border); background: var(--glass-bg);
-  backdrop-filter: blur(12px); color: var(--text-b);
+  height: 38px; padding: 0 14px;
+  border: none; background: transparent; color: var(--text-b);
   font-family: var(--font-mono); font-size: 11px; font-weight: 500;
   cursor: pointer; transition: all .2s var(--ease); letter-spacing: .04em;
-  margin-right: 6px;
 }
 .theme-cycle-btn:hover {
   background: var(--glass-hover); color: var(--text-a);
-  border-color: rgba(var(--accent),0.3);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
 }
