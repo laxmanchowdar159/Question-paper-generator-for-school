@@ -2,29 +2,21 @@ import os
 import re
 import json
 import time
-import base64
-import textwrap
 from pathlib import Path
 from io import BytesIO
 
 # ── PDF ──────────────────────────────────────────────────────────────
 from reportlab.platypus import (
     SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle,
-    PageBreak, HRFlowable, Image, KeepTogether
+    PageBreak, HRFlowable, KeepTogether
 )
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.pagesizes import A4
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_JUSTIFY, TA_RIGHT
-from reportlab.lib.colors import HexColor, black, white, Color
-from reportlab.lib.units import cm, mm
-
-# ── Math rendering ───────────────────────────────────────────────────
-import matplotlib
-matplotlib.use("Agg")
-import matplotlib.pyplot as plt
-import matplotlib.mathtext as mathtext
+from reportlab.lib.colors import HexColor, black, white
+from reportlab.lib.units import mm
 
 # ── Flask ────────────────────────────────────────────────────────────
 from flask import Flask, render_template, request, jsonify, send_file
@@ -37,84 +29,16 @@ except Exception:
     genai = None
     GENAI_AVAILABLE = False
 
-app = Flask(
-    __name__,
-    template_folder="templates",
-    static_folder="static",
-    static_url_path="/static"
-)
+app = Flask(__name__, template_folder="templates",
+            static_folder="static", static_url_path="/static")
 
 GEMINI_KEY = os.environ.get("GEMINI_API_KEY", "").strip()
 
 # ═══════════════════════════════════════════════════════════════════════
-# MATH IMAGE RENDERER
-# Converts LaTeX inline math ($...$) or display math ($$...$$) to PNG
-# and returns a ReportLab Image flowable.
-# ═══════════════════════════════════════════════════════════════════════
-
-_MATH_CACHE = {}
-
-def math_to_image(latex_expr: str, fontsize: float = 13, dpi: int = 220,
-                  inline: bool = True) -> Image | None:
-    """Render a LaTeX math expression to a ReportLab Image flowable."""
-    cache_key = (latex_expr, fontsize, dpi, inline)
-    if cache_key in _MATH_CACHE:
-        data = _MATH_CACHE[cache_key]
-        buf = BytesIO(data)
-        img = Image(buf)
-        img.drawWidth  = img.imageWidth  * (72 / dpi)
-        img.drawHeight = img.imageHeight * (72 / dpi)
-        return img
-
-    expr = latex_expr.strip()
-    if not expr.startswith("$"):
-        expr = f"${expr}$"
-
-    try:
-        fig = plt.figure(figsize=(0.01, 0.01))
-        fig.patch.set_alpha(0)
-        ax = fig.add_axes([0, 0, 1, 1])
-        ax.set_axis_off()
-        ax.patch.set_alpha(0)
-
-        renderer = mathtext.MathTextParser("path")
-        t = ax.text(
-            0.0, 0.5, expr,
-            fontsize=fontsize,
-            color="black",
-            va="center",
-            ha="left",
-            transform=ax.transAxes,
-        )
-        fig.canvas.draw()
-        bbox = t.get_window_extent(renderer=fig.canvas.get_renderer())
-        w_in = max(bbox.width  / fig.dpi + 0.05, 0.3)
-        h_in = max(bbox.height / fig.dpi + 0.05, 0.2)
-        fig.set_size_inches(w_in, h_in)
-        fig.canvas.draw()
-
-        buf = BytesIO()
-        fig.savefig(buf, format="png", dpi=dpi, bbox_inches="tight",
-                    transparent=True, pad_inches=0.01)
-        plt.close(fig)
-
-        raw = buf.getvalue()
-        _MATH_CACHE[cache_key] = raw
-        buf.seek(0)
-        img = Image(buf)
-        img.drawWidth  = img.imageWidth  * (72 / dpi)
-        img.drawHeight = img.imageHeight * (72 / dpi)
-        return img
-
-    except Exception:
-        plt.close("all")
-        return None
-
-
-# ═══════════════════════════════════════════════════════════════════════
 # FONT REGISTRATION
+# Bundles DejaVu Sans (Regular + Bold + Oblique) for full Unicode support.
+# Falls back to Helvetica gracefully if fonts are missing.
 # ═══════════════════════════════════════════════════════════════════════
-
 _fonts_registered = False
 
 def register_fonts():
@@ -122,464 +46,743 @@ def register_fonts():
     if _fonts_registered:
         return
     _base = os.path.dirname(os.path.abspath(__file__))
-    font_path      = os.path.join(_base, "static", "fonts", "DejaVuSans.ttf")
-    font_bold_path = os.path.join(_base, "static", "fonts", "DejaVuSans-Bold.ttf")
-    try:
-        pdfmetrics.registerFont(TTFont("DejaVu", font_path))
-    except Exception:
-        pass
-    try:
-        pdfmetrics.registerFont(TTFont("DejaVu-Bold", font_bold_path))
-    except Exception:
-        pass
+    fdir  = os.path.join(_base, "static", "fonts")
+    sys   = "/usr/share/fonts/truetype/dejavu"
+
+    def reg(name, filename):
+        for d in [fdir, sys]:
+            p = os.path.join(d, filename)
+            if os.path.exists(p):
+                try:
+                    pdfmetrics.registerFont(TTFont(name, p))
+                    return True
+                except Exception:
+                    pass
+        return False
+
+    reg("Reg",  "DejaVuSans.ttf")
+    reg("Bold", "DejaVuSans-Bold.ttf")
+    reg("Ital", "DejaVuSans-Oblique.ttf")
     _fonts_registered = True
 
-
-def bold_font():
+def _f(variant="Reg"):
+    """Return registered font name or safe fallback."""
     register_fonts()
+    fallback = {"Reg": "Helvetica", "Bold": "Helvetica-Bold", "Ital": "Helvetica-Oblique"}
     try:
-        pdfmetrics.getFont("DejaVu-Bold")
-        return "DejaVu-Bold"
+        pdfmetrics.getFont(variant)
+        return variant
     except Exception:
-        return "DejaVu"
-
-
-def body_font():
-    register_fonts()
-    try:
-        pdfmetrics.getFont("DejaVu")
-        return "DejaVu"
-    except Exception:
-        return "Helvetica"
+        return fallback.get(variant, "Helvetica")
 
 
 # ═══════════════════════════════════════════════════════════════════════
-# LINE PARSER
-# Splits a line into text segments and math segments.
-# Returns a list of ReportLab elements (Paragraphs + Images).
+# LATEX → REPORTLAB XML
+#
+# CRITICAL: NEVER use Unicode subscript/superscript characters (₀¹², etc.)
+# in ReportLab — they render as solid black boxes because the font has no
+# glyph for them. Use ReportLab's <sub> and <super> XML tags instead.
 # ═══════════════════════════════════════════════════════════════════════
 
-# Matches $$...$$  or  $...$
-_MATH_PATTERN = re.compile(r'(\$\$[^$]+\$\$|\$[^$\n]+\$)')
+_MATH_RE = re.compile(r'(\$\$[^$]+\$\$|\$[^$\n]+\$)')
 
-def _escape_xml(s: str) -> str:
-    return s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+# Greek → unicode (fine in body text, not as sub/super)
+_GREEK = {
+    r'\alpha':'α', r'\beta':'β', r'\gamma':'γ', r'\delta':'δ',
+    r'\epsilon':'ε', r'\varepsilon':'ε', r'\zeta':'ζ', r'\eta':'η',
+    r'\theta':'θ', r'\iota':'ι', r'\kappa':'κ', r'\lambda':'λ',
+    r'\mu':'μ', r'\nu':'ν', r'\xi':'ξ', r'\pi':'π', r'\rho':'ρ',
+    r'\sigma':'σ', r'\tau':'τ', r'\upsilon':'υ', r'\phi':'φ',
+    r'\varphi':'φ', r'\chi':'χ', r'\psi':'ψ', r'\omega':'ω',
+    r'\Gamma':'Γ', r'\Delta':'Δ', r'\Theta':'Θ', r'\Lambda':'Λ',
+    r'\Xi':'Ξ', r'\Pi':'Π', r'\Sigma':'Σ', r'\Upsilon':'Υ',
+    r'\Phi':'Φ', r'\Psi':'Ψ', r'\Omega':'Ω',
+}
+# Math symbols → unicode
+_SYM = {
+    r'\times':'×', r'\div':'÷', r'\pm':'±', r'\mp':'∓',
+    r'\cdot':'·', r'\ldots':'…', r'\cdots':'⋯',
+    r'\infty':'∞', r'\partial':'∂', r'\nabla':'∇',
+    r'\in':'∈', r'\notin':'∉', r'\subset':'⊂', r'\supset':'⊃',
+    r'\cup':'∪', r'\cap':'∩',
+    r'\leq':'≤', r'\geq':'≥', r'\neq':'≠', r'\approx':'≈',
+    r'\equiv':'≡', r'\sim':'~', r'\propto':'∝',
+    r'\rightarrow':'→', r'\leftarrow':'←', r'\Rightarrow':'⇒',
+    r'\Leftarrow':'⇐', r'\leftrightarrow':'↔',
+    r'\uparrow':'↑', r'\downarrow':'↓',
+    r'\forall':'∀', r'\exists':'∃', r'\neg':'¬',
+    r'\angle':'∠', r'\perp':'⊥', r'\parallel':'∥',
+    r'\triangle':'△', r'\degree':'°', r'\circ':'°',
+    r'\therefore':'∴', r'\because':'∵',
+    r'\int':'∫', r'\oint':'∮',
+    r'\to':'→', r'\gets':'←',
+    r'\%':'%', r'\$':'$',
+}
 
-def parse_math_line(line: str, style, math_fontsize: float = 12) -> list:
+
+def _extract_braced(s, pos):
+    """Extract {…} content at pos. Returns (content, new_pos)."""
+    if pos >= len(s) or s[pos] != '{':
+        return (s[pos], pos + 1) if pos < len(s) else ('', pos)
+    depth, i = 0, pos
+    while i < len(s):
+        if   s[i] == '{': depth += 1
+        elif s[i] == '}': depth -= 1
+        if depth == 0:
+            return s[pos+1:i], i+1
+        i += 1
+    return s[pos+1:], len(s)
+
+
+def _latex_to_rl(expr: str) -> str:
     """
-    Parse a line that may contain $math$ or $$math$$.
-    Returns a list of flowables: Paragraphs and Images, to be wrapped
-    in a KeepTogether so they sit on the same visual line.
+    Convert a LaTeX expression string to ReportLab paragraph XML.
+    Uses <super>/<sub> tags — never Unicode super/subscript characters.
     """
-    parts = _MATH_PATTERN.split(line)
-    if len(parts) == 1:
-        # No math — just a paragraph
-        safe = _escape_xml(line)
-        safe = re.sub(r'\*\*(.+?)\*\*', r'<b>\1</b>', safe)
-        safe = re.sub(r'\*(.+?)\*',     r'<i>\1</i>', safe)
-        return [Paragraph(safe, style)]
+    s = expr.strip().lstrip('$').rstrip('$').strip()
 
-    flowables = []
-    text_buf  = ""
+    # Unwrap font/text wrappers
+    s = re.sub(r'\\(?:text|mathrm|mathbf|mathit|boldsymbol)\{([^}]*)\}', r'\1', s)
+    s = re.sub(r'\\(?:left|right)(?=[|(\[\]{}.])', '', s)
 
-    def flush_text():
-        nonlocal text_buf
-        if text_buf.strip():
-            safe = _escape_xml(text_buf)
-            safe = re.sub(r'\*\*(.+?)\*\*', r'<b>\1</b>', safe)
-            safe = re.sub(r'\*(.+?)\*',     r'<i>\1</i>', safe)
-            flowables.append(Paragraph(safe, style))
-        text_buf = ""
+    # Replace Greek (longest key first to avoid prefix collisions)
+    for k in sorted(_GREEK, key=len, reverse=True):
+        s = s.replace(k, _GREEK[k])
+    for k in sorted(_SYM, key=len, reverse=True):
+        s = s.replace(k, _SYM[k])
 
-    for part in parts:
-        if _MATH_PATTERN.match(part):
-            flush_text()
-            # Strip delimiters
-            expr = part.strip("$").strip()
-            is_display = part.startswith("$$")
-            fs = math_fontsize + 3 if is_display else math_fontsize
-            img = math_to_image(expr, fontsize=fs, dpi=220)
-            if img:
-                flowables.append(img)
-            else:
-                # Fallback: monospace text
-                safe = _escape_xml(part)
-                flowables.append(Paragraph(f"<font name='Courier'>{safe}</font>", style))
+    result, i = '', 0
+    while i < len(s):
+
+        # \frac{num}{den}  →  (num/den)
+        if s[i:i+5] == '\\frac':
+            i += 5
+            num, i = _extract_braced(s, i)
+            den, i = _extract_braced(s, i)
+            result += f'({_latex_to_rl(num)}/{_latex_to_rl(den)})'
+            continue
+
+        # \sqrt[n]{x}  →  n√(x)
+        if s[i:i+5] == '\\sqrt':
+            i += 5
+            n_root = ''
+            if i < len(s) and s[i] == '[':
+                j = s.find(']', i);  j = j if j != -1 else i
+                n_root = s[i+1:j];   i = j + 1
+            inner, i = _extract_braced(s, i)
+            result += f'{n_root}√({_latex_to_rl(inner)})'
+            continue
+
+        # ^{sup}  →  <super>sup</super>   (NOT unicode superscript)
+        if s[i] == '^':
+            i += 1
+            raw, i = _extract_braced(s, i)
+            inner  = _latex_to_rl(raw).replace('&','&amp;').replace('<','&lt;').replace('>','&gt;')
+            result += f'<super>{inner}</super>'
+            continue
+
+        # _{sub}  →  <sub>sub</sub>       (NOT unicode subscript)
+        if s[i] == '_':
+            i += 1
+            raw, i = _extract_braced(s, i)
+            inner  = _latex_to_rl(raw).replace('&','&amp;').replace('<','&lt;').replace('>','&gt;')
+            result += f'<sub>{inner}</sub>'
+            continue
+
+        # Decorator commands — just render inner content
+        decorated = False
+        for cmd in (r'\overline', r'\widehat', r'\widetilde',
+                    r'\vec', r'\hat', r'\bar', r'\tilde'):
+            if s[i:].startswith(cmd):
+                i += len(cmd)
+                inner, i = _extract_braced(s, i)
+                result += _latex_to_rl(inner)
+                decorated = True
+                break
+        if decorated:
+            continue
+
+        # Unknown backslash command — skip
+        if s[i] == '\\':
+            j = i + 1
+            while j < len(s) and (s[j].isalpha() or s[j] == '*'):
+                j += 1
+            if j == i + 1 and j < len(s):
+                j += 1
+            i = j
+            result += ' '
+            continue
+
+        # Escape XML chars in literal characters
+        c = s[i]
+        if   c == '&': result += '&amp;'
+        elif c == '<': result += '&lt;'
+        elif c == '>': result += '&gt;'
+        else:          result += c
+        i += 1
+
+    return re.sub(r'  +', ' ', result).strip()
+
+
+def _process(text: str) -> str:
+    """
+    Convert a raw text line (possibly with $math$) into
+    ReportLab-XML-safe markup. Returns a string ready for Paragraph().
+    """
+    # Fix common LaTeX artifacts
+    text = re.sub(r'\\_', '_', text)
+    text = re.sub(r'\\-',  '-', text)
+    text = re.sub(r'\\%',  '%', text)
+
+    # Replace $math$ spans
+    def _repl(m):
+        return _latex_to_rl(m.group(0))
+    converted = _MATH_RE.sub(_repl, text)
+
+    # Now escape remaining XML chars, but NOT inside the tags we just created
+    # Strategy: split on ReportLab tags, escape only non-tag segments
+    tag_re = re.compile(r'(</?(?:super|sub|b|i|font)[^>]*>)')
+    parts  = tag_re.split(converted)
+    safe   = []
+    for p in parts:
+        if tag_re.match(p):
+            safe.append(p)  # it's a tag, pass through
         else:
-            text_buf += part
+            # Escape & and bare < >  (but don't double-escape existing entities)
+            p = p.replace('&', '&amp;')
+            p = re.sub(r'&amp;(amp|lt|gt|quot|#\d+);', r'&\1;', p)
+            p = re.sub(r'<', '&lt;', p)
+            safe.append(p)
 
-    flush_text()
-    return flowables
+    out = ''.join(safe)
 
+    # Markdown bold/italic
+    out = re.sub(r'\*\*(.+?)\*\*', r'<b>\1</b>', out)
+    out = re.sub(r'\*(.+?)\*',     r'<i>\1</i>', out)
 
-# ═══════════════════════════════════════════════════════════════════════
-# SECTION / TABLE DETECTORS
-# ═══════════════════════════════════════════════════════════════════════
-
-def is_section_header(line: str) -> bool:
-    s = line.strip()
-    if re.match(r'^(SECTION|Section|PART|Part)\s+[A-Da-d](\s|[-:]|$)', s):
-        return True
-    return bool(re.match(
-        r'^(General Instructions|Instructions|ANSWER KEY|Answer Key|'
-        r'GENERAL INSTRUCTIONS|Note:|NOTE:)', s
-    ))
-
-def is_table_row(line: str) -> bool:
-    return "|" in line and line.strip().startswith("|")
-
-def is_divider_row(line: str) -> bool:
-    return bool(re.match(r'^\|[\s\-:|]+\|', line.strip()))
-
-def is_separator_line(line: str) -> bool:
-    s = line.strip()
-    return len(s) > 4 and all(c in "-=_" for c in s)
+    return out
 
 
 # ═══════════════════════════════════════════════════════════════════════
-# PAGE CANVAS CALLBACKS (header/footer on every page)
+# COLOURS
 # ═══════════════════════════════════════════════════════════════════════
+C_NAVY   = HexColor("#1a237e")   # main accent
+C_STEEL  = HexColor("#283593")   # question numbers
+C_BODY   = HexColor("#212121")   # body text
+C_GREY   = HexColor("#546e7a")   # meta / secondary
+C_LIGHT  = HexColor("#e8eaf6")   # section banner fill
+C_RULE   = HexColor("#b0bec5")   # thin lines
+C_MARK   = HexColor("#2e7d32")   # marks annotation
+C_KRED   = HexColor("#b71c1c")   # answer key accent
+C_KFILL  = HexColor("#fff8f8")   # answer key fill
 
-class ExamPageCanvas:
-    """Adds page number and branding footer to every page."""
-    def __init__(self, canvas, doc):
-        self.canvas = canvas
-        self.doc    = doc
 
+# ═══════════════════════════════════════════════════════════════════════
+# STYLES
+# ═══════════════════════════════════════════════════════════════════════
+def _styles():
+    register_fonts()
+    R, B, I = _f("Reg"), _f("Bold"), _f("Ital")
+    base = getSampleStyleSheet()
+
+    def S(name, **kw):
+        if name not in base:
+            base.add(ParagraphStyle(name=name, **kw))
+
+    # ── Paper header ─────────────────────────────────────────────────
+    S("PTitle",  fontName=B, fontSize=15, textColor=white,
+      alignment=TA_CENTER, leading=20, spaceAfter=0, spaceBefore=0)
+    S("PMeta",   fontName=R, fontSize=9,  textColor=C_BODY,
+      alignment=TA_LEFT,   leading=12, spaceAfter=0)
+    S("PMetaR",  fontName=R, fontSize=9,  textColor=C_BODY,
+      alignment=TA_RIGHT,  leading=12, spaceAfter=0)
+    S("PMetaC",  fontName=R, fontSize=9,  textColor=C_BODY,
+      alignment=TA_CENTER, leading=12, spaceAfter=0)
+
+    # ── Section banners ───────────────────────────────────────────────
+    S("SecBanner", fontName=B, fontSize=10.5, textColor=C_NAVY,
+      leading=14, spaceAfter=0, spaceBefore=0)
+
+    # ── Instructions block ────────────────────────────────────────────
+    S("InstrHead", fontName=B, fontSize=9.5, textColor=C_BODY,
+      leading=13, spaceAfter=1, spaceBefore=4)
+    S("Instr",     fontName=R, fontSize=9.5, textColor=C_BODY,
+      leading=13, spaceAfter=1, leftIndent=14, firstLineIndent=-14)
+
+    # ── Questions ─────────────────────────────────────────────────────
+    # Hanging-indent: number floats left, body wraps at indent
+    S("Q", fontName=R, fontSize=10.5, textColor=C_BODY,
+      alignment=TA_JUSTIFY, leading=15,
+      spaceBefore=5, spaceAfter=1,
+      leftIndent=24, firstLineIndent=-24)
+
+    # Sub-parts (a), (b) …
+    S("QSub", fontName=R, fontSize=10.5, textColor=C_BODY,
+      alignment=TA_JUSTIFY, leading=15,
+      spaceBefore=2, spaceAfter=1,
+      leftIndent=38, firstLineIndent=-14)
+
+    # Continuation / generic body lines inside a question
+    S("QCont", fontName=R, fontSize=10.5, textColor=C_BODY,
+      alignment=TA_JUSTIFY, leading=15,
+      spaceAfter=1, leftIndent=24)
+
+    # MCQ option cell (inside a 2-col table)
+    S("Opt", fontName=R, fontSize=10.5, textColor=C_BODY,
+      leading=14, spaceAfter=0, leftIndent=0)
+
+    # ── Answer key ────────────────────────────────────────────────────
+    S("KTitle",  fontName=B, fontSize=13, textColor=C_KRED,
+      alignment=TA_CENTER, leading=17, spaceAfter=4)
+    S("KSec",    fontName=B, fontSize=10, textColor=C_KRED,
+      leading=13, spaceAfter=2)
+    S("KQ",      fontName=B, fontSize=10, textColor=C_STEEL,
+      leading=13, spaceAfter=1,
+      leftIndent=22, firstLineIndent=-22)
+    S("KBody",   fontName=R, fontSize=9.5, textColor=C_BODY,
+      leading=13, spaceAfter=1, leftIndent=22)
+
+    # ── Misc ──────────────────────────────────────────────────────────
+    S("DiagLabel", fontName=I, fontSize=8.5, textColor=C_GREY,
+      leading=11, spaceAfter=1)
+
+    return base
+
+
+# ═══════════════════════════════════════════════════════════════════════
+# PAGE CANVAS  (top rule + footer on every page)
+# ═══════════════════════════════════════════════════════════════════════
+class ExamCanvas:
     def __call__(self, canvas, doc):
+        W = A4[0]
+        LM, RM = doc.leftMargin, W - doc.rightMargin
+
         canvas.saveState()
-        canvas.setFont(body_font(), 8)
-        canvas.setFillColor(HexColor("#aaaaaa"))
-        # Left: ExamCraft branding
-        canvas.drawString(28, 16, "ExamCraft — AI Exam Paper Generator")
-        # Right: page number
-        canvas.drawRightString(A4[0] - 28, 16, f"Page {doc.page}")
-        # Thin line above footer
-        canvas.setStrokeColor(HexColor("#dddddd"))
-        canvas.setLineWidth(0.5)
-        canvas.line(28, 24, A4[0] - 28, 24)
+
+        # Top navy rule
+        canvas.setStrokeColor(C_NAVY)
+        canvas.setLineWidth(1.5)
+        canvas.line(LM, A4[1] - 12*mm, RM, A4[1] - 12*mm)
+
+        # Footer separator
+        canvas.setStrokeColor(C_RULE)
+        canvas.setLineWidth(0.4)
+        canvas.line(LM, 20, RM, 20)
+
+        # Footer text
+        canvas.setFont(_f("Ital"), 7.5)
+        canvas.setFillColor(C_GREY)
+        canvas.drawString(LM, 10,
+            "ExamCraft  ·  Created by Laxman Nimmagadda"
+            "  (if the paper is hard, I am not guilty)")
+        canvas.drawRightString(RM, 10, f"Page {doc.page}")
+
         canvas.restoreState()
 
 
 # ═══════════════════════════════════════════════════════════════════════
-# STYLES BUILDER
+# HELPER: section banner table
 # ═══════════════════════════════════════════════════════════════════════
+def _sec_banner(text, st, pw):
+    p = Paragraph(f'<b>{text}</b>', st["SecBanner"])
+    t = Table([[p]], colWidths=[pw])
+    t.setStyle(TableStyle([
+        ("BACKGROUND",    (0,0),(-1,-1), C_LIGHT),
+        ("LINEBELOW",     (0,0),(-1,-1), 1.5, C_NAVY),
+        ("LINETOP",       (0,0),(-1,-1), 0.4, C_RULE),
+        ("LEFTPADDING",   (0,0),(-1,-1), 10),
+        ("RIGHTPADDING",  (0,0),(-1,-1), 10),
+        ("TOPPADDING",    (0,0),(-1,-1), 5),
+        ("BOTTOMPADDING", (0,0),(-1,-1), 5),
+    ]))
+    return t
 
-ACCENT  = HexColor("#1a237e")
-KEY_RED = HexColor("#b71c1c")
 
-def build_styles():
-    register_fonts()
-    bf  = bold_font()
-    bdf = body_font()
+# ═══════════════════════════════════════════════════════════════════════
+# HELPER: 2-column MCQ options table
+# opts = [(letter, rl_text), …]
+# ═══════════════════════════════════════════════════════════════════════
+def _opts_table(opts, st, pw):
+    rows = []
+    for k in range(0, len(opts), 2):
+        L = opts[k]
+        R = opts[k+1] if k+1 < len(opts) else ('', '')
+        lp = Paragraph(f'<b>({L[0]})</b>  {L[1]}', st["Opt"])
+        rp = Paragraph(f'<b>({R[0]})</b>  {R[1]}' if R[0] else '', st["Opt"])
+        rows.append([lp, rp])
+    col = pw / 2
+    t = Table(rows, colWidths=[col, col])
+    t.setStyle(TableStyle([
+        ("TOPPADDING",    (0,0),(-1,-1), 1),
+        ("BOTTOMPADDING", (0,0),(-1,-1), 1),
+        ("LEFTPADDING",   (0,0),(-1,-1), 20),
+        ("RIGHTPADDING",  (0,0),(-1,-1), 4),
+        ("VALIGN",        (0,0),(-1,-1), "TOP"),
+    ]))
+    return t
 
-    styles = getSampleStyleSheet()
 
-    def add(name, **kw):
-        if name not in styles:
-            styles.add(ParagraphStyle(name=name, **kw))
+# ═══════════════════════════════════════════════════════════════════════
+# HELPER: pipe-table → PDF table
+# ═══════════════════════════════════════════════════════════════════════
+def _pipe_table(rows, st, pw):
+    if not rows:
+        return None
+    mc = max(len(r) for r in rows)
+    norm = [r + ['']*(mc-len(r)) for r in rows]
+    R, B = _f("Reg"), _f("Bold")
 
-    add("ExamTitle",
-        fontName=bf, fontSize=16, alignment=TA_CENTER,
-        textColor=ACCENT, spaceAfter=3, leading=20)
-    add("ExamSubtitle",
-        fontName=bdf, fontSize=10.5, alignment=TA_CENTER,
-        textColor=HexColor("#444444"), spaceAfter=4, leading=14)
-    add("ExamMeta",
-        fontName=bdf, fontSize=9.5, alignment=TA_CENTER,
-        textColor=HexColor("#666666"), spaceAfter=10, leading=13)
-    add("SectionHeader",
-        fontName=bf, fontSize=11.5, textColor=ACCENT,
-        spaceBefore=10, spaceAfter=5, leading=15,
-        borderPad=4, backColor=HexColor("#e8eaf6"),
-        borderColor=ACCENT, borderWidth=0)
-    add("Instructions",
-        fontName=bdf, fontSize=9.5, textColor=HexColor("#333333"),
-        leading=14, spaceAfter=2, leftIndent=10)
-    add("QNumber",
-        fontName=bf, fontSize=10.5, textColor=HexColor("#000000"),
-        leading=15, spaceAfter=1)
-    add("QBody",
-        fontName=bdf, fontSize=10.5, alignment=TA_JUSTIFY,
-        leading=15, spaceAfter=3, leftIndent=18)
-    add("QOption",
-        fontName=bdf, fontSize=10, leading=14,
-        spaceAfter=1, leftIndent=30)
-    add("Marks",
-        fontName=bf, fontSize=9.5, alignment=TA_RIGHT,
-        textColor=HexColor("#555555"), leading=14)
-    add("DiagramBox",
-        fontName=bdf, fontSize=9.5, leading=13, spaceAfter=6,
-        textColor=HexColor("#555555"),
-        borderColor=HexColor("#aaaaaa"), borderWidth=1,
-        borderPad=6, backColor=HexColor("#f5f5f5"))
-    add("KeyTitle",
-        fontName=bf, fontSize=14, alignment=TA_CENTER,
-        textColor=KEY_RED, spaceAfter=8, leading=18)
-    add("KeySectionHeader",
-        fontName=bf, fontSize=11, textColor=KEY_RED,
-        spaceBefore=8, spaceAfter=3, leading=15,
-        backColor=HexColor("#fff8f8"), borderPad=3)
-    add("KeyQNum",
-        fontName=bf, fontSize=10, textColor=HexColor("#333333"),
-        leading=14, spaceAfter=1)
-    add("KeyBody",
-        fontName=bdf, fontSize=10, leading=14, spaceAfter=2)
-    add("KeyBodyIndent",
-        fontName=bdf, fontSize=10, leading=14, spaceAfter=2,
-        leftIndent=18, textColor=HexColor("#222222"))
+    para_rows = []
+    for ri, row in enumerate(norm):
+        sty = st["KQ"] if ri == 0 else st["KBody"]
+        para_rows.append([Paragraph(_process(c), sty) for c in row])
 
-    return styles
+    cw = pw / mc
+    t = Table(para_rows, colWidths=[cw]*mc, repeatRows=1)
+    t.setStyle(TableStyle([
+        ("FONTNAME",      (0,0),(-1,-1), R),
+        ("FONTSIZE",      (0,0),(-1,-1), 9.5),
+        ("BACKGROUND",    (0,0),(-1,0),  C_LIGHT),
+        ("TEXTCOLOR",     (0,0),(-1,0),  C_NAVY),
+        ("FONTNAME",      (0,0),(-1,0),  B),
+        ("GRID",          (0,0),(-1,-1), 0.4, C_RULE),
+        ("ROWBACKGROUNDS",(0,1),(-1,-1), [white, HexColor("#f8f8f8")]),
+        ("TOPPADDING",    (0,0),(-1,-1), 4),
+        ("BOTTOMPADDING", (0,0),(-1,-1), 4),
+        ("LEFTPADDING",   (0,0),(-1,-1), 7),
+        ("RIGHTPADDING",  (0,0),(-1,-1), 7),
+        ("VALIGN",        (0,0),(-1,-1), "MIDDLE"),
+    ]))
+    return t
+
+
+# ═══════════════════════════════════════════════════════════════════════
+# LINE-TYPE DETECTORS
+# ═══════════════════════════════════════════════════════════════════════
+def _is_sec_hdr(s):
+    s = s.strip()
+    if re.match(r'^(SECTION|Section|PART|Part)\s+[A-Da-d](\s|[-:]|$)', s):
+        return True
+    return bool(re.match(r'^(GENERAL INSTRUCTIONS|General Instructions'
+                         r'|Instructions|Note:|NOTE:)\s*$', s))
+
+def _is_table_row(s):
+    return '|' in s and s.strip().startswith('|')
+
+def _is_divider(s):
+    return bool(re.match(r'^\|[\s\-:|]+\|', s.strip()))
+
+def _is_hrule(s):
+    s = s.strip()
+    return len(s) > 3 and all(c in '-=_' for c in s)
+
+# Lines that come from the AI exam header and should NOT be re-rendered
+# (we render our own canonical header box instead)
+_HDR_SKIP = re.compile(
+    r'^(School|Subject|Class|Board|Total\s*Marks|Time\s*Allowed|Date)\s*[:/]',
+    re.I)
 
 
 # ═══════════════════════════════════════════════════════════════════════
 # MAIN PDF BUILDER
 # ═══════════════════════════════════════════════════════════════════════
+def create_exam_pdf(text, subject, chapter, board="",
+                   answer_key=None, include_key=False) -> bytes:
 
-def create_exam_pdf(
-    text: str,
-    subject: str,
-    chapter: str,
-    board: str = "",
-    answer_key: str = None,
-    include_key: bool = False,
-) -> bytes:
+    register_fonts()
+    st = _styles()
 
-    buffer  = BytesIO()
-    styles  = build_styles()
-    bf      = bold_font()
-    bdf     = body_font()
-    PAGE_W  = A4[0] - 56  # usable width (28mm margins each side — wider)
+    # Margins: snug but comfortable — standard exam paper feel
+    LM = BM = 20 * mm
+    RM = 20 * mm
+    TM = 16 * mm           # tight top — canvas draws rule at 12 mm
+    PW = A4[0] - LM - RM   # usable width ≈ 170 mm
 
-    doc = SimpleDocTemplate(
-        buffer, pagesize=A4,
-        rightMargin=28, leftMargin=28,
-        topMargin=30, bottomMargin=28,
-        title=f"{subject} - {chapter}" if chapter else subject,
-    )
+    buf = BytesIO()
+    doc = SimpleDocTemplate(buf, pagesize=A4,
+                            leftMargin=LM, rightMargin=RM,
+                            topMargin=TM, bottomMargin=BM,
+                            title=f"{subject}{' – '+chapter if chapter else ''}")
+    elems = []
 
-    elements = []
+    # ─── Canonical header ────────────────────────────────────────────
+    # Pull fields from AI-generated text
+    def _pull(pat, default=""):
+        m = re.search(pat, text, re.I | re.M)
+        return m.group(1).strip() if m else default
 
-    # ── Header box ───────────────────────────────────────────────────
-    # Two-column header: left = title/chapter, right = board/meta
-    left_content  = [Paragraph(f"<b>{subject or 'Question Paper'}</b>", styles["ExamTitle"])]
-    right_content = []
-    if chapter:
-        left_content.append(Paragraph(f"Chapter: {chapter}", styles["ExamSubtitle"]))
-    if board:
-        right_content.append(Paragraph(f"<b>{board}</b>", styles["ExamMeta"]))
-    right_content.append(Paragraph("ExamCraft — AI Generated", styles["ExamMeta"]))
+    h_marks  = _pull(r'Total\s*Marks\s*[:/]\s*(\d+)', "100")
+    h_time   = _pull(r'Time\s*Allowed\s*[:/]\s*([^\n]+)', "3 Hours")
+    h_class  = _pull(r'Class\s*[:/]?\s*(\d+\w*)', "")
+    h_board  = board or _pull(r'Board\s*[:/]\s*([^\n]+)', "")
 
-    left_cell  = [item for item in left_content]
-    right_cell = [item for item in right_content]
+    disp_title   = subject or "Question Paper"
+    disp_chapter = chapter or ""
 
-    header_tbl = Table(
-        [[left_cell, right_cell]],
-        colWidths=[PAGE_W * 0.65, PAGE_W * 0.35]
-    )
-    header_tbl.setStyle(TableStyle([
-        ("BACKGROUND",    (0, 0), (-1, -1), HexColor("#e8eaf6")),
-        ("BOX",           (0, 0), (-1, -1), 1.5, ACCENT),
-        ("TOPPADDING",    (0, 0), (-1, -1), 12),
-        ("BOTTOMPADDING", (0, 0), (-1, -1), 12),
-        ("LEFTPADDING",   (0, 0), (-1, -1), 16),
-        ("RIGHTPADDING",  (0, 0), (-1, -1), 16),
-        ("VALIGN",        (0, 0), (-1, -1), "MIDDLE"),
-        ("ALIGN",         (1, 0), (1, -1),  "RIGHT"),
+    # Row 1: dark navy title bar
+    title_str = disp_title
+    if disp_chapter:
+        title_str += f"  —  {disp_chapter}"
+    tbl_title = Table(
+        [[Paragraph(title_str, st["PTitle"])]],
+        colWidths=[PW])
+    tbl_title.setStyle(TableStyle([
+        ("BACKGROUND",    (0,0),(-1,-1), C_NAVY),
+        ("TOPPADDING",    (0,0),(-1,-1), 9),
+        ("BOTTOMPADDING", (0,0),(-1,-1), 9),
+        ("LEFTPADDING",   (0,0),(-1,-1), 12),
+        ("RIGHTPADDING",  (0,0),(-1,-1), 12),
     ]))
-    elements.append(header_tbl)
-    elements.append(Spacer(1, 12))
 
-    # ── Parse body ───────────────────────────────────────────────────
-    table_data: list = []
-    in_table: bool   = False
+    # Row 2: meta strip (left = board+class, right = marks+time)
+    left_meta  = "  |  ".join(x for x in [h_board, f"Class {h_class}" if h_class else ""] if x)
+    right_meta = f"Total Marks: {h_marks}   |   Time: {h_time}"
+    tbl_meta = Table(
+        [[Paragraph(left_meta,  st["PMeta"]),
+          Paragraph(right_meta, st["PMetaR"])]],
+        colWidths=[PW*0.55, PW*0.45])
+    tbl_meta.setStyle(TableStyle([
+        ("BACKGROUND",    (0,0),(-1,-1), C_LIGHT),
+        ("TOPPADDING",    (0,0),(-1,-1), 5),
+        ("BOTTOMPADDING", (0,0),(-1,-1), 5),
+        ("LEFTPADDING",   (0,0),(-1,-1), 10),
+        ("RIGHTPADDING",  (0,0),(-1,-1), 10),
+        ("VALIGN",        (0,0),(-1,-1), "MIDDLE"),
+    ]))
+
+    # Row 3: school / date fill-in line
+    tbl_school = Table(
+        [[Paragraph("School / Institution: " + "_"*34
+                    + "   Date: " + "_"*12,
+                    st["PMetaC"])]],
+        colWidths=[PW])
+    tbl_school.setStyle(TableStyle([
+        ("BACKGROUND",    (0,0),(-1,-1), white),
+        ("BOX",           (0,0),(-1,-1), 0.5, C_RULE),
+        ("TOPPADDING",    (0,0),(-1,-1), 5),
+        ("BOTTOMPADDING", (0,0),(-1,-1), 5),
+        ("LEFTPADDING",   (0,0),(-1,-1), 10),
+        ("RIGHTPADDING",  (0,0),(-1,-1), 10),
+    ]))
+
+    elems += [tbl_title, tbl_meta, tbl_school, Spacer(1, 7)]
+
+    # ─── Body parser ─────────────────────────────────────────────────
+    tbl_rows  = []
+    in_table  = False
+    pending_opts = []   # MCQ options waiting to be flushed
 
     def flush_table():
-        nonlocal table_data, in_table
-        if not table_data:
-            return
-        max_cols = max(len(r) for r in table_data)
-        rows     = [r + [""] * (max_cols - len(r)) for r in table_data]
+        nonlocal tbl_rows, in_table
+        if tbl_rows:
+            t = _pipe_table(tbl_rows, st, PW)
+            if t:
+                elems.append(Spacer(1, 3))
+                elems.append(t)
+                elems.append(Spacer(1, 5))
+        tbl_rows, in_table = [], False
 
-        # First row = header
-        col_w = PAGE_W / max(max_cols, 1)
-        tbl   = Table(rows, colWidths=[col_w] * max_cols, repeatRows=1)
-        tbl.setStyle(TableStyle([
-            ("FONTNAME",       (0, 0), (-1, -1), bdf),
-            ("FONTSIZE",       (0, 0), (-1, -1), 9.5),
-            ("BACKGROUND",     (0, 0), (-1,  0), HexColor("#e8eaf6")),
-            ("TEXTCOLOR",      (0, 0), (-1,  0), ACCENT),
-            ("FONTNAME",       (0, 0), (-1,  0), bf),
-            ("FONTSIZE",       (0, 0), (-1,  0), 10),
-            ("GRID",           (0, 0), (-1, -1), 0.5, HexColor("#9e9e9e")),
-            ("ROWBACKGROUNDS", (0, 1), (-1, -1),
-             [HexColor("#ffffff"), HexColor("#f3f3f3")]),
-            ("TOPPADDING",     (0, 0), (-1, -1), 5),
-            ("BOTTOMPADDING",  (0, 0), (-1, -1), 5),
-            ("LEFTPADDING",    (0, 0), (-1, -1), 7),
-            ("RIGHTPADDING",   (0, 0), (-1, -1), 7),
-            ("VALIGN",         (0, 0), (-1, -1), "MIDDLE"),
-        ]))
-        elements.append(Spacer(1, 4))
-        elements.append(tbl)
-        elements.append(Spacer(1, 8))
-        table_data.clear()
-        in_table = False
+    def flush_opts():
+        nonlocal pending_opts
+        if pending_opts:
+            elems.append(_opts_table(pending_opts, st, PW))
+            elems.append(Spacer(1, 2))
+        pending_opts = []
 
-    for raw_line in text.split("\n"):
-        raw = raw_line.rstrip()
+    lines = text.split('\n')
+    i_line = 0
+    while i_line < len(lines):
+        raw  = lines[i_line].rstrip()
+        line = re.sub(r'\\_', '_', re.sub(r'\\-', '-', raw))
+        s    = line.strip()
+        i_line += 1
 
-        # Table row
-        if is_table_row(raw):
-            if is_divider_row(raw):
+        # ── table rows ──────────────────────────────────────────────
+        if _is_table_row(line):
+            if _is_divider(line):
                 continue
-            cells = [c.strip() for c in raw.split("|") if c.strip()]
+            flush_opts()
+            cells = [c.strip() for c in line.split('|') if c.strip()]
             if cells:
-                # Parse math inside table cells
-                parsed_cells = []
-                for cell in cells:
-                    if "$" in cell:
-                        img = math_to_image(cell.strip("$").strip(), fontsize=10, dpi=200)
-                        parsed_cells.append(img if img else cell)
-                    else:
-                        parsed_cells.append(Paragraph(_escape_xml(cell), styles["QBody"]))
-                table_data.append(parsed_cells)
+                tbl_rows.append(cells)
                 in_table = True
             continue
-        else:
-            if in_table:
-                flush_table()
+        elif in_table:
+            flush_table()
 
-        # Blank
-        if not raw.strip():
-            elements.append(Spacer(1, 4))
+        # ── blank / spacing ─────────────────────────────────────────
+        if not s:
+            flush_opts()
+            elems.append(Spacer(1, 3))
             continue
 
-        # HR separator
-        if is_separator_line(raw):
-            elements.append(HRFlowable(
-                width="100%", thickness=0.5,
-                color=HexColor("#cccccc"), spaceBefore=3, spaceAfter=3))
+        # ── skip AI-generated header fields (we drew our own) ───────
+        if _HDR_SKIP.match(s):
             continue
 
-        # Diagram placeholder
-        if raw.strip().startswith("[DIAGRAM:") or raw.strip().lower().startswith("[draw"):
-            label = raw.strip()
-            elements.append(Paragraph(f"<i>{_escape_xml(label)}</i>", styles["DiagramBox"]))
-            # Draw an empty box for student to draw in
-            box = Table([["  " * 40]], colWidths=[PAGE_W])
+        # ── horizontal rule ─────────────────────────────────────────
+        if _is_hrule(line):
+            flush_opts()
+            elems.append(HRFlowable(width="100%", thickness=0.4,
+                                    color=C_RULE, spaceBefore=2, spaceAfter=2))
+            continue
+
+        # ── diagram placeholder ──────────────────────────────────────
+        if s.startswith('[DIAGRAM:') or s.lower().startswith('[draw'):
+            flush_opts()
+            label = s.strip('[]')
+            elems.append(Paragraph(f'<i>{label}</i>', st["DiagLabel"]))
+            box = Table([['']],  colWidths=[PW], rowHeights=[50])
             box.setStyle(TableStyle([
-                ("BOX",           (0, 0), (-1, -1), 1, HexColor("#aaaaaa")),
-                ("BACKGROUND",    (0, 0), (-1, -1), HexColor("#fafafa")),
-                ("TOPPADDING",    (0, 0), (-1, -1), 40),
-                ("BOTTOMPADDING", (0, 0), (-1, -1), 40),
+                ('BOX',        (0,0),(-1,-1), 0.7, C_RULE),
+                ('BACKGROUND', (0,0),(-1,-1), HexColor('#fafafa')),
             ]))
-            elements.append(box)
-            elements.append(Spacer(1, 6))
+            elems.append(box)
+            elems.append(Spacer(1, 4))
             continue
 
-        # Section header
-        if is_section_header(raw):
-            s = raw.strip()
-            elements.append(Spacer(1, 6))
-            # Coloured section banner
-            sec_tbl = Table(
-                [[Paragraph(f"<b>{_escape_xml(s)}</b>", styles["SectionHeader"])]],
-                colWidths=[PAGE_W]
-            )
-            sec_tbl.setStyle(TableStyle([
-                ("BACKGROUND",    (0, 0), (-1, -1), HexColor("#e8eaf6")),
-                ("BOX",           (0, 0), (-1, -1), 1,   ACCENT),
-                ("LEFTPADDING",   (0, 0), (-1, -1), 10),
-                ("RIGHTPADDING",  (0, 0), (-1, -1), 10),
-                ("TOPPADDING",    (0, 0), (-1, -1), 5),
-                ("BOTTOMPADDING", (0, 0), (-1, -1), 5),
-            ]))
-            elements.append(sec_tbl)
-            elements.append(Spacer(1, 5))
+        # ── section header ───────────────────────────────────────────
+        if _is_sec_hdr(line):
+            flush_opts()
+            elems.append(Spacer(1, 5))
+            elems.append(_sec_banner(s, st, PW))
+            elems.append(Spacer(1, 4))
             continue
 
-        # Math-aware line rendering
-        line_elements = parse_math_line(raw, styles["QBody"], math_fontsize=12)
-        if line_elements:
-            if len(line_elements) == 1:
-                elements.append(line_elements[0])
-            else:
-                elements.append(KeepTogether(line_elements))
+        # ── MCQ options — collect and render as 2-col table ──────────
+        # single option: "(a) text" or "a) text" or "A. text"
+        opt_m = re.match(r'^\s*[\(\[]?\s*([a-dA-D])\s*[\)\]\.]\s+(.+)', s)
+        if opt_m and not re.match(r'^\d', s):
+            letter = opt_m.group(1).lower()
+            val    = _process(opt_m.group(2))
+            pending_opts.append((letter, val))
+            if len(pending_opts) >= 4:
+                flush_opts()
+            continue
 
+        # multiple options on one line: "(a) x  (b) y  (c) z  (d) w"
+        multi = re.findall(
+            r'[\(\[]([a-dA-D])[\)\]\.]\s+([^(\[]+?)(?=\s*[\(\[][a-dA-D][\)\]\.]|$)',
+            s)
+        if len(multi) >= 2 and not re.match(r'^\d+\.', s):
+            flush_opts()
+            opts = [(l.lower(), _process(v.strip())) for l, v in multi]
+            elems.append(_opts_table(opts, st, PW))
+            elems.append(Spacer(1, 2))
+            continue
+
+        # ── numbered questions: "1. text [2 Marks]" ──────────────────
+        q_m = re.match(r'^(Q\.?\s*)?(\d+)[\.\)]\s+(.+)', s)
+        if q_m:
+            flush_opts()
+            qnum  = q_m.group(2)
+            qbody = q_m.group(3)
+
+            # Pull mark annotation from end
+            mk_m = re.search(r'(\[\s*\d+\s*[Mm]arks?\s*\])\s*$', qbody)
+            mark_tag = ''
+            if mk_m:
+                mark_tag = mk_m.group(1)
+                qbody    = qbody[:mk_m.start()].strip()
+
+            body_rl = _process(qbody)
+            mark_rl = (f'  <font color="{C_MARK.hexval()}" size="9">'
+                       f'<b>{mark_tag}</b></font>') if mark_tag else ''
+
+            # Hanging-indent: bold number, then body wraps with indent
+            xml = (f'<font color="{C_STEEL.hexval()}"><b>{qnum}.</b></font>'
+                   f'  {body_rl}{mark_rl}')
+            elems.append(Paragraph(xml, st["Q"]))
+            continue
+
+        # ── sub-parts: "(a) long sentence [2 Marks]" ─────────────────
+        sub_m = re.match(r'^\s*[\(\[]\s*([a-z])\s*[\)\]]\s+(.+)', s)
+        if sub_m:
+            flush_opts()
+            sl   = sub_m.group(1)
+            sbod = sub_m.group(2)
+            mk_m2 = re.search(r'(\[\s*\d+\s*[Mm]arks?\s*\])\s*$', sbod)
+            mark2 = ''
+            if mk_m2:
+                mark2 = (f'  <font color="{C_MARK.hexval()}" size="9">'
+                         f'<b>{mk_m2.group(1)}</b></font>')
+                sbod  = sbod[:mk_m2.start()].strip()
+            elems.append(Paragraph(
+                f'<b>({sl})</b>  {_process(sbod)}{mark2}',
+                st["QSub"]))
+            continue
+
+        # ── numbered instruction lines (inside instr block) ───────────
+        instr_m = re.match(r'^(\d+)\.\s+(.+)$', s)
+        if instr_m and len(s) < 220:
+            flush_opts()
+            elems.append(Paragraph(
+                f'<b>{instr_m.group(1)}.</b>  {_process(instr_m.group(2))}',
+                st["Instr"]))
+            continue
+
+        # ── fallback: continuation / general body ────────────────────
+        flush_opts()
+        elems.append(Paragraph(_process(s), st["QCont"]))
+
+    flush_opts()
     if in_table:
         flush_table()
 
-    # ── Answer Key ───────────────────────────────────────────────────
+    # ─── Answer key ───────────────────────────────────────────────────
     if include_key and answer_key and answer_key.strip():
-        elements.append(PageBreak())
+        elems.append(PageBreak())
 
-        # Key header banner
-        key_hdr = Table(
-            [[Paragraph("ANSWER KEY", styles["KeyTitle"])]],
-            colWidths=[PAGE_W]
-        )
-        key_hdr.setStyle(TableStyle([
-            ("BACKGROUND",    (0, 0), (-1, -1), HexColor("#fff0f0")),
-            ("BOX",           (0, 0), (-1, -1), 2, KEY_RED),
-            ("TOPPADDING",    (0, 0), (-1, -1), 10),
-            ("BOTTOMPADDING", (0, 0), (-1, -1), 10),
+        # Key title banner
+        kt = Table([[Paragraph("ANSWER KEY", st["KTitle"])]], colWidths=[PW])
+        kt.setStyle(TableStyle([
+            ("BACKGROUND",    (0,0),(-1,-1), C_KFILL),
+            ("LINEBELOW",     (0,0),(-1,-1), 2, C_KRED),
+            ("LINETOP",       (0,0),(-1,-1), 2, C_KRED),
+            ("TOPPADDING",    (0,0),(-1,-1), 7),
+            ("BOTTOMPADDING", (0,0),(-1,-1), 7),
         ]))
-        elements.append(key_hdr)
-        elements.append(Spacer(1, 10))
+        elems += [kt, Spacer(1, 8)]
 
-        for raw_line in answer_key.split("\n"):
-            raw    = raw_line.rstrip()
-            stripped = raw.strip()
+        for raw in answer_key.split('\n'):
+            line = re.sub(r'\\_', '_', re.sub(r'\\-', '-', raw.rstrip()))
+            s    = line.strip()
 
-            if not stripped:
-                elements.append(Spacer(1, 3))
+            if not s:
+                elems.append(Spacer(1, 2))
                 continue
 
-            # Section header in key
-            if re.match(r'^(Section|SECTION|Part|PART)\s+[A-D]:?', stripped):
-                sec = Table(
-                    [[Paragraph(f"<b>{_escape_xml(stripped)}</b>", styles["KeySectionHeader"])]],
-                    colWidths=[PAGE_W]
-                )
-                sec.setStyle(TableStyle([
-                    ("BACKGROUND",    (0, 0), (-1, -1), HexColor("#fff8f8")),
-                    ("BOX",           (0, 0), (-1, -1), 0.8, KEY_RED),
-                    ("LEFTPADDING",   (0, 0), (-1, -1), 10),
-                    ("RIGHTPADDING",  (0, 0), (-1, -1), 10),
-                    ("TOPPADDING",    (0, 0), (-1, -1), 4),
-                    ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
+            if re.match(r'^(Section|SECTION|Part|PART)\s+[A-D]', s):
+                ks = Table([[Paragraph(f'<b>{s}</b>', st["KSec"])]], colWidths=[PW])
+                ks.setStyle(TableStyle([
+                    ("BACKGROUND",    (0,0),(-1,-1), C_KFILL),
+                    ("LINEBELOW",     (0,0),(-1,-1), 0.8, C_KRED),
+                    ("LEFTPADDING",   (0,0),(-1,-1), 8),
+                    ("TOPPADDING",    (0,0),(-1,-1), 3),
+                    ("BOTTOMPADDING", (0,0),(-1,-1), 3),
                 ]))
-                elements.append(Spacer(1, 4))
-                elements.append(sec)
-                elements.append(Spacer(1, 4))
+                elems += [Spacer(1, 4), ks, Spacer(1, 3)]
                 continue
 
-            # Detect question number line
-            is_qline = bool(re.match(r'^Q?\d+[\.\)]', stripped))
-            is_indent = stripped.startswith(("Ans", "Answer", "Sol", "a)", "b)", "c)", "d)", "->", "="))
+            q_m = re.match(r'^(Q\.?\s*)?(\d+)[\.\)]\s*(.*)', s)
+            if q_m:
+                body = _process(q_m.group(3)) if q_m.group(3) else ''
+                elems.append(Paragraph(
+                    f'<b>{q_m.group(2)}.</b>  {body}', st["KQ"]))
+                continue
 
-            style = (styles["KeyBodyIndent"] if is_indent
-                     else styles["KeyQNum"] if is_qline
-                     else styles["KeyBody"])
+            elems.append(Paragraph(_process(s), st["KBody"]))
 
-            line_els = parse_math_line(raw, style, math_fontsize=11)
-            for el in line_els:
-                elements.append(el)
-
-    # ── Build ─────────────────────────────────────────────────────────
-    page_cb = ExamPageCanvas(None, None)
-    doc.build(elements, onFirstPage=page_cb, onLaterPages=page_cb)
-
-    pdf_bytes = buffer.getvalue()
-    buffer.close()
-    return pdf_bytes
+    # ─── Build ────────────────────────────────────────────────────────
+    doc.build(elems, onFirstPage=ExamCanvas(), onLaterPages=ExamCanvas())
+    pdf = buf.getvalue()
+    buf.close()
+    return pdf
 
 
 # ═══════════════════════════════════════════════════════════════════════
-# GEMINI — model discovery + call
+# GEMINI
 # ═══════════════════════════════════════════════════════════════════════
-
 _discovered_models = []
 
 def discover_models():
@@ -593,8 +796,7 @@ def discover_models():
         models = []
         for m in genai.list_models():
             if "generateContent" in (m.supported_generation_methods or []):
-                name = m.name.replace("models/", "")
-                models.append(name)
+                models.append(m.name.replace("models/", ""))
         preferred = ["gemini-2.0-flash", "gemini-1.5-flash", "gemini-1.5-pro", "gemini-pro"]
         ordered   = [p for p in preferred if any(p in n for n in models)]
         rest      = [n for n in models if not any(p in n for p in preferred)]
@@ -604,7 +806,7 @@ def discover_models():
         return ["gemini-1.5-flash", "gemini-pro"]
 
 
-def call_gemini(prompt: str) -> tuple:
+def call_gemini(prompt):
     if not (GEMINI_KEY and GENAI_AVAILABLE):
         return None, "Gemini not configured."
     models_to_try = discover_models()
@@ -616,210 +818,182 @@ def call_gemini(prompt: str) -> tuple:
             try:
                 model = genai.GenerativeModel(
                     model_name,
-                    generation_config={
-                        "temperature": 0.7,
-                        "max_output_tokens": 8192,
-                        "top_p": 0.9,
-                    },
-                )
+                    generation_config={"temperature":0.7, "max_output_tokens":8192, "top_p":0.9})
                 response = model.generate_content(prompt)
                 if response and hasattr(response, "text") and response.text.strip():
                     return response.text.strip(), None
                 last_error = f"{model_name}: empty response"
                 break
             except Exception as e:
-                err_str = str(e)
-                last_error = f"{model_name} (attempt {attempt+1}): {err_str}"
-                if "429" in err_str or "404" in err_str or "quota" in err_str.lower():
-                    time.sleep(0.3)
-                    break
+                err = str(e)
+                last_error = f"{model_name} ({attempt+1}): {err}"
+                if "429" in err or "404" in err or "quota" in err.lower():
+                    time.sleep(0.3); break
                 if attempt == 0:
-                    time.sleep(1.5)
-                    continue
+                    time.sleep(1.5); continue
                 break
     return None, last_error
 
 
 # ═══════════════════════════════════════════════════════════════════════
-# FALLBACK LOCAL PAPER
+# FALLBACK PAPER
 # ═══════════════════════════════════════════════════════════════════════
-
 def build_local_paper(cls, subject, chapter, marks, difficulty):
-    half = int(int(marks) * 0.5)
-    return f"""{subject or "General"} - Model Question Paper
-School: ________________________    Date: __________
-Class: {cls}    Subject: {subject or "N/A"}    Board: Standard
-Total Marks: {marks}               Time Allowed: 3 Hours
+    return f"""{subject or "Science"} — Model Question Paper
+Subject: {subject or "Science"}   Class: {cls}   Board: Standard Board
+Total Marks: {marks}   Time Allowed: 3 Hours
 
-Chapter / Topic: {chapter or "Full Syllabus"}
-Difficulty: {difficulty}
-
-General Instructions:
+GENERAL INSTRUCTIONS
 1. All questions are compulsory.
 2. Read each question carefully before answering.
-3. Marks for each question are shown in brackets.
-4. Write answers neatly and in order.
+3. Marks for each question are indicated in brackets.
+4. Write your answers neatly and in the correct order.
 5. Calculators are not permitted unless specified.
-6. Draw diagrams wherever necessary.
+6. Draw neat, labelled diagrams wherever necessary.
 
-SECTION A - Objective Questions [20 Marks]
+SECTION A - Objective Questions (20 Marks)
 
-1. Choose the correct answer:                              [1 Mark]
-   (A) Option A   (B) Option B   (C) Option C   (D) Option D
+1. Which of the following best describes Newton's First Law? [1 Mark]
+(a) Force equals mass times acceleration
+(b) An object at rest stays at rest unless acted on by a net force
+(c) Every action has an equal and opposite reaction
+(d) Acceleration is inversely proportional to mass
 
-2. Fill in the blank: The value of ________ is fundamental.  [1 Mark]
+2. The SI unit of electric charge is __________. [1 Mark]
 
-3. True or False: Statement about {chapter or "this topic"}.   [1 Mark]
+3. True or False: $v^2 = u^2 + 2as$ is an equation of uniformly accelerated motion. [1 Mark]
 
-SECTION B - Short Answer Questions [30 Marks]
+SECTION B - Short Answer Questions (30 Marks)
 
-4. Explain the main concept of {chapter or "this chapter"}.   [3 Marks]
+4. State the law of conservation of momentum and give one real-world example. [3 Marks]
 
-5. State and explain an important theorem or principle.      [3 Marks]
+5. A wire of resistance $R$ is stretched to double its length. Find the new resistance. [3 Marks]
 
-SECTION C - Long Answer Questions [30 Marks]
+SECTION C - Long Answer Questions (30 Marks)
 
-6. Describe the important principles of {chapter or "this topic"}
-   with proofs or derivations where applicable.             [5 Marks]
+6. Derive the mirror formula $\\frac{{1}}{{v}} + \\frac{{1}}{{u}} = \\frac{{1}}{{f}}$ with a labelled diagram. [5 Marks]
 
-SECTION D - Case Study [20 Marks]
+[DIAGRAM: Ray diagram for concave mirror showing object, image and focal points]
 
-7. Read the following scenario and answer:
-   (a) Identify the key concept demonstrated.               [5 Marks]
-   (b) Explain the underlying principle involved.           [5 Marks]
+SECTION D - Case Study (20 Marks)
+
+7. Ravi connects a $6\\ \\Omega$ resistor and a $12\\ \\Omega$ resistor in parallel across a $12$ V battery.
+(a) Calculate the equivalent resistance of the combination. [2 Marks]
+(b) Find the total current drawn from the battery. [3 Marks]
 
 ANSWER KEY
 
 Section A:
-1. (B)
-2. [Expected answer]
-3. True / False — [brief justification]
+1. (b)
+2. Coulomb (C)
+3. True
 
 Section B:
-4. Three key points with brief explanation each.
-5. Statement + explanation of the principle.
+4. Law of conservation of momentum: total momentum of an isolated system remains constant.
+   Example: A gun recoils when fired — momentum of bullet forward equals recoil backward.
+5. Resistance R = ρl/A. On stretching to 2l, area becomes A/2. New R = ρ(2l)/(A/2) = 4R.
 
 Section C:
-6. Introduction → Principle → Proof/Derivation → Conclusion.
+6. Consider a concave mirror. Using geometry of reflected rays from a point object:
+   1/v + 1/u = 1/f  (derived by similar triangles from the ray diagram).
 
 Section D:
-7. (a) Key concept identified and explained.
-   (b) Principle stated with reasoning.
+7. (a) 1/R_eq = 1/6 + 1/12 = 2/12 + 1/12 = 3/12, so R_eq = 4 Ω.
+   (b) I = V/R_eq = 12/4 = 3 A.
 """
 
 
 # ═══════════════════════════════════════════════════════════════════════
-# PROMPT BUILDER — asks AI to use LaTeX math notation
+# PROMPT BUILDER
 # ═══════════════════════════════════════════════════════════════════════
-
 def build_prompt(class_name, subject, chapter, board, exam_type, difficulty, marks, suggestions):
-    subj_lower = (subject or "").lower()
-    is_stem = any(k in subj_lower for k in [
-        "math", "maths", "physics", "chemistry",
-        "science", "biology", "computer"
-    ])
+    subj_l = (subject or "").lower()
+    is_stem = any(k in subj_l for k in
+                  ["math","maths","physics","chemistry","science","biology","computer"])
 
-    math_block = ""
+    math_note = ""
     if is_stem:
-        math_block = """
-==================================================
-MATH & SCIENCE NOTATION — MANDATORY
-==================================================
-Use LaTeX math notation wrapped in $ signs for ALL mathematical/scientific expressions.
-This is critical — the PDF renderer supports LaTeX math perfectly.
-
-Inline math  : $F = ma$,  $E = mc^2$,  $H_2O$,  $CO_2$
-Display math : $$\\int_0^\\infty e^{-x^2}dx = \\frac{\\sqrt{\\pi}}{2}$$
-Powers       : $x^2$, $a^{n+1}$, $10^{-19}$
-Subscripts   : $H_2O$, $v_{max}$, $a_n$
-Fractions    : $\\frac{a}{b}$, $\\frac{x+1}{x-1}$
-Square root  : $\\sqrt{x}$, $\\sqrt[3]{8}$
-Greek letters: $\\theta$, $\\alpha$, $\\beta$, $\\pi$, $\\lambda$, $\\mu$
-Integrals    : $\\int_a^b f(x)dx$
-Summation    : $\\sum_{i=1}^n i^2$
-Vectors      : $\\vec{F}$, $|\\vec{v}|$
-Chemical eq  : $2H_2 + O_2 \\rightarrow 2H_2O$
-Degree symbol: $90^\\circ$
-Approximately: $\\approx$
-==================================================
-DO NOT use plain text for ANY mathematical expression.
-Every number with a unit, every equation, every formula MUST be in $...$.
-==================================================
+        math_note = """
+MATH/SCIENCE NOTATION:
+- ALL equations and expressions inside $...$: $F = ma$, $v^2 = u^2 + 2as$
+- Fractions: $\\frac{a}{b}$   Powers: $x^2$, $10^{-19}$   Roots: $\\sqrt{x}$
+- Subscripts: $H_2O$, $v_{max}$   Greek: $\\theta$, $\\alpha$, $\\lambda$, $\\pi$
+- Symbols: $\\pm$, $\\times$, $\\approx$, $\\rightarrow$, $\\leq$, $\\geq$
+- Chemical: $2H_2 + O_2 \\rightarrow 2H_2O$   Degree: $90^\\circ$
+- Fill-in-blank: write underscores directly: __________  (never \\_ )
 """
 
-    extra = (
-        f"\nSPECIAL INSTRUCTIONS:\n{suggestions}\n"
-        if suggestions and suggestions.strip()
-        else ""
-    )
+    extra = f"\nSPECIAL INSTRUCTIONS:\n{suggestions}\n" if suggestions and suggestions.strip() else ""
 
-    return f"""You are a senior board examination authority creating an official exam paper.
+    m = int(marks) if str(marks).isdigit() else 100
+    sA = max(1, int(m*0.20)); sB = max(1, int(m*0.30))
+    sC = max(1, int(m*0.30)); sD = max(1, m - sA - sB - sC)
 
-==================================================
-CRITICAL OUTPUT RULES
-==================================================
-1. Use LaTeX math notation ($...$) for all math/science expressions.
-2. Output the exam body first, then "ANSWER KEY" on its own line, then the key.
-3. Every question must show its mark value in brackets: [2 Marks]
-4. Start directly with the Exam Header — no preamble.
-5. For tables, use Markdown pipe table format: | Col1 | Col2 |
-6. For diagram spots write: [DIAGRAM: brief description]
+    return f"""You are an experienced senior examiner writing an official board examination paper.
+Follow every rule below exactly — no deviation, no extra commentary.
+
+OUTPUT RULES:
+1. Begin immediately with the exam header block (Subject/Class/Board/Marks/Time). No preamble.
+2. Use LaTeX $...$ for ALL math/science expressions.
+3. End every question line with its mark in brackets: [1 Mark], [3 Marks], [5 Marks].
+4. MCQ options MUST be on separate lines, each starting: (a), (b), (c), (d)
+5. Section headers exactly as: SECTION A - Objective Questions ({sA} Marks)
+6. For diagram spots write on its own line: [DIAGRAM: what to draw]
+7. For data tables use Markdown pipes: | Col1 | Col2 |
+8. After the paper write ANSWER KEY on its own line, then the full answer key.
+9. No markdown heading markers (##, ###). No bullet dashes outside MCQ options.
+10. Write natural, well-worded, board-appropriate questions. No trivial fillers.
 {extra}
-==================================================
-EXAM DETAILS
-==================================================
-Class        : {class_name or "Not specified"}
-Subject      : {subject or "Not specified"}
-Chapter/Topic: {chapter or "Full Syllabus"}
-Board / Exam : {board}
-Difficulty   : {difficulty}
-Total Marks  : {marks}
-==================================================
-REQUIRED STRUCTURE
-==================================================
+EXAM DETAILS:
+  Subject   : {subject or "Not specified"}
+  Class     : {class_name or "Not specified"}
+  Board     : {board}
+  Chapter   : {chapter or "Full Syllabus"}
+  Difficulty: {difficulty}
+  Marks     : {marks}
 
-[EXAM HEADER]
-  School / Institution: ______________________________
-  Subject: {subject}   Class: {class_name}   Board: {board}
-  Total Marks: {marks}       Time Allowed: 3 Hours
-  Date: ______________
+STRUCTURE TO FOLLOW:
 
-[GENERAL INSTRUCTIONS]
-  (6 numbered instructions)
+Subject: {subject}   Class: {class_name}   Board: {board}
+Total Marks: {marks}   Time Allowed: 3 Hours
 
-SECTION A - Objective Questions  (~20% = {int(int(marks)*0.2)} marks)
-  MCQ, fill-in-blank, true/false — 1 mark each, min 10 questions
+GENERAL INSTRUCTIONS
+1. All questions are compulsory.
+2. The paper consists of four sections A, B, C and D.
+3. Marks for each question are shown in brackets.
+4. Use of calculators is not permitted.
+5. Draw neat, labelled diagrams wherever required.
+6. Write clearly and in order.
 
-SECTION B - Short Answer  (~30% = {int(int(marks)*0.3)} marks)
-  2–3 marks each, min 6 questions
+SECTION A - Objective Questions ({sA} Marks)
+[MCQ, fill-in-blank, true/false — 1 mark each. Minimum {sA} questions.
+ MCQ must have options on 4 separate lines: (a) (b) (c) (d)]
 
-SECTION C - Long Answer  (~30% = {int(int(marks)*0.3)} marks)
-  5 marks each with sub-parts, min 4 questions
+SECTION B - Short Answer ({sB} Marks)
+[2–3 marks each. Minimum {sB//3} questions. Include sub-parts where appropriate.]
 
-SECTION D - Case Study  (~20% = {int(int(marks)*0.2)} marks)
-  One real-world scenario + 4 sub-questions
+SECTION C - Long Answer ({sC} Marks)
+[5 marks each with labelled sub-parts (a)(b)(c). Minimum {sC//5} questions.
+ Include proofs/derivations/diagrams as appropriate.]
+
+SECTION D - Case Study ({sD} Marks)
+[One real-world scenario, then {sD//5} questions totalling {sD} marks.]
 
 ANSWER KEY
-  Section A: all MCQ answers
-  Section B: key points per question
-  Section C: step-by-step solutions
-  Section D: detailed answers
-{math_block}
-Begin the paper now.
-"""
+Section A: answer for each question
+Section B: 3–4 key points per answer
+Section C: step-by-step solution with all working shown
+Section D: full explanation with units and reasoning
+{math_note}
+Begin the paper now."""
 
 
 # ═══════════════════════════════════════════════════════════════════════
 # SPLIT PAPER / KEY
 # ═══════════════════════════════════════════════════════════════════════
-
-def split_key(text: str) -> tuple:
-    patterns = [
-        r'\nANSWER KEY\n',
-        r'\n---\s*ANSWER KEY\s*---\n',
-        r'(?i)\nANSWER KEY:?\s*\n',
-    ]
-    for pat in patterns:
+def split_key(text):
+    for pat in [r'\nANSWER KEY\n', r'\n---\s*ANSWER KEY\s*---\n',
+                r'(?i)\nANSWER KEY:?\s*\n']:
         parts = re.split(pat, text, maxsplit=1)
         if len(parts) == 2:
             return parts[0].strip(), parts[1].strip()
@@ -829,7 +1003,6 @@ def split_key(text: str) -> tuple:
 # ═══════════════════════════════════════════════════════════════════════
 # ROUTES
 # ═══════════════════════════════════════════════════════════════════════
-
 @app.route("/")
 def index():
     return render_template("index.html")
@@ -838,8 +1011,7 @@ def index():
 @app.route("/generate", methods=["POST"])
 def generate():
     try:
-        data = request.get_json(force=True) or {}
-
+        data             = request.get_json(force=True) or {}
         class_name       = (data.get("class") or "").strip()
         subject          = (data.get("subject") or "").strip()
         chapter          = (data.get("chapter") or "").strip()
@@ -860,12 +1032,9 @@ def generate():
         if not subject and (data.get("scope") == "all" or data.get("all_chapters")):
             subject = "Mixed Subjects"
 
-        use_fallback = str(data.get("use_fallback", "false")).lower() in ("true", "1", "yes")
-
+        use_fallback = str(data.get("use_fallback","false")).lower() in ("true","1","yes")
         prompt = data.get("prompt") or build_prompt(
-            class_name, subject, chapter, board,
-            exam_type, difficulty, marks, suggestions
-        )
+            class_name, subject, chapter, board, exam_type, difficulty, marks, suggestions)
 
         generated_text = None
         api_error      = None
@@ -875,34 +1044,21 @@ def generate():
 
         if not generated_text:
             if use_fallback or not GEMINI_KEY:
-                generated_text = build_local_paper(
-                    class_name, subject, chapter, marks, difficulty
-                )
+                generated_text = build_local_paper(class_name, subject, chapter, marks, difficulty)
                 use_fallback = True
             else:
-                return jsonify({
-                    "success":   False,
-                    "error":     "AI generation failed.",
-                    "api_error": api_error,
-                    "suggestion": "Send use_fallback=true to get a template paper.",
-                }), 502
+                return jsonify({"success": False, "error": "AI generation failed.",
+                                "api_error": api_error,
+                                "suggestion": "Send use_fallback=true for a template paper."}), 502
 
         paper, key = split_key(generated_text)
-
-        return jsonify({
-            "success":       True,
-            "paper":         paper,
-            "answer_key":    key,
-            "api_error":     api_error,
-            "used_fallback": use_fallback,
-            "board":         board,
-            "subject":       subject,
-            "chapter":       chapter,
-        })
-
+        return jsonify({"success": True, "paper": paper, "answer_key": key,
+                        "api_error": api_error, "used_fallback": use_fallback,
+                        "board": board, "subject": subject, "chapter": chapter})
     except Exception as e:
         import traceback
-        return jsonify({"success": False, "error": str(e), "trace": traceback.format_exc()}), 500
+        return jsonify({"success": False, "error": str(e),
+                        "trace": traceback.format_exc()}), 500
 
 
 @app.route("/download-pdf", methods=["POST"])
@@ -921,28 +1077,24 @@ def download_pdf():
 
         pdf_bytes = create_exam_pdf(
             paper_text, subject, chapter,
-            board=board,
-            answer_key=answer_key,
-            include_key=include_key,
-        )
+            board=board, answer_key=answer_key, include_key=include_key)
+
         parts    = [p for p in [board, subject, chapter] if p]
         filename = ("_".join(parts) + ".pdf").replace(" ", "_").replace("/", "-")
-        return send_file(
-            BytesIO(pdf_bytes),
-            as_attachment=True,
-            download_name=filename,
-            mimetype="application/pdf",
-        )
+        return send_file(BytesIO(pdf_bytes), as_attachment=True,
+                         download_name=filename, mimetype="application/pdf")
     except Exception as e:
         import traceback
-        return jsonify({"success": False, "error": str(e), "trace": traceback.format_exc()}), 500
+        return jsonify({"success": False, "error": str(e),
+                        "trace": traceback.format_exc()}), 500
 
 
 @app.route("/health")
 def health():
     configured = bool(GEMINI_KEY and GENAI_AVAILABLE)
     models     = discover_models() if configured else []
-    return jsonify({"status": "ok", "gemini": "configured" if configured else "not configured",
+    return jsonify({"status": "ok",
+                    "gemini": "configured" if configured else "not configured",
                     "models_available": models})
 
 
