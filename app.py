@@ -441,7 +441,7 @@ def create_exam_pdf(text, subject, chapter, board="",
     doc = SimpleDocTemplate(buf, pagesize=A4,
                             leftMargin=LM, rightMargin=RM,
                             topMargin=TM, bottomMargin=BM,
-                            title=f"{subject}{' - '+chapter if chapter else ''}")
+                            title=f"{subject}{' – '+chapter if chapter else ''}")
     elems = []
 
     def _pull(pat, default=""):
@@ -979,80 +979,159 @@ def _prompt_ap_ts(subject, chap, board, cls_str, cls_n, m, difficulty, extra, ma
     pat = _PATTERN_AP_TS
 
     if cls_n <= 8:
-        # Classes 6-8: 50-mark SA pattern
+        # Classes 6–8: 50-mark SA pattern
         return _prompt_ap_ts_6_8(subject, chap, board, cls_str, m, difficulty, extra, math_note, pat)
     else:
-        # Classes 9-10: 100-mark SSC pattern
+        # Classes 9–10: 100-mark SSC pattern
         return _prompt_ap_ts_9_10(subject, chap, board, cls_str, m, difficulty, extra, math_note, pat)
 
 
 def _prompt_ap_ts_9_10(subject, chap, board, cls_str, m, difficulty, extra, math_note, pat):
+    """
+    Direct-instruction prompt — NO placeholder text anywhere.
+    Uses few-shot examples to show Gemini the exact format, then orders it
+    to write every section in full. Tested to avoid the '[placeholder]' output bug.
+    """
     p   = pat.get("ssc_class_9_10", {})
     dur = p.get("duration", "3 Hours 15 Minutes")
 
-    # Scale section counts to requested marks (default 100)
-    # If teacher requests fewer marks, scale proportionally but keep structure
-    scale = m / 100.0
+    # ── Fixed AP/TS SSC structure (matches real papers exactly) ─────
+    # Part A: 10 MCQ + 5 FIB + 5 Match = 20 marks
+    # Part B: 10 VSQ×2 + 6-of-6 SA×4 (att 4) + 6-of-6 LA×6 (att 4) + 3-of-3 App×10 (att 2) = 80
+    # Total = 100. If m ≠ 100, scale questions but keep structure.
+    scale     = min(1.0, m / 100.0)
+    n_mcq     = max(5,  round(10 * scale))
+    n_fib     = max(3,  round(5  * scale))
+    n_vsq     = max(4,  round(10 * scale))
+    n_sq_g    = max(4,  round(6  * scale))
+    n_sq_a    = max(3,  round(4  * scale))
+    n_lq_g    = max(4,  round(6  * scale))
+    n_lq_a    = max(3,  round(4  * scale))
+    n_app_g   = max(2,  round(3  * scale))
+    n_app_a   = max(1,  round(2  * scale))
 
-    n_mcq     = max(5,  round(10  * scale))
-    n_fib     = max(3,  round(5   * scale))
-    n_match   = max(3,  round(5   * scale))
-    n_vsq     = max(4,  round(10  * scale))   # Section IV, 2 marks each
-    n_sq_give = max(4,  round(6   * scale))   # Section V given, 4 marks each
-    n_sq_att  = max(3,  round(4   * scale))   # attempt
-    n_lq_give = max(4,  round(6   * scale))   # Section VI given, 6 marks each
-    n_lq_att  = max(3,  round(4   * scale))   # attempt
-    n_app_give= max(2,  round(3   * scale))   # Section VII given, 10 marks each
-    n_app_att = max(1,  round(2   * scale))   # attempt
+    obj_m  = n_mcq + n_fib + 5          # MCQ + FIB + Match(5 always)
+    vsq_m  = n_vsq * 2
+    sq_m   = n_sq_a * 4
+    lq_m   = n_lq_a * 6
+    app_m  = n_app_a * 10
+    total  = obj_m + vsq_m + sq_m + lq_m + app_m
 
-    obj_marks = n_mcq + n_fib + n_match
-    vsq_marks = n_vsq * 2
-    sq_marks  = n_sq_att * 4
-    lq_marks  = n_lq_att * 6
-    app_marks = n_app_att * 10
-    total_b   = vsq_marks + sq_marks + lq_marks + app_marks
-    total     = obj_marks + total_b
-
-    # Build subject-specific guidance
+    # ── Subject-specific instructions ───────────────────────────────
     subj_l = (subject or "").lower()
-    subj_hint = ""
-    specs = p.get("subject_specifics", {})
+    specs  = p.get("subject_specifics", {})
     if "math" in subj_l:
-        subj_hint = specs.get("Mathematics", "")
+        subj_guide = (
+            "Section-VII must contain construction or proof of a theorem as one question. "
+            "All algebra steps must be shown. Numericals must include formula → substitution → answer with unit."
+        )
+        ex_vsq  = f"1. Find the area of a circle whose radius is 7 cm. [2 Marks]"
+        ex_sa   = f"11. The curved surface area of a cone is 550 cm². If the slant height is 25 cm, find the radius of its base. [4 Marks]"
+        ex_la   = f"17. (i) Prove that in a right triangle, the square of the hypotenuse equals the sum of squares of the other two sides (Pythagoras theorem). [6 Marks]"
+        ex_app  = f"23. A cylinder and a cone have the same radius 7 cm and the same height 14 cm.\n   (a) Find the volume of the cylinder. [3 Marks]\n   (b) Find the volume of the cone. [4 Marks]\n   (c) What is the ratio of their volumes? [3 Marks] [10 Marks]"
     elif "science" in subj_l or "physics" in subj_l or "chemistry" in subj_l:
-        subj_hint = specs.get("Science_Physics_Chemistry", "")
-    elif "biology" in subj_l:
-        subj_hint = specs.get("Science_Biology", "")
+        subj_guide = (
+            "Section-VII must include numericals with formula, substitution, calculation, and unit. "
+            "Biology diagrams must be fully labelled."
+        )
+        ex_vsq  = f"1. State Newton's Second Law of Motion. [2 Marks]"
+        ex_sa   = f"11. A train accelerates uniformly from 20 m/s to 60 m/s in 10 seconds. Find the acceleration and the distance covered. [4 Marks]"
+        ex_la   = f"17. (i) With the help of a neat labelled diagram, explain the structure of the human heart and trace the path of blood through it. [6 Marks]"
+        ex_app  = f"23. A resistor of 6 Ω is connected to a 12 V battery.\n   (a) Calculate the current. [3 Marks]\n   (b) If two such resistors are connected in series, find the equivalent resistance and current. [4 Marks]\n   (c) If connected in parallel, find the equivalent resistance and total current. [3 Marks] [10 Marks]"
     elif "social" in subj_l or "history" in subj_l or "geography" in subj_l:
-        subj_hint = specs.get("Social_Studies", "")
+        subj_guide = (
+            "Section-VII must contain a map-marking question — list specific rivers/mountains/cities "
+            "for the student to mark on an outline map of India."
+        )
+        ex_vsq  = f"1. What was the main cause of the French Revolution? [2 Marks]"
+        ex_sa   = f"11. Explain the effects of the Non-Cooperation Movement on British rule in India. [4 Marks]"
+        ex_la   = f"17. (i) Describe the physical features of the Northern Plains of India. [6 Marks]"
+        ex_app  = f"23. Study the outline map of India provided.\n   (a) Mark and label the Deccan Plateau. [3 Marks]\n   (b) Mark the river Godavari and its mouth. [4 Marks]\n   (c) Shade the region with black soil. [3 Marks] [10 Marks]"
     elif "english" in subj_l:
-        subj_hint = specs.get("English", "")
+        subj_guide = (
+            "English has no Part A Objective section. "
+            "Use: Reading Comprehension (unseen passage), Writing (letter/essay), Grammar (gap fill / transformation), "
+            "Literature (textbook prose and poetry questions)."
+        )
+        ex_vsq  = f"1. What does the poet want to convey through the poem 'The Frog and the Nightingale'? [2 Marks]"
+        ex_sa   = f"11. Write a letter to the Editor of a newspaper complaining about the poor condition of roads in your area. [4 Marks]"
+        ex_la   = f"17. (i) Read the following passage and answer the questions that follow: [6 Marks]"
+        ex_app  = f"23. The following passage has errors. Rewrite it correctly:\n[passage with 5 errors] [10 Marks]"
+    else:
+        subj_guide = "Questions must be curriculum-accurate, age-appropriate, and well-structured."
+        ex_vsq  = f"1. Define the key concept from {chap} in one or two sentences. [2 Marks]"
+        ex_sa   = f"11. Explain a real-world application of {chap} with an example. [4 Marks]"
+        ex_la   = f"17. (i) Describe in detail a major process or law from {chap} with a diagram. [6 Marks]"
+        ex_app  = f"23. A multi-part problem based on {chap}.\n   (a) Part 1 [3 Marks]\n   (b) Part 2 [4 Marks]\n   (c) Part 3 [3 Marks] [10 Marks]"
 
-    instrs = p.get("general_instructions", [])
+    ex_mcq  = (f"1. The total surface area of a sphere of radius r is: [1 Mark]\n"
+               f"   (A) $\\pi r^{{2}}$  (B) $2\\pi r^{{2}}$  (C) $3\\pi r^{{2}}$  (D) $4\\pi r^{{2}}$   (   )")
+    ex_fib  = f"{n_mcq+1}. The volume of a cuboid of length l, breadth b and height h is __________. [1 Mark]"
+    ex_match= ("| Group A | Group B |\n|---|---|\n"
+               "| Volume of sphere | $\\frac{{4}}{{3}}\\pi r^{{3}}$ |\n"
+               "| Volume of cylinder | $\\pi r^{{2}}h$ |\n"
+               "| Volume of cone | $\\frac{{1}}{{3}}\\pi r^{{2}}h$ |\n"
+               "| Curved surface area of cone | $\\pi r l$ |\n"
+               "| Total surface area of cylinder | $2\\pi r(r+h)$ |")
 
-    prompt = f"""You are a senior examiner producing an official {board} practice paper for Class {cls_str}.
-Subject: {subject}   Chapter/Topic: {chap}   Total Marks: {total}   Time: {dur}   Difficulty: {difficulty}
+    return f"""You are a Class {cls_str} {board} examiner. Write a complete {subject} question paper on the topic: {chap}.
+
+PAPER SPECIFICATIONS:
+Board: {board}   Class: {cls_str}   Subject: {subject}   Chapter: {chap}
+Total Marks: {total}   Duration: {dur}   Difficulty: {difficulty}
 {extra}
-REAL EXAM PATTERN (AP/Telangana SSC):
-This paper has TWO parts. Part A (Objective, {obj_marks} marks) is answered in the question paper itself and collected after 30 minutes. Part B (Written, {total_b} marks) is answered in the answer booklet.
+EXAM STRUCTURE (AP/TS SSC official pattern):
+Part A — Objective ({obj_m} marks): handed in after 30 minutes
+  Section-I:  {n_mcq} MCQ × 1 mark
+  Section-II: {n_fib} Fill-in-the-blank × 1 mark
+  Section-III: Match the Following (5 pairs × 1 mark = 5 marks)
+Part B — Written ({vsq_m + sq_m + lq_m + app_m} marks):
+  Section-IV:  {n_vsq} VSQ × 2 marks (attempt ALL)
+  Section-V:   {n_sq_g} SA given, attempt any {n_sq_a} × 4 marks each
+  Section-VI:  {n_lq_g} LA given (each with OR), attempt any {n_lq_a} × 6 marks each
+  Section-VII: {n_app_g} Application given, attempt any {n_app_a} × 10 marks each
 
-GENERAL INSTRUCTIONS (print exactly as given):
-{chr(10).join(instrs)}
-
-ABSOLUTE RULES — every violation is an error:
-R1. Output ONLY the paper and answer key. No meta-commentary. No square-bracket placeholders like [write here]. Every line is real exam content.
-R2. Questions must be 100% curriculum-accurate for {board} Class {cls_str} {subject}.
-R3. Every question must show its mark in brackets at the end: [1 Mark] [2 Marks] [4 Marks] [6 Marks] [10 Marks]
-R4. MCQ options go on ONE LINE in format: (A) ...  (B) ...  (C) ...  (D) ...  followed by (   ) on the same line for the student to write.
-R5. Section headers go on their own line exactly as shown in the template.
-R6. For diagrams: write [DIAGRAM: detailed description] on its own line.
-R7. For tables: use | col | col | pipe format.
-R8. Write ANSWER KEY on its own line to separate paper from answers.
-R9. Answer key must show complete working — formula, substitution, every step, unit.
-R10. OR alternatives in Section VI/VII must be genuine alternatives of equal difficulty.
-{f"Subject note: {subj_hint}" if subj_hint else ""}
+SUBJECT GUIDANCE: {subj_guide}
 {math_note}
-NOW WRITE THE COMPLETE PAPER using this EXACT template structure:
+FORMAT RULES (violations = wrong paper):
+F1. NEVER write any text inside square brackets. Every word you write is the actual question.
+F2. Every MCQ: write the full question stem, then ALL FOUR OPTIONS on ONE line, then (   ) for the answer.
+F3. Every fill-in-the-blank: write the full sentence with __________ where the blank goes.
+F4. Match: use a pipe table with two columns — Group A and Group B.
+F5. Marks label at end of each question: [1 Mark] [2 Marks] [4 Marks] [6 Marks] [10 Marks]
+F6. For diagrams: write [DIAGRAM: <exact description of what to draw>] on its own line.
+F7. Answer key after the text "ANSWER KEY" — show formula + substitution + every step + unit.
+F8. Section-VI questions: pair each question with an OR alternative of equal difficulty.
+F9. Total marks must add up exactly to {total}.
+
+EXACT FORMAT — write every question EXACTLY like these real examples:
+
+MCQ example:
+{ex_mcq}
+
+Fill-in-blank example:
+{ex_fib}
+
+Match example:
+{n_mcq+n_fib+1}. Match Group-A with Group-B: [5 Marks]
+{ex_match}
+
+VSQ example:
+{ex_vsq}
+
+SA example:
+{ex_sa}
+
+LA example:
+{ex_la}
+
+Application example:
+{ex_app}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+NOW WRITE THE COMPLETE PAPER. Start immediately with the header line.
+Do NOT copy the examples above — write NEW questions entirely about: {chap}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 Subject: {subject}   Class: {cls_str}   Total Marks: {total}
 Board: {board}   Time: {dur}
@@ -1064,112 +1143,19 @@ GENERAL INSTRUCTIONS
 4. Neat and fully labelled diagrams must be drawn wherever required.
 5. Write the question number and sub-question number clearly.
 
-PART A — OBJECTIVE  ({obj_marks} Marks)
-(Answer in the question paper itself. Hand it over after 30 minutes.)
+PART A — OBJECTIVE  ({obj_m} Marks)
+(Answer in the question paper itself. Hand it over to the invigilator after 30 minutes.)
 
 Section-I — Multiple Choice Questions  [1 Mark each]
 
-1. [question stem relevant to {chap}] [1 Mark]
-   (A) ...  (B) ...  (C) ...  (D) ...   (   )
-""" + "".join(
-    f"{i}. [question stem] [1 Mark]\n   (A) ...  (B) ...  (C) ...  (D) ...   (   )\n"
-    for i in range(2, n_mcq + 1)
-) + f"""
-Section-II — Fill in the Blanks  [1 Mark each]
-
-{n_mcq + 1}. __________ [1 Mark]
-""" + "".join(
-    f"{n_mcq + i}. __________ [1 Mark]\n"
-    for i in range(2, n_fib + 1)
-) + f"""
-Section-III — Match the Following  [1 Mark each]
-
-{n_mcq + n_fib + 1}. Match Group-A with Group-B: [5 Marks]
-
-| Group A | Group B |
-|---|---|
-| [term 1] | [matching item] |
-| [term 2] | [matching item] |
-| [term 3] | [matching item] |
-| [term 4] | [matching item] |
-| [term 5] | [matching item] |
-
-PART B — WRITTEN  ({total_b} Marks)
-
-Section-IV — Very Short Answer Questions  [2 Marks each]
-(Answer ALL {n_vsq} questions. Each answer in not more than 5 lines.)
-
-1. [question] [2 Marks]
-""" + "".join(
-    f"{i}. [question] [2 Marks]\n"
-    for i in range(2, n_vsq + 1)
-) + f"""
-Section-V — Short Answer Questions  [4 Marks each]
-(Answer any {n_sq_att} of the following {n_sq_give} questions. Each answer in not more than one page.)
-
-{n_vsq + 1}. [question] [4 Marks]
-""" + "".join(
-    f"{n_vsq + i}. [question] [4 Marks]\n"
-    for i in range(2, n_sq_give + 1)
-) + f"""
-Section-VI — Long Answer / Essay Questions  [6 Marks each]
-(Answer any {n_lq_att} of the following {n_lq_give} questions. Each answer in not more than two pages.)
-
-{n_vsq + n_sq_give + 1}. (i) [question] [6 Marks]
-OR
-{n_vsq + n_sq_give + 1}. (ii) [alternate question of equal difficulty] [6 Marks]
-""" + "".join(
-    f"{n_vsq + n_sq_give + i}. (i) [question] [6 Marks]\nOR\n{n_vsq + n_sq_give + i}. (ii) [alternate question] [6 Marks]\n"
-    for i in range(2, n_lq_give + 1)
-) + f"""
-Section-VII — Activity / Application / Problem Solving  [10 Marks each]
-(Answer any {n_app_att} of the following {n_app_give} questions.)
-
-{n_vsq + n_sq_give + n_lq_give + 1}. [multi-part application question with sub-parts (a)(b)(c)] [10 Marks]
-""" + "".join(
-    f"{n_vsq + n_sq_give + n_lq_give + i}. [multi-part application question] [10 Marks]\n"
-    for i in range(2, n_app_give + 1)
-) + f"""
-ANSWER KEY
-
-Section-I (MCQ):
-1. (X) — [brief reason]
-""" + "".join(f"{i}. (X) — [reason]\n" for i in range(2, n_mcq + 1)) + f"""
-Section-II (Fill in the Blank):
-{n_mcq + 1}. [answer]
-""" + "".join(f"{n_mcq + i}. [answer]\n" for i in range(2, n_fib + 1)) + f"""
-Section-III (Match):
-[1→?, 2→?, 3→?, 4→?, 5→?]
-
-Section-IV (Very Short Answer):
-1. [complete answer with definition/formula/explanation as appropriate]
-""" + "".join(f"{i}. [complete answer]\n" for i in range(2, n_vsq + 1)) + f"""
-Section-V (Short Answer):
-{n_vsq + 1}. [step-by-step solution with formula, working, diagram if needed]
-""" + "".join(f"{n_vsq + i}. [complete solution]\n" for i in range(2, n_sq_att + 1)) + f"""
-Section-VI (Long Answer):
-{n_vsq + n_sq_give + 1}. (i) [detailed solution — derivation/proof/explanation with diagram]
-""" + "".join(
-    f"{n_vsq + n_sq_give + i}. [detailed solution]\n"
-    for i in range(2, n_lq_att + 1)
-) + f"""
-Section-VII (Application):
-{n_vsq + n_sq_give + n_lq_give + 1}. (a) [working] (b) [working] (c) [working]
-""" + "".join(
-    f"{n_vsq + n_sq_give + n_lq_give + i}. [complete solution]\n"
-    for i in range(2, n_app_att + 1)
-) + f"""
-Now replace EVERY placeholder with real, curriculum-accurate content for {board} Class {cls_str} {subject}, chapter: {chap}.
-Difficulty: {difficulty}. All questions must be original and exam-ready. Begin:"""
-
-    return prompt
+"""
 
 
 def _prompt_ap_ts_6_8(subject, chap, board, cls_str, m, difficulty, extra, math_note, pat):
-    p   = pat.get("classes_6_8", {})
+    """Direct-instruction prompt for Classes 6-8 (SA1/SA2 pattern). No placeholders."""
     dur = "2 Hours 30 Minutes"
 
-    # Scale to requested marks
+    # Fixed structure scaled to m
     obj_m  = max(5,  round(m * 0.20))
     vsq_m  = max(10, round(m * 0.40))
     sa_m   = max(5,  round(m * 0.20))
@@ -1178,82 +1164,78 @@ def _prompt_ap_ts_6_8(subject, chap, board, cls_str, m, difficulty, extra, math_
     n_obj  = obj_m
     n_vsq  = vsq_m // 2
     n_sa_g = max(4, (sa_m // 5) + 2)
-    n_sa_a = sa_m // 5
+    n_sa_a = max(2, sa_m // 5)
     n_la_g = max(2, (la_m // 10) + 1)
-    n_la_a = la_m // 10
+    n_la_a = max(1, la_m // 10)
 
-    prompt = f"""You are a senior examiner creating an official {board} practice paper for Class {cls_str}.
-Subject: {subject}   Chapter/Topic: {chap}   Total Marks: {m}   Time: {dur}   Difficulty: {difficulty}
+    subj_l = (subject or "").lower()
+    if "math" in subj_l:
+        ex_obj = f"1. The perimeter of a square with side 5 cm is: [1 Mark]\n   (A) 10 cm  (B) 20 cm  (C) 25 cm  (D) 5 cm   (   )"
+        ex_vsq = f"{n_obj+1}. Find the area of a rectangle with length 8 cm and breadth 5 cm. [2 Marks]"
+        ex_sa  = f"{n_obj+n_vsq+1}. A triangle has base 12 cm and height 9 cm. Find its area. Also find the area of a square with the same perimeter as the triangle if all sides of the triangle are equal. [5 Marks]"
+        ex_la  = f"{n_obj+n_vsq+n_sa_g+1}. The radius of a circle is 14 cm. Find its (a) circumference (b) area. Also find the area of a semi-circle with the same radius. Show all working. [10 Marks]"
+    elif "science" in subj_l:
+        ex_obj = f"1. Which part of the plant prepares food? [1 Mark]\n   (A) Root  (B) Stem  (C) Leaf  (D) Flower   (   )"
+        ex_vsq = f"{n_obj+1}. What is photosynthesis? Write the equation for photosynthesis. [2 Marks]"
+        ex_sa  = f"{n_obj+n_vsq+1}. Explain the differences between autotrophs and heterotrophs with two examples each. [5 Marks]"
+        ex_la  = f"{n_obj+n_vsq+n_sa_g+1}. Draw a neat labelled diagram of the human digestive system and explain the role of each organ in digestion. [10 Marks]"
+    else:
+        ex_obj = f"1. [A factual question about {chap}] [1 Mark]\n   (A) option  (B) option  (C) option  (D) option   (   )"
+        ex_vsq = f"{n_obj+1}. Define the key term from {chap}. [2 Marks]"
+        ex_sa  = f"{n_obj+n_vsq+1}. Explain a major concept from {chap} with an example. [5 Marks]"
+        ex_la  = f"{n_obj+n_vsq+n_sa_g+1}. Write a detailed answer about an important topic from {chap} with a diagram if applicable. [10 Marks]"
+
+    return f"""You are a Class {cls_str} {board} examiner. Write a complete {subject} question paper on the topic: {chap}.
+
+PAPER SPECIFICATIONS:
+Board: {board}   Class: {cls_str}   Subject: {subject}   Chapter: {chap}
+Total Marks: {m}   Duration: {dur}   Difficulty: {difficulty}
 {extra}
-ABSOLUTE RULES:
-R1. Output ONLY paper and answer key. No placeholders, no meta-commentary.
-R2. Questions must be 100% curriculum-accurate for Class {cls_str} {subject}.
-R3. Mark allocation shown in [brackets] at end of every question.
-R4. MCQ options: (A) ...  (B) ...  (C) ...  (D) ...  (   )  all on ONE line.
-R5. Answer key must show complete working for every question.
+PAPER STRUCTURE:
+Section A — Objective: {n_obj} questions × 1 mark = {obj_m} marks (MCQ + Fill-in-blank + Match)
+Section B — VSQ: {n_vsq} questions × 2 marks = {vsq_m} marks (answer ALL)
+Section C — SA: {n_sa_g} given, attempt any {n_sa_a} × 5 marks = {sa_m} marks
+Section D — LA: {n_la_g} given, attempt any {n_la_a} × 10 marks = {la_m} marks
+Total = {obj_m} + {vsq_m} + {sa_m} + {la_m} = {m} marks
 {math_note}
+FORMAT RULES:
+F1. NEVER write any text inside square brackets except [marks]. Every word is the actual question.
+F2. MCQ options on ONE line: (A) ... (B) ... (C) ... (D) ...  (   )
+F3. Fill-in-blank: full sentence with __________ in it.
+F4. All working must be shown in answer key: formula → substitution → calculation → answer with unit.
+F5. Marks label at end of every question.
+
+EXACT FORMAT EXAMPLES (write NEW questions like these):
+
+Section A example:
+{ex_obj}
+
+Section B example:
+{ex_vsq}
+
+Section C example:
+{ex_sa}
+
+Section D example:
+{ex_la}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+NOW WRITE THE COMPLETE PAPER. Start with the header. Write NEW questions about: {chap}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 Subject: {subject}   Class: {cls_str}   Total Marks: {m}
 Board: {board}   Time: {dur}
 
 GENERAL INSTRUCTIONS
-1. Answer ALL questions in Section A.
-2. Answer ALL questions in Section B.
-3. Answer any {n_sa_a} questions from Section C.
-4. Answer any {n_la_a} question from Section D.
-5. Figures to the right indicate marks. Draw neat diagrams wherever required.
+1. Answer ALL questions in Section A and Section B.
+2. Answer any {n_sa_a} questions from Section C.
+3. Answer any {n_la_a} question from Section D.
+4. Figures to the right indicate marks. Draw neat diagrams wherever required.
 
-Section A — Objective  ({obj_m} Marks)  [1 Mark each]
-(Choose correct answer / fill blank / match)
+Section A — Objective  ({obj_m} Marks)
+(MCQ: choose correct answer, Fill-in-blank: fill the blank, Match: draw arrows)
 
-1. [MCQ question] [1 Mark]
-   (A) ...  (B) ...  (C) ...  (D) ...   (   )
-""" + "".join(
-    f"{i}. [MCQ/FIB/Match question] [1 Mark]\n"
-    for i in range(2, n_obj + 1)
-) + f"""
-Section B — Very Short Answer  ({vsq_m} Marks)  [2 Marks each]
-(Answer ALL questions in 1-2 sentences.)
-
-{n_obj + 1}. [question] [2 Marks]
-""" + "".join(
-    f"{n_obj + i}. [question] [2 Marks]\n"
-    for i in range(2, n_vsq + 1)
-) + f"""
-Section C — Short Answer  ({sa_m} Marks)  [5 Marks each]
-(Answer any {n_sa_a} of the following {n_sa_g} questions.)
-
-{n_obj + n_vsq + 1}. [question] [5 Marks]
-""" + "".join(
-    f"{n_obj + n_vsq + i}. [question] [5 Marks]\n"
-    for i in range(2, n_sa_g + 1)
-) + f"""
-Section D — Long Answer  ({la_m} Marks)  [10 Marks each]
-(Answer any {n_la_a} of the following {n_la_g} questions.)
-
-{n_obj + n_vsq + n_sa_g + 1}. [question with sub-parts] [10 Marks]
-""" + "".join(
-    f"{n_obj + n_vsq + n_sa_g + i}. [question] [10 Marks]\n"
-    for i in range(2, n_la_g + 1)
-) + f"""
-ANSWER KEY
-
-Section A:
-1. (X)
-""" + "".join(f"{i}. [answer]\n" for i in range(2, n_obj + 1)) + f"""
-Section B:
-{n_obj + 1}. [complete answer]
-""" + "".join(f"{n_obj + i}. [answer]\n" for i in range(2, n_vsq + 1)) + f"""
-Section C:
-{n_obj + n_vsq + 1}. [step-by-step solution]
-""" + "".join(f"{n_obj + n_vsq + i}. [solution]\n" for i in range(2, n_sa_a + 1)) + f"""
-Section D:
-{n_obj + n_vsq + n_sa_g + 1}. [detailed solution with diagram if needed]
-
-Replace ALL placeholders with real curriculum-accurate content for {board} Class {cls_str} {subject}, chapter: {chap}.
-Difficulty: {difficulty}. Begin:"""
-
-    return prompt
+"""
 
 
 # ═══════════════════════════════════════════════════════════════════════
@@ -1282,347 +1264,322 @@ def _prompt_competitive(exam, subject, chap, cls_str, m, difficulty, extra, math
 
 
 def _prompt_ntse(comp, exam_full, subject, chap, cls_str, m, difficulty, extra, math_note):
-    """NTSE has MAT + SAT as separate papers. Generate as requested."""
+    """NTSE MAT or SAT — direct instruction, zero placeholders."""
     stage_info = comp.get("stages", {})
     s1 = stage_info.get("Stage_1_State", {})
-    marking = comp.get("marking_scheme", s1.get("marking", "No negative marking at Stage 1."))
-
-    # Detect which paper is being asked (MAT vs SAT)
+    marking = s1.get("marking", "No negative marking at Stage 1.")
     subj_l = (subject or "").lower()
-    if "mat" in subj_l or "mental" in subj_l or "reasoning" in subj_l or "ability" in subj_l:
-        # MAT paper: 100 questions, 100 marks, 2 hours
-        n_q = min(100, m)
-        return f"""You are a senior examiner creating an official NTSE Stage 1 MAT (Mental Ability Test) practice paper.
-Exam: {exam_full} — MAT (Mental Ability Test)   Class: {cls_str}   Questions: {n_q}   Marks: {n_q}   Time: 2 Hours
-Difficulty: {difficulty}
-{extra}
-MAT PATTERN:
-- All questions are MCQ with 4 options (A) (B) (C) (D).
-- Each carries 1 mark. {marking}
-- Question types to include: Verbal Analogy, Non-Verbal Analogy, Number Series, Letter Series, Mixed Series, Coding-Decoding, Blood Relations, Direction & Distance, Ranking & Ordering, Clock & Calendar, Venn Diagrams, Mirror Image, Paper Folding, Embedded Figures, Figure Matrix, Mathematical Reasoning.
-- Distribute approximately: Analogy (15Q), Series (15Q), Coding/Decoding (10Q), Blood Relations (8Q), Direction/Distance (8Q), Ranking/Ordering (8Q), Clock/Calendar (5Q), Figure-based (15Q), Mathematical Reasoning (16Q).
+    is_mat = any(k in subj_l for k in ["mat", "mental", "reasoning", "ability"])
 
-ABSOLUTE RULES:
-R1. Every question must be fully formed — no placeholders.
-R2. MCQ options: (A) ...  (B) ...  (C) ...  (D) ... on ONE line after the question.
-R3. Mark each question [1 Mark].
-R4. No hints or labels revealing the question type embedded in the question.
-R5. Difficulty: {difficulty}. NTSE questions are moderately challenging.
+    if is_mat:
+        n_q = min(100, max(10, m))
+        return f"""You are an expert NTSE examiner. Write a complete NTSE Stage 1 MAT (Mental Ability Test) practice paper for Class {cls_str}.
+
+SPECIFICATIONS: {n_q} questions × 1 mark = {n_q} marks | Time: 2 Hours | {marking} | Difficulty: {difficulty}
+{extra}
+DISTRIBUTION (write exactly this many of each type):
+Verbal Analogy 10 | Non-Verbal Analogy 8 | Number Series 10 | Letter Series 8 | Mixed Series 5
+Coding-Decoding 8 | Blood Relations 6 | Direction & Distance 6 | Ranking/Ordering 6
+Clock & Calendar 5 | Venn Diagrams 5 | Mirror/Water Image 8 | Figure Counting 5 | Mathematical Reasoning 10
 {math_note}
+
+QUALITY RULES:
+- Every question is 100% complete — a student reads it, thinks, and picks an answer. No description, no label, no instruction embedded in the question text.
+- Four options (A)(B)(C)(D) on one line. Exactly one is correct. Distractors are plausible.
+- Marks label at end: [1 Mark]
+- Answer key: number, correct letter, one-sentence explanation.
+
+FORMAT EXAMPLES (write all questions like these):
+
+1. BOOK : LIBRARY :: Painting : ? [1 Mark]
+   (A) Artist  (B) Museum  (C) Canvas  (D) Colour
+
+2. Find the missing number: 2, 6, 12, 20, 30, ? [1 Mark]
+   (A) 40  (B) 42  (C) 44  (D) 45
+
+3. If CAT = 3120, DOG = 4157, then COT = ? [1 Mark]
+   (A) 3157  (B) 3152  (C) 3147  (D) 3165
+
+4. A is the father of B. B is the sister of C. C is the mother of D. How is A related to D? [1 Mark]
+   (A) Father  (B) Grandfather  (C) Uncle  (D) Great-grandfather
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+NOW WRITE THE COMPLETE PAPER. Start directly with the header. Do NOT copy the examples.
+Write {n_q} brand-new original questions following the format above.
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 Exam: {exam_full} — Mental Ability Test
-Class: {cls_str}                                                   Total Marks: {n_q}
-                                                                    Time: 2 Hours
+Class: {cls_str}   Total Marks: {n_q}   Time: 2 Hours
 
 INSTRUCTIONS
-1. This paper contains {n_q} Multiple Choice Questions.
-2. Each question carries 1 mark. {marking}
+1. This paper contains {n_q} Multiple Choice Questions. Each carries 1 mark.
+2. {marking}
 3. Choose the correct option and darken the appropriate circle on the OMR sheet.
 
-1. [MAT question] [1 Mark]
-   (A) ...  (B) ...  (C) ...  (D) ...
-""" + "".join(
-    f"{i}. [MAT question] [1 Mark]\n   (A) ...  (B) ...  (C) ...  (D) ...\n"
-    for i in range(2, n_q + 1)
-) + f"""
-ANSWER KEY
-""" + "".join(f"{i}. (X) — [explanation]\n" for i in range(1, n_q + 1)) + f"""
-Replace ALL placeholders with real, well-formed NTSE MAT questions. Difficulty: {difficulty}. Begin:"""
-
+"""
     else:
-        # SAT paper: 100Q — 40 Science + 40 Social Science + 20 Maths
         n_sci = 40; n_soc = 40; n_mat = 20
         total_q = n_sci + n_soc + n_mat
-        topic = chap if chap and chap != "as per syllabus" else "Class 10 syllabus (all topics)"
+        topic = chap if chap and chap != "as per syllabus" else "Class 10 full syllabus"
+        return f"""You are an expert NTSE examiner. Write a complete NTSE Stage 1 SAT (Scholastic Aptitude Test) for Class {cls_str}.
 
-        return f"""You are a senior examiner creating an official NTSE Stage 1 SAT (Scholastic Aptitude Test) practice paper.
-Exam: {exam_full} — SAT (Scholastic Aptitude Test)   Class: {cls_str}   Questions: {total_q}   Marks: {total_q}   Time: 2 Hours
-Topic focus: {topic}   Difficulty: {difficulty}
+SPECIFICATIONS: {total_q} questions | Science {n_sci}Q + Social Science {n_soc}Q + Mathematics {n_mat}Q | 1 mark each | Time: 2 Hours | {marking} | Difficulty: {difficulty}
+Topic focus: {topic}
 {extra}
-SAT PATTERN:
-- Science: {n_sci} questions (Physics ~13, Chemistry ~13, Biology ~14)
-- Social Science: {n_soc} questions (History ~13, Geography ~13, Civics ~7, Economics ~7)
-- Mathematics: {n_mat} questions
-- All MCQ, 1 mark each, 4 options. {marking}
-- Questions are numbered sequentially 1-{total_q} across all subjects.
-
-ABSOLUTE RULES:
-R1. Every question is complete, curriculum-accurate, original.
-R2. Options: (A) ...  (B) ...  (C) ...  (D) ... on one line after question.
-R3. Mark each [1 Mark]. No category labels within question text.
-R4. Wrong options must be plausible (not obviously wrong).
-R5. Language must match NCERT/State Board textbook terminology.
+Science breakdown: Physics ~13Q, Chemistry ~13Q, Biology ~14Q
+Social Science breakdown: History ~13Q, Geography ~13Q, Civics ~7Q, Economics ~7Q
+Mathematics: Class 10 syllabus — Number System, Algebra, Geometry, Mensuration, Statistics, Probability
 {math_note}
 
+QUALITY RULES:
+- Every question is complete — a student reads it and can answer. No description or label in the question.
+- 4 options (A)(B)(C)(D) on one line. One correct. Three plausible distractors based on common errors.
+- Language matches NCERT Class 10 textbook terminology exactly.
+- Marks label at end: [1 Mark]
+- Answer key: number, correct letter, one-sentence explanation.
+
+FORMAT EXAMPLES:
+
+1. A body is moving with uniform velocity. The net force acting on it is: [1 Mark]
+   (A) Equal to its weight  (B) In the direction of motion  (C) Zero  (D) Equal to ma
+
+2. The French Revolution began in the year: [1 Mark]
+   (A) 1776  (B) 1789  (C) 1804  (D) 1815
+
+3. If the roots of $x^{{2}} - 5x + 6 = 0$ are $\\alpha$ and $\\beta$, then $\\alpha + \\beta$ equals: [1 Mark]
+   (A) 6  (B) −5  (C) 5  (D) −6
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Write the complete SAT paper. Start with the header. Do NOT copy the examples.
+Write {n_sci} Science + {n_soc} Social Science + {n_mat} Mathematics questions, numbered 1–{total_q}.
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
 Exam: {exam_full} — Scholastic Aptitude Test
-Class: {cls_str}   Topic: {topic}                                  Total Marks: {total_q}
-                                                                    Time: 2 Hours
+Class: {cls_str}   Topic: {topic}   Total Marks: {total_q}   Time: 2 Hours
 
 INSTRUCTIONS
-1. This paper contains {total_q} questions — Science ({n_sci}), Social Science ({n_soc}), Mathematics ({n_mat}).
-2. Each question carries 1 mark. {marking}
+1. {total_q} questions: Science (1–{n_sci}), Social Science ({n_sci+1}–{n_sci+n_soc}), Mathematics ({n_sci+n_soc+1}–{total_q}).
+2. Each carries 1 mark. {marking}
 
-SCIENCE  (Questions 1-{n_sci})
+SCIENCE  (Questions 1–{n_sci})
 
-1. [Science question — Physics/Chemistry/Biology] [1 Mark]
-   (A) ...  (B) ...  (C) ...  (D) ...
-""" + "".join(
-    f"{i}. [Science question] [1 Mark]\n   (A) ...  (B) ...  (C) ...  (D) ...\n"
-    for i in range(2, n_sci + 1)
-) + f"""
-SOCIAL SCIENCE  (Questions {n_sci+1}-{n_sci+n_soc})
-
-{n_sci+1}. [Social Science question] [1 Mark]
-   (A) ...  (B) ...  (C) ...  (D) ...
-""" + "".join(
-    f"{n_sci+i}. [Social Science question] [1 Mark]\n   (A) ...  (B) ...  (C) ...  (D) ...\n"
-    for i in range(2, n_soc + 1)
-) + f"""
-MATHEMATICS  (Questions {n_sci+n_soc+1}-{total_q})
-
-{n_sci+n_soc+1}. [Maths question] [1 Mark]
-   (A) ...  (B) ...  (C) ...  (D) ...
-""" + "".join(
-    f"{n_sci+n_soc+i}. [Maths question] [1 Mark]\n   (A) ...  (B) ...  (C) ...  (D) ...\n"
-    for i in range(2, n_mat + 1)
-) + f"""
-ANSWER KEY
-""" + "".join(f"{i}. (X) — [explanation]\n" for i in range(1, total_q + 1)) + f"""
-Replace ALL placeholders with real NTSE-level questions. Difficulty: {difficulty}. Topic: {topic}. Begin:"""
+"""
 
 
 def _prompt_nso(comp, exam_full, subject, chap, cls_str, m, difficulty, extra, math_note):
-    patt = comp.get("paper_structure", {}).get("Classes_6_10", {})
-    secs = patt.get("sections", [])
+    patt  = comp.get("paper_structure", {}).get("Classes_6_10", {})
     total_q = patt.get("total_questions", 50)
     total_m = patt.get("total_marks", 60)
-    dur = patt.get("duration", "1 Hour")
+    dur     = patt.get("duration", "1 Hour")
     marking = comp.get("marking", "No negative marking.")
+    s1_q = 10; s2_q = 35; s3_q = 5
+    topic = chap if chap and chap != "as per syllabus" else f"Class {cls_str} Science"
 
-    # Section details
-    s1_q = 10; s1_m = 10   # Logical Reasoning, 1 mark each
-    s2_q = 35; s2_m = 35   # Science, 1 mark each
-    s3_q = 5;  s3_m = 15   # Achiever's, 3 marks each
+    return f"""You are an expert NSO examiner. Write a complete NSO (National Science Olympiad) practice paper for Class {cls_str}.
 
-    topic = chap if chap and chap != "as per syllabus" else f"Class {cls_str} Science syllabus"
-
-    return f"""You are a senior examiner creating an official NSO (National Science Olympiad) practice paper.
-Exam: {exam_full}   Class: {cls_str}   Total Questions: {total_q}   Total Marks: {total_m}   Time: {dur}
-Topic: {topic}   Difficulty: {difficulty}
+SPECIFICATIONS: {total_q} questions | {total_m} marks | Time: {dur} | {marking} | Difficulty: {difficulty}
+Topic: {topic}
 {extra}
-NSO PATTERN (SOF):
-- Section 1 — Logical Reasoning: {s1_q} questions × 1 mark = {s1_m} marks
-- Section 2 — Science: {s2_q} questions × 1 mark = {s2_m} marks (from Class {cls_str} science syllabus)
-- Section 3 — Achiever's Section: {s3_q} questions × 3 marks = {s3_m} marks (HOT — higher order thinking)
-- All MCQ, 4 options, ONE correct answer. {marking}
-
-ABSOLUTE RULES:
-R1. Section 1: pure logical reasoning questions (analogy, series, coding, mirror image, figure, etc.).
-R2. Section 2: science questions exactly from Class {cls_str} syllabus, topic: {topic}.
-R3. Section 3: challenging application questions from the same syllabus — multi-concept or data-based.
-R4. Wrong options must be plausible. Questions must be complete and original.
-R5. Options format: (A) ...  (B) ...  (C) ...  (D) ... on one line after question.
-R6. Mark each question: Section 1 and 2 = [1 Mark], Section 3 = [3 Marks].
+STRUCTURE:
+Section 1 — Logical Reasoning: {s1_q} questions × 1 mark = 10 marks
+Section 2 — Science: {s2_q} questions × 1 mark = 35 marks (from Class {cls_str} {topic} syllabus)
+Section 3 — Achiever's Section: {s3_q} questions × 3 marks = 15 marks (high-difficulty HOT questions)
 {math_note}
+
+QUALITY RULES:
+- Section 1: pure reasoning (analogy, series, mirror image, coding, direction, blood relation, Venn). No science content.
+- Section 2: direct Class {cls_str} science questions — concepts, definitions, applications, diagrams described in words.
+- Section 3: multi-step, data-based, or application questions. Significantly harder than Section 2. Wrong options arise from plausible misconceptions.
+- Every question is 100% complete. Never leave a description or label where the question should be.
+- Options (A)(B)(C)(D) on one line. [1 Mark] or [3 Marks] at end.
+- Answer key: number, correct letter, one-sentence explanation.
+
+FORMAT EXAMPLES (write all questions like these):
+
+Section 1 example:
+1. MICROSCOPE : BIOLOGIST :: Telescope : ? [1 Mark]
+   (A) Astronomer  (B) Physicist  (C) Chemist  (D) Geologist
+
+2. Find the next term: 1, 4, 9, 16, 25, ? [1 Mark]
+   (A) 30  (B) 36  (C) 49  (D) 35
+
+Section 2 example (Class {cls_str} Science):
+11. In photosynthesis, the gas released during the light reaction is: [1 Mark]
+    (A) Carbon dioxide  (B) Nitrogen  (C) Oxygen  (D) Hydrogen
+
+Section 3 example:
+46. A plant was kept in a dark room for 48 hours, then one leaf was covered with black paper and the plant was exposed to sunlight for 6 hours. The iodine test was performed on both leaves. Which observation is CORRECT? [3 Marks]
+    (A) Both leaves turn blue-black  (B) Covered leaf turns blue-black, uncovered stays brown
+    (C) Uncovered leaf turns blue-black, covered stays brown  (D) Both leaves stay brown
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Write the complete NSO paper. Start with the header. Do NOT copy the examples.
+Write {s1_q} Section 1 + {s2_q} Section 2 + {s3_q} Section 3 questions about: {topic}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 Exam: {exam_full}
 Class: {cls_str}   Topic: {topic}   Total Marks: {total_m}   Time: {dur}
 
 INSTRUCTIONS
-1. Total {total_q} questions: Section 1 ({s1_q}Q × 1M), Section 2 ({s2_q}Q × 1M), Section 3 ({s3_q}Q × 3M).
-2. All questions are MCQ. 4 options. {marking}
+1. {total_q} questions: Section 1 ({s1_q}Q × 1M), Section 2 ({s2_q}Q × 1M), Section 3 ({s3_q}Q × 3M). Total: {total_m} marks.
+2. All MCQ. 4 options. {marking}
 
-Section 1 — Logical Reasoning  ({s1_m} Marks)
+Section 1 — Logical Reasoning  (10 Marks)
 
-1. [Logical Reasoning question] [1 Mark]
-   (A) ...  (B) ...  (C) ...  (D) ...
-""" + "".join(
-    f"{i}. [Logical Reasoning question] [1 Mark]\n   (A) ...  (B) ...  (C) ...  (D) ...\n"
-    for i in range(2, s1_q + 1)
-) + f"""
-Section 2 — Science  ({s2_m} Marks)
-
-{s1_q+1}. [Science question from {topic}] [1 Mark]
-   (A) ...  (B) ...  (C) ...  (D) ...
-""" + "".join(
-    f"{s1_q+i}. [Science question] [1 Mark]\n   (A) ...  (B) ...  (C) ...  (D) ...\n"
-    for i in range(2, s2_q + 1)
-) + f"""
-Section 3 — Achiever's Section  ({s3_m} Marks)
-(Higher Order Thinking — 3 marks each)
-
-{s1_q+s2_q+1}. [Challenging HOT science question] [3 Marks]
-   (A) ...  (B) ...  (C) ...  (D) ...
-""" + "".join(
-    f"{s1_q+s2_q+i}. [HOT question] [3 Marks]\n   (A) ...  (B) ...  (C) ...  (D) ...\n"
-    for i in range(2, s3_q + 1)
-) + f"""
-ANSWER KEY
-""" + "".join(f"{i}. (X) — [explanation]\n" for i in range(1, total_q + 1)) + f"""
-Replace ALL placeholders with real NSO-quality questions. Class {cls_str}. Topic: {topic}. Difficulty: {difficulty}. Begin:"""
+"""
 
 
 def _prompt_imo(comp, exam_full, subject, chap, cls_str, m, difficulty, extra, math_note):
-    patt = comp.get("paper_structure", {}).get("Classes_6_10", {})
+    patt    = comp.get("paper_structure", {}).get("Classes_6_10", {})
     total_q = patt.get("total_questions", 50)
     total_m = patt.get("total_marks", 60)
-    dur = patt.get("duration", "1 Hour")
+    dur     = patt.get("duration", "1 Hour")
     marking = comp.get("marking", "No negative marking.")
-
-    s1_q = 10; s1_m = 10    # Logical Reasoning
-    s2_q = 25; s2_m = 25    # Mathematical Reasoning
-    s3_q = 10; s3_m = 10    # Everyday Mathematics
-    s4_q = 5;  s4_m = 15    # Achiever's Section, 3 marks each
-
+    s1_q = 10; s2_q = 25; s3_q = 10; s4_q = 5
     topic = chap if chap and chap != "as per syllabus" else f"Class {cls_str} Mathematics"
 
-    return f"""You are a senior examiner creating an official IMO (International Mathematics Olympiad, SOF) practice paper.
-Exam: {exam_full}   Class: {cls_str}   Total Marks: {total_m}   Time: {dur}
-Topic: {topic}   Difficulty: {difficulty}
-{extra}
-IMO PATTERN (SOF):
-- Section 1 — Logical Reasoning: {s1_q} questions × 1 mark = {s1_m} marks
-- Section 2 — Mathematical Reasoning: {s2_q} questions × 1 mark = {s2_m} marks (syllabus-based)
-- Section 3 — Everyday Mathematics: {s3_q} questions × 1 mark = {s3_m} marks (real-life application)
-- Section 4 — Achiever's Section: {s4_q} questions × 3 marks = {s4_m} marks (high-difficulty)
-- All MCQ, 4 options, ONE correct. {marking}
+    return f"""You are an expert IMO examiner. Write a complete IMO (International Mathematics Olympiad, SOF) practice paper for Class {cls_str}.
 
-ABSOLUTE RULES:
-R1. Section 1: logical/reasoning questions using numbers, letters, figures.
-R2. Section 2: maths questions from Class {cls_str} curriculum, topic {topic}.
-R3. Section 3: word problems applying maths to real-world situations.
-R4. Section 4: tough multi-step maths problems requiring deep problem-solving.
-R5. All wrong options must arise from plausible errors.
-R6. Options: (A) ...  (B) ...  (C) ...  (D) ... on one line after question.
+SPECIFICATIONS: {total_q} questions | {total_m} marks | Time: {dur} | {marking} | Difficulty: {difficulty}
+Topic: {topic}
+{extra}
+STRUCTURE:
+Section 1 — Logical Reasoning: {s1_q} questions × 1 mark (number/letter/figure based reasoning)
+Section 2 — Mathematical Reasoning: {s2_q} questions × 1 mark (Class {cls_str} {topic} syllabus)
+Section 3 — Everyday Mathematics: {s3_q} questions × 1 mark (real-life word problems)
+Section 4 — Achiever's Section: {s4_q} questions × 3 marks (multi-step hard problems)
 {math_note}
+
+QUALITY RULES:
+- Section 1: number analogies, letter series, figure patterns, data interpretation. No algebra.
+- Section 2: direct Class {cls_str} maths questions — concepts, formulas, computations from {topic}.
+- Section 3: word problems where maths is applied to real situations (shopping, measurement, time, distance).
+- Section 4: deep multi-step problems — require 3+ steps. Wrong options from common algebraic/arithmetic errors.
+- Every question is 100% complete. Options (A)(B)(C)(D) on one line. Marks label at end.
+- Answer key: number, correct letter, one-sentence working hint.
+
+FORMAT EXAMPLES (write all questions like these):
+
+Section 1 example:
+1. 4 : 16 :: 7 : ? [1 Mark]
+   (A) 28  (B) 49  (C) 42  (D) 21
+
+2. In a certain code, MATHS = 13, 1, 20, 8, 19. What is the code for SCIENCE? [1 Mark]
+   (A) 19, 3, 9, 5, 14, 3, 5  (B) 18, 2, 8, 4, 13, 2, 4  (C) 20, 4, 10, 6, 15, 4, 6  (D) 19, 3, 9, 5, 13, 3, 5
+
+Section 2 example (Class {cls_str} Maths):
+11. The volume of a sphere of radius 6 cm is: [1 Mark]
+    (A) $72\\pi$ cm³  (B) $144\\pi$ cm³  (C) $288\\pi$ cm³  (D) $216\\pi$ cm³
+
+Section 3 example:
+36. A cylindrical tank of radius 7 m and height 5 m is to be painted on the outside (excluding base). The cost of painting at ₹12 per m² is: [1 Mark]
+    (A) ₹2,640  (B) ₹3,080  (C) ₹2,200  (D) ₹1,848
+
+Section 4 example:
+47. A cone and a hemisphere have the same base radius r and the same total surface area. Find the slant height of the cone in terms of r. [3 Marks]
+    (A) $r$  (B) $2r$  (C) $3r$  (D) $\\sqrt{{3}}r$
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Write the complete IMO paper. Start with the header. Do NOT copy the examples.
+Write {s1_q}+{s2_q}+{s3_q}+{s4_q} questions all about: {topic}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 Exam: {exam_full}
 Class: {cls_str}   Topic: {topic}   Total Marks: {total_m}   Time: {dur}
 
 INSTRUCTIONS
-1. Total {total_q} questions across 4 sections. {marking}
-2. Section 1 & 2 & 3: 1 mark each. Section 4: 3 marks each.
+1. {total_q} questions: Sec 1 ({s1_q}Q×1M), Sec 2 ({s2_q}Q×1M), Sec 3 ({s3_q}Q×1M), Sec 4 ({s4_q}Q×3M). Total: {total_m} marks.
+2. All MCQ. 4 options. {marking}
 
-Section 1 — Logical Reasoning  ({s1_m} Marks)
+Section 1 — Logical Reasoning  (10 Marks)
 
-1. [Logical Reasoning question using numbers/letters/figures] [1 Mark]
-   (A) ...  (B) ...  (C) ...  (D) ...
-""" + "".join(
-    f"{i}. [Logical Reasoning question] [1 Mark]\n   (A) ...  (B) ...  (C) ...  (D) ...\n"
-    for i in range(2, s1_q + 1)
-) + f"""
-Section 2 — Mathematical Reasoning  ({s2_m} Marks)
-
-{s1_q+1}. [Maths question from {topic}] [1 Mark]
-   (A) ...  (B) ...  (C) ...  (D) ...
-""" + "".join(
-    f"{s1_q+i}. [Maths question] [1 Mark]\n   (A) ...  (B) ...  (C) ...  (D) ...\n"
-    for i in range(2, s2_q + 1)
-) + f"""
-Section 3 — Everyday Mathematics  ({s3_m} Marks)
-
-{s1_q+s2_q+1}. [Real-life application word problem] [1 Mark]
-   (A) ...  (B) ...  (C) ...  (D) ...
-""" + "".join(
-    f"{s1_q+s2_q+i}. [Word problem] [1 Mark]\n   (A) ...  (B) ...  (C) ...  (D) ...\n"
-    for i in range(2, s3_q + 1)
-) + f"""
-Section 4 — Achiever's Section  ({s4_m} Marks)
-(High difficulty — 3 marks each)
-
-{s1_q+s2_q+s3_q+1}. [Challenging multi-step maths question] [3 Marks]
-   (A) ...  (B) ...  (C) ...  (D) ...
-""" + "".join(
-    f"{s1_q+s2_q+s3_q+i}. [HOT maths question] [3 Marks]\n   (A) ...  (B) ...  (C) ...  (D) ...\n"
-    for i in range(2, s4_q + 1)
-) + f"""
-ANSWER KEY
-""" + "".join(f"{i}. (X) — [explanation]\n" for i in range(1, total_q + 1)) + f"""
-Replace ALL placeholders with real IMO-quality questions. Class {cls_str}. Topic: {topic}. Difficulty: {difficulty}. Begin:"""
+"""
 
 
 def _prompt_ijso(comp, exam_full, subject, chap, cls_str, m, difficulty, extra, math_note):
-    s1 = comp.get("national_selection_stages", {}).get("Stage_1_NSEJS", {})
-    n_q = s1.get("questions", 80)
-    dur = "2 Hours"
-    marking = "+3 correct, −1 wrong"
+    s1      = comp.get("national_selection_stages", {}).get("Stage_1_NSEJS", {})
+    n_q     = s1.get("questions", 80)
+    dur     = "2 Hours"
+    n_phy   = 27; n_che = 27; n_bio = 26
+    topic   = chap if chap and chap != "as per syllabus" else "Integrated Physics, Chemistry and Biology (Class 9–10 level)"
 
-    # Physics 27, Chemistry 27, Biology 26
-    n_phy = 27; n_che = 27; n_bio = 26
+    return f"""You are an expert IJSO/NSEJS examiner. Write a complete NSEJS Stage 1 practice paper for Class {cls_str}.
 
-    topic = chap if chap and chap != "as per syllabus" else "Integrated Science (Class 9-10 level)"
-
-    return f"""You are a senior examiner creating an official IJSO / NSEJS Stage 1 practice paper.
-Exam: {exam_full} (NSEJS Stage 1 style)   Class: {cls_str}   Questions: {n_q}   Time: {dur}
-Marks: +3 correct, −1 wrong   Difficulty: {difficulty}   Topic: {topic}
+SPECIFICATIONS: {n_q} questions | Marking: +3 correct, −1 wrong | Time: {dur} | Difficulty: {difficulty}
+Physics {n_phy}Q + Chemistry {n_che}Q + Biology {n_bio}Q
+Topic: {topic}
 {extra}
-IJSO/NSEJS PATTERN:
-- {n_q} MCQ questions: Physics ({n_phy}), Chemistry ({n_che}), Biology ({n_bio})
-- 4 options per question, ONE correct answer.
-- Marking: {marking}. Total maximum = {n_q*3} marks if all correct.
-- Level: Class 10 NCERT standard with deep application and multi-concept questions.
-- Questions are numbered sequentially 1-{n_q}.
-
-ABSOLUTE RULES:
-R1. Physics, Chemistry, Biology questions must be accurately labelled with section headers.
-R2. Every question is complete, original, curriculum-accurate at Class 9-10 NCERT level.
-R3. Questions must test understanding and application, not just recall.
-R4. Wrong options must arise from plausible misconceptions or partial understanding.
-R5. Options: (A) ...  (B) ...  (C) ...  (D) ... on one line after question.
-R6. Mark each: [+3/−1]
-R7. Diagrams: write [DIAGRAM: description] before the question if diagram-based.
+LEVEL: Class 10 NCERT — but questions test deep understanding and application, not just recall.
+Multi-concept questions are encouraged (e.g. a question spanning both physics and chemistry).
 {math_note}
 
-Exam: {exam_full} (NSEJS Stage 1 Practice)
+QUALITY RULES:
+- Every question is fully formed. A student reads it, thinks carefully, and picks one answer.
+- 4 options (A)(B)(C)(D) on one line. Exactly one is correct. Three distractors based on real misconceptions.
+- Questions must require thinking beyond direct textbook recall — apply, analyse, calculate.
+- Marks label: [+3/−1] at end of every question.
+- Answer key: number, correct letter, 2-sentence explanation (why correct + why top distractor is wrong).
+
+FORMAT EXAMPLES (write all questions like these):
+
+Physics example:
+1. A ball is thrown vertically upward with initial velocity $u$. The ratio of its KE at the point of projection to its KE when it has risen to half its maximum height is: [+3/−1]
+   (A) 1:2  (B) 2:1  (C) 1:4  (D) 4:1  ← wait wrong, actual answer should be (B) 2:1
+
+Chemistry example:
+28. When excess $Na_{{2}}CO_{{3}}$ solution is added to a solution of $CaCl_{{2}}$, the precipitate formed is: [+3/−1]
+   (A) $Ca(OH)_{{2}}$  (B) $CaCO_{{3}}$  (C) $Ca_{{3}}(CO_{{3}})_{{2}}$  (D) $NaCl$
+
+Biology example:
+55. In a normal adult human kidney, approximately what fraction of the glomerular filtrate is reabsorbed? [+3/−1]
+   (A) 99%  (B) 75%  (C) 50%  (D) 25%
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Write the complete paper. Start with the header. Do NOT copy the examples.
+Write {n_phy} Physics + {n_che} Chemistry + {n_bio} Biology questions, numbered 1–{n_q}.
+All must be original, challenging, and about: {topic}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Exam: {exam_full} — NSEJS Stage 1 Practice
 Class: {cls_str}   Topic: {topic}
-Total Questions: {n_q}   Marking: +3 correct / −1 wrong   Time: {dur}
+Total Questions: {n_q}   Marking: +3 / −1   Time: {dur}
 
 INSTRUCTIONS
-1. Each question has ONE correct answer. Marking: +3 correct, −1 wrong, 0 unattempted.
-2. Questions cover Physics, Chemistry and Biology equally.
+1. Each question has ONE correct answer. +3 for correct, −1 for wrong, 0 for unattempted.
+2. Questions cover Physics (1–{n_phy}), Chemistry ({n_phy+1}–{n_phy+n_che}), Biology ({n_phy+n_che+1}–{n_q}).
 
-PHYSICS  (Questions 1-{n_phy})
+PHYSICS  (Questions 1–{n_phy})
 
-1. [Physics question at Class 9-10 level, application-based] [+3/−1]
-   (A) ...  (B) ...  (C) ...  (D) ...
-""" + "".join(
-    f"{i}. [Physics question] [+3/−1]\n   (A) ...  (B) ...  (C) ...  (D) ...\n"
-    for i in range(2, n_phy + 1)
-) + f"""
-CHEMISTRY  (Questions {n_phy+1}-{n_phy+n_che})
-
-{n_phy+1}. [Chemistry question] [+3/−1]
-   (A) ...  (B) ...  (C) ...  (D) ...
-""" + "".join(
-    f"{n_phy+i}. [Chemistry question] [+3/−1]\n   (A) ...  (B) ...  (C) ...  (D) ...\n"
-    for i in range(2, n_che + 1)
-) + f"""
-BIOLOGY  (Questions {n_phy+n_che+1}-{n_q})
-
-{n_phy+n_che+1}. [Biology question] [+3/−1]
-   (A) ...  (B) ...  (C) ...  (D) ...
-""" + "".join(
-    f"{n_phy+n_che+i}. [Biology question] [+3/−1]\n   (A) ...  (B) ...  (C) ...  (D) ...\n"
-    for i in range(2, n_bio + 1)
-) + f"""
-ANSWER KEY
-""" + "".join(f"{i}. (X) — [explanation: 2 sentences why correct + why main distractor is wrong]\n" for i in range(1, n_q + 1)) + f"""
-Replace ALL placeholders with real IJSO/NSEJS-quality questions. Topic: {topic}. Difficulty: {difficulty}. Begin:"""
+"""
 
 
 def _prompt_generic_comp(exam, subject, chap, cls_str, m, difficulty, extra, math_note):
-    n_q = m // 4
-    return f"""Create a {exam} style practice paper.
-Subject: {subject}   Class: {cls_str}   Chapter: {chap}   Marks: {m}   Difficulty: {difficulty}
-{extra}
-All MCQ, 4 options, 1 mark each. Show ANSWER KEY at the end.
-{math_note}
-1. [question] [1 Mark]
-   (A) ...  (B) ...  (C) ...  (D) ...
-""" + "".join(
-    f"{i}. [question] [1 Mark]\n   (A) ...  (B) ...  (C) ...  (D) ...\n"
-    for i in range(2, n_q + 1)
-) + "ANSWER KEY\n" + "".join(f"{i}. (X)\n" for i in range(1, n_q + 1)) + "\nBegin:"
+    n_q  = max(10, m // 4)
+    topic = chap if chap and chap != "as per syllabus" else f"Class {cls_str} {subject}"
+    return f"""Write a complete {exam} style MCQ practice paper.
+
+SPECIFICATIONS: {n_q} questions × 1 mark = {n_q} marks | Subject: {subject} | Class: {cls_str} | Topic: {topic} | Difficulty: {difficulty}
+{extra}{math_note}
+
+QUALITY RULES:
+- Every question is fully formed. Options (A)(B)(C)(D) on one line. [1 Mark] at end.
+- One correct answer. Three plausible distractors.
+- Complete answer key with correct letter and brief explanation.
+
+EXAMPLES:
+1. A specific factual question about {topic} with a clear correct answer. [1 Mark]
+   (A) First option  (B) Second option  (C) Third option  (D) Fourth option
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Write all {n_q} questions. Do NOT copy examples. Start with the header.
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Exam: {exam} Practice Paper
+Subject: {subject}   Class: {cls_str}   Topic: {topic}   Marks: {n_q}
+
+INSTRUCTIONS: All questions carry 1 mark. Choose the correct option.
+
+"""
 
 
 # ═══════════════════════════════════════════════════════════════════════
