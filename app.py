@@ -423,6 +423,41 @@ _HDR_SKIP = re.compile(
     r'^(School|Subject|Class|Board|Total\s*Marks|Time\s*Allowed|Date)\s*[:/]',
     re.I)
 
+# ── Figure junk-line filter ───────────────────────────────────────────
+# AI sometimes outputs stray figure-description lines that are NOT
+# proper [DIAGRAM:…] markers. These patterns match lines that look like
+# leaked figure metadata and should be silently dropped from the PDF.
+_FIG_JUNK = re.compile(
+    r'^('
+    r'Figure\s*:'                               # "Figure: Triangle ABC with..."
+    r'|Triangle\s+[A-Z]{2,4}$'                 # "Triangle ABC"
+    r'|Trapezium\s+[A-Z]{2,4}$'                # "Trapezium ABCD"
+    r'|Right[\s-]?angled?\s+(Triangle|Iso)'     # "Right-angled Triangle", "Right-angled Isosceles..."
+    r'|Right\s+Angle\s+Triangle$'              # "Right Angle Triangle"
+    r'|Altitude(\s+from\s+\w+(\s+to\s+\w+)?)?$'  # "Altitude" / "Altitude from A to BC"
+    r'|Angle\s+[A-Z]\s*=?\s*\d+°?$'            # "Angle A = 60°"
+    r'|Angle\s+[A-Z]\s+\d+°?$'
+    r'|∠[A-Z]\s*=\s*\d+°?$'                   # "∠A = 60°"
+    r'|[A-Z]+\s+is\s+(altitude|median|midpoint|perpendicular)\s+to\s+[A-Z]+'
+    r'|Side\s+[A-Z]{2}$'                       # "Side AB"
+    r'|Parallel\s+[A-Z]{2}$'                   # "Parallel DE"
+    r'|Diagonals?\s+[A-Z]{2}\s+and\s+[A-Z]{2}' # "Diagonals AC and BD intersect at O"
+    r'|[A-Z]{2}\s+Parallel\s+to\s+[A-Z]{2}$'  # "DE Parallel to BC"
+    r'|[A-Z]+\s+on\s+[A-Z]{2}$'               # "D on AB"
+    r'|[A-Z]+\s+Parallel\s+to\s+[A-Z]+$'
+    r'|Right\s+(angles?|angle\s+at\s+vertex)'
+    r'|Perpendicular$'
+    r'|Distance\s+from\s+[A-Z]\s+to\s+[A-Z]+'
+    r'|(?:\d+°?\s*){3,}$'                      # "60° 60° 60°" lines of angles
+    r'|(?:140"|140\s*"?\s*){2,}'               # "140" 140" 140"" repeated
+    r'|θ\s*=\s*\d+°?\s*$'                      # "θ = 60°"
+    r'|α\s*=\s*\d+°?\s*$'
+    r'|[A-Z]M\s*is\s+altitude'
+    r'|(?:Angle\s+[A-Z]\s*\n?){2,}'           # multiple "Angle X" lines
+    r')',
+    re.IGNORECASE
+)
+
 
 # ═══════════════════════════════════════════════════════════════════════
 # MAIN PDF BUILDER
@@ -548,6 +583,22 @@ def create_exam_pdf(text, subject, chapter, board="",
         if _HDR_SKIP.match(s):
             continue
 
+        # Drop stray figure-description lines that the AI emits alongside [DIAGRAM:] markers
+        if _FIG_JUNK.match(s):
+            continue
+
+        # "Figure: ..." lines emitted outside [DIAGRAM:] tags — convert to italic label
+        fig_m = re.match(r'^Figure\s*:\s*(.+)', s, re.I)
+        if fig_m:
+            flush_opts()
+            desc = fig_m.group(1).strip()
+            # Remove trailing angle noise like "Angle A = 60° Angle B = 60°..."
+            desc = re.sub(r'(?:\.\s*)?(?:Angle\s+[A-Z]\s*=?\s*\d+°?\s*){1,}$', '', desc).strip()
+            desc = re.sub(r'(?:\s*\d+°){2,}', '', desc).strip()
+            if desc:
+                elems.append(Paragraph(f'<i>Figure: {desc}</i>', st["DiagLabel"]))
+            continue
+
         if _is_hrule(line):
             flush_opts()
             elems.append(HRFlowable(width="100%", thickness=0.4,
@@ -558,13 +609,15 @@ def create_exam_pdf(text, subject, chapter, board="",
             flush_opts()
             label   = s.strip('[]')
             desc    = re.sub(r'^DIAGRAM:\s*', '', label, flags=re.I).strip()
+            # Sanitise desc — drop any angle/measurement noise that crept in
+            desc = re.sub(r'(?:\s*\d+°){2,}', '', desc).strip()
             elems.append(Paragraph(f'<i>Figure: {desc}</i>', st["DiagLabel"]))
 
             drawing = None
             if diagrams:
                 # Exact match first
                 if desc in diagrams and diagrams[desc]:
-                    drawing = svg_to_best_image(diagrams[desc], width_pt=PW * 0.58)
+                    drawing = svg_to_best_image(diagrams[desc], width_pt=PW * 0.65)
                 if drawing is None:
                     # Fuzzy match: find diagram key with most word overlap
                     desc_words = set(re.findall(r'\w+', desc.lower()))
@@ -577,29 +630,42 @@ def create_exam_pdf(text, subject, chapter, board="",
                         if overlap > best_score:
                             best_score, best_key = overlap, d_key
                     if best_key and best_score >= 2:
-                        drawing = svg_to_best_image(diagrams[best_key], width_pt=PW * 0.58)
+                        drawing = svg_to_best_image(diagrams[best_key], width_pt=PW * 0.65)
 
             if drawing is not None:
                 elems.append(Spacer(1, 3))
-                elems.append(drawing)
+                # Centre the drawing
+                outer_d = Table([[drawing]], colWidths=[PW])
+                outer_d.setStyle(TableStyle([
+                    ('ALIGN',         (0,0),(-1,-1), 'CENTER'),
+                    ('TOPPADDING',    (0,0),(-1,-1), 2),
+                    ('BOTTOMPADDING', (0,0),(-1,-1), 2),
+                ]))
+                elems.append(outer_d)
             else:
-                # Placeholder box when diagram not yet generated
-                ph_style = st.get("DiagLabel", list(st.byName.values())[0])
-                ph = Paragraph(f'<i>[Diagram: {desc}]</i>', ph_style)
-                box = Table([[ph]], colWidths=[PW*0.75])
+                # Clean placeholder box — no stray text inside, just a neat space
+                blank_height_mm = 38  # ~38 mm reserved for hand-drawn diagram
+                ph_label = Paragraph(
+                    f'<i>[ Draw diagram here: {desc} ]</i>',
+                    st["DiagLabel"])
+                box = Table(
+                    [[ph_label],
+                     [Spacer(1, blank_height_mm * mm - 20)]],
+                    colWidths=[PW * 0.72])
                 box.setStyle(TableStyle([
-                    ('BOX',           (0,0),(-1,-1), 0.5, C_RULE),
-                    ('BACKGROUND',    (0,0),(-1,-1), HexColor('#f8f9fa')),
-                    ('TOPPADDING',    (0,0),(-1,-1), 10),
-                    ('BOTTOMPADDING', (0,0),(-1,-1), 10),
-                    ('LEFTPADDING',   (0,0),(-1,-1), 8),
-                    ('RIGHTPADDING',  (0,0),(-1,-1), 8),
+                    ('BOX',           (0,0),(-1,-1), 0.6, C_RULE),
+                    ('BACKGROUND',    (0,0),(-1,-1), HexColor('#f9f9f9')),
+                    ('TOPPADDING',    (0,0),(-1,-1), 6),
+                    ('BOTTOMPADDING', (0,0),(-1,-1), 6),
+                    ('LEFTPADDING',   (0,0),(-1,-1), 10),
+                    ('RIGHTPADDING',  (0,0),(-1,-1), 10),
+                    ('VALIGN',        (0,0),(-1,-1), 'TOP'),
                 ]))
                 outer = Table([[box]], colWidths=[PW])
                 outer.setStyle(TableStyle([
                     ('ALIGN',         (0,0),(-1,-1), 'CENTER'),
                     ('TOPPADDING',    (0,0),(-1,-1), 2),
-                    ('BOTTOMPADDING', (0,0),(-1,-1), 2),
+                    ('BOTTOMPADDING', (0,0),(-1,-1), 4),
                 ]))
                 elems.append(outer)
             elems.append(Spacer(1, 5))
@@ -1105,7 +1171,7 @@ Study these EXACT formats. Your paper must match them precisely.
 2. QUESTION NUMBERS: Section I: Q1–Q10. Section II: Q11–Q15. Section III: Q16 (single match question). Section IV: renumber Q1–Q10. Section V: Q11–Q16. Section VI: Q17–Q22. Section VII: Q23–Q25.
 3. MCQ ANSWER BRACKET: Every MCQ must end with (   ) on the same line after option D.
 4. SECTION HEADERS: Write exactly as shown — "Section I — Multiple Choice Questions [1 Mark each]" etc.
-5. DIAGRAMS: When a question requires a diagram (geometry proof, biology structure, physics setup), put [DIAGRAM: full description with all required labels] on its own line immediately after the question.
+5. DIAGRAMS: When a question requires a diagram (geometry proof, biology structure, physics setup), put [DIAGRAM: full description with all required labels] on its own line immediately after the question. Do NOT write any additional figure description lines such as "Figure: ...", "Triangle ABC", angle labels, or other diagram metadata — these cause formatting errors. The [DIAGRAM:] tag is sufficient.
 6. DO NOT write instructions, do not add a preamble, do not explain your choices. Output the paper directly.
 7. SELF-CHECK: After writing all sections, mentally count: 10 MCQ ✓, 5 fill-blank ✓, 1 match ✓, 10 VSQ ✓, 6 SA ✓, 6 LA ✓, 3 App ✓. Then write the answer key.
 
