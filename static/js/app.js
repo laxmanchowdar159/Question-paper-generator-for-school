@@ -31,6 +31,9 @@ function updateSidebar() {
     let chapterText = document.getElementById('chapter').value || '—';
     if (scope === 'all') chapterText = 'All Chapters';
     setSidebarValue('sb-chapter', chapterText);
+    const scopeVal = document.getElementById('scopeSelect')?.value;
+    setSidebarValue('sb-scope', scopeVal === 'all' ? 'Full syllabus' : scopeVal === 'single' ? 'Single chapter' : '—');
+    setSidebarValue('sb-difficulty', getDifficulty());
     setSidebarValue('sb-marks', document.getElementById('totalMarks').value || '—');
     const examType = document.getElementById('examType').value;
     setSidebarValue('sb-type', examType ? examType.replace('-', ' ') : '—');
@@ -41,6 +44,10 @@ function updateSidebar() {
         boardText = document.getElementById('competitiveExam').value || '—';
     }
     setSidebarValue('sb-board', boardText);
+
+    // answer key indicator
+    const includeKey = document.getElementById('includeKey')?.checked;
+    setSidebarValue('sb-key', includeKey ? 'Yes' : 'No');
 }
 
 // =====================================================
@@ -48,26 +55,23 @@ function updateSidebar() {
 // =====================================================
 
 async function initCurriculum() {
-
     try {
-
         const res = await fetch("/chapters");
-
         const json = await res.json();
-
         if (json.success && json.data) {
-
             curriculumData = json.data;
-
         }
-
-    }
-    catch {
-
+    } catch {
         console.warn("Using fallback curriculum");
-
     }
 
+    // if a class was already selected (unlikely on fresh load) refresh subjects
+    const cls = document.getElementById("class")?.value;
+    if (cls) {
+        await updateSubjects();
+        updateFormVisibility();
+        updateSidebar();
+    }
 }
 
 
@@ -78,66 +82,49 @@ async function initCurriculum() {
 async function updateSubjects() {
 
     const cls = document.getElementById("class").value;
+    const subjectSelect = document.getElementById("subject");
+    const chapterSelect = document.getElementById("chapter");
 
-    const subjectSelect =
-        document.getElementById("subject");
+    // show loading indicator
+    subjectSelect.innerHTML = '<option value="">Loading...</option>';
+    chapterSelect.innerHTML = '<option value="">Select Chapter</option>';
 
-    const chapterSelect =
-        document.getElementById("chapter");
-
-    subjectSelect.innerHTML =
-        '<option value="">Select Subject</option>';
-
-    chapterSelect.innerHTML =
-        '<option value="">Select Chapter</option>';
-
-    if (!cls) return;
+    if (!cls) {
+        subjectSelect.innerHTML = '<option value="">Select Subject</option>';
+        return;
+    }
 
     let subjects = null;
 
     try {
-
-        const res =
-            await fetch(`/chapters?class=${cls}`);
-
+        const res = await fetch(`/chapters?class=${cls}`);
         const json = await res.json();
-
         if (json.success && json.data) {
-
-            subjects =
-                Object.keys(json.data);
-
-            curriculumData[cls] =
-                json.data;
-
+            subjects = Object.keys(json.data);
+            curriculumData[cls] = json.data;
         }
-
-    }
-    catch {}
+    } catch {}
 
     if (!subjects && curriculumData[cls]) {
-
-        subjects =
-            Object.keys(curriculumData[cls]);
-
+        subjects = Object.keys(curriculumData[cls]);
     }
 
-    if (!subjects) return;
+    subjectSelect.innerHTML = '<option value="">Select Subject</option>';
+    chapterSelect.innerHTML = '<option value="">Select Chapter</option>';
+
+    if (!subjects || subjects.length === 0) {
+        // nothing available
+        return;
+    }
 
     subjects.forEach(subject => {
-
-        const opt =
-            document.createElement("option");
-
+        const opt = document.createElement("option");
         opt.value = subject;
-
         opt.textContent = subject;
-
         subjectSelect.appendChild(opt);
-
     });
-
 }
+
 
 
 // =====================================================
@@ -184,14 +171,11 @@ function updateChapters() {
 // =====================================================
 
 function getDifficulty() {
-
-    const selected =
-        document.querySelector(
-            'input[name="difficulty"]:checked'
-        );
-
-    return selected?.value || "Medium";
-
+    // support radio group as well as legacy select
+    const radio = document.querySelector('input[name="difficulty"]:checked');
+    if (radio) return radio.value;
+    const sel = document.querySelector('select[name="difficulty"]');
+    return sel?.value || "Medium";
 }
 
 
@@ -204,129 +188,178 @@ function updateFormVisibility() {
     const stateCard = document.getElementById("stateCard");
     const competitiveCard = document.getElementById("competitiveCard");
     const scopeCard = document.getElementById("scopeCard");
+    const classCard = document.getElementById("class")?.closest(".card");
+    const subjectCard = document.getElementById("subject")?.closest(".card");
     const chapterCard = document.getElementById("chapter")?.closest(".card");
+    const marksCard = document.getElementById("totalMarks")?.closest(".card");
+    const difficultyCard = document.querySelector('select[name="difficulty"]')?.closest(".card");
+
+    // always show class selection
+    if (classCard) classCard.style.display = "block";
+
+    // hide everything else by default and clear
+    if (subjectCard) {
+        subjectCard.style.display = "none";
+        document.getElementById("subject").value = "";
+    }
+    if (chapterCard) {
+        chapterCard.style.display = "none";
+        document.getElementById("chapter").value = "";
+    }
+    if (marksCard) {
+        marksCard.style.display = "none";
+        document.getElementById("totalMarks").value = "100";
+    }
+    if (difficultyCard) {
+        difficultyCard.style.display = "none";
+        const diffInputs = document.querySelectorAll('input[name="difficulty"]');
+        diffInputs.forEach(i => i.checked = false);
+    }
 
     // toggle cards based on examType
     if (examType === "state-board") {
-        stateCard.style.display = "block";
-        competitiveCard.style.display = "none";
-        scopeCard && (scopeCard.style.display = "none");
+        if (stateCard) stateCard.style.display = "block";
+        if (competitiveCard) competitiveCard.style.display = "none";
+        if (scopeCard) scopeCard.style.display = "block"; // show scope selector for state as well
+
+        // for state board we always ask for subject/marks, chapter may depend on scope
+        if (subjectCard) subjectCard.style.display = "block";
+        if (marksCard) marksCard.style.display = "block";
+        if (difficultyCard) difficultyCard.style.display = "block";
+
+        const scope = document.getElementById("scopeSelect")?.value;
+        if (scope === "all") {
+            if (chapterCard) {
+                chapterCard.style.display = "none";
+                const sel = document.getElementById("chapter");
+                if (sel) sel.value = "";
+            }
+        } else {
+            if (chapterCard) chapterCard.style.display = "block";
+        }
     } else if (examType === "competitive") {
-        stateCard.style.display = "none";
-        competitiveCard.style.display = "block";
-        scopeCard && (scopeCard.style.display = "block");
+        if (stateCard) stateCard.style.display = "none";
+        if (competitiveCard) competitiveCard.style.display = "block";
+        if (scopeCard) scopeCard.style.display = "block";
+
+        // always show difficulty for competitive papers
+        if (difficultyCard) difficultyCard.style.display = "block";
+
+        const scope = document.getElementById("scopeSelect")?.value;
+        if (scope === "all") {
+            // full competitive paper: only class and difficulty needed
+            if (subjectCard) {
+            subjectCard.style.display = "none";
+            const sel = document.getElementById("subject");
+            if (sel) sel.value = "";
+        }
+        if (chapterCard) {
+            chapterCard.style.display = "none";
+            const sel = document.getElementById("chapter");
+            if (sel) sel.value = "";
+        }
+        if (marksCard) {
+            marksCard.style.display = "none";
+            const sel = document.getElementById("totalMarks");
+            if (sel) sel.value = "100";
+        }
+        } else {
+            // chapter-wise competitive paper: subject/chapter/marks required
+            if (subjectCard) subjectCard.style.display = "block";
+            if (chapterCard) chapterCard.style.display = "block";
+            if (marksCard) marksCard.style.display = "block";
+        }
     } else {
-        stateCard.style.display = "none";
-        competitiveCard.style.display = "none";
-        scopeCard && (scopeCard.style.display = "none");
+        // no exam type selected; hide the rest
+        if (stateCard) stateCard.style.display = "none";
+        if (competitiveCard) competitiveCard.style.display = "none";
+        if (scopeCard) scopeCard.style.display = "none";
     }
 
-    // adjust chapter selector when "all chapters" scope is chosen
-    const scope = document.getElementById("scopeSelect")?.value;
-    if (scope === "all") {
-        chapterCard && (chapterCard.style.display = "none");
-    } else {
-        chapterCard && (chapterCard.style.display = "block");
+    // global: if full syllabus is selected, hide subject and chapter selectors
+    const globalScope = document.getElementById("scopeSelect")?.value;
+    if (globalScope === "all") {
+        if (subjectCard) {
+            subjectCard.style.display = "none";
+            const sel = document.getElementById("subject");
+            if (sel) sel.value = "";
+        }
+        if (chapterCard) {
+            chapterCard.style.display = "none";
+            const sel2 = document.getElementById("chapter");
+            if (sel2) sel2.value = "";
+        }
     }
+
+    // set required attributes based on visibility
+    const adjustRequired = (card, selector) => {
+        if (!card) return;
+        const input = card.querySelector(selector);
+        if (input) input.required = card.style.display !== "none";
+    };
+
 }
 
-
 // =====================================================
-// GENERATE PAPER
+// REQUEST GENERATION
 // =====================================================
 
 async function generatePaper() {
-
     // determine scope: single chapter or all chapters
     const scope = document.getElementById("scopeSelect")?.value || "single";
 
+    // build payload
     const payload = {
-
-        class:
-            document.getElementById("class").value,
-
-        subject:
-            document.getElementById("subject").value,
-
-        // if user requested all chapters we send blank so backend treats as full syllabus
-        chapter:
-            scope === "all" ? "" : document.getElementById("chapter").value,
-
-        marks:
-            document.getElementById("totalMarks")?.value || "100",
-
-        difficulty:
-            getDifficulty(),
-
-        suggestions:
-            document.getElementById("suggestions")?.value || ""
-
+        class: document.getElementById("class").value,
+        subject: document.getElementById("subject").value,
+        chapter: scope === "all" ? "" : document.getElementById("chapter").value,
+        marks: document.getElementById("totalMarks")?.value || "100",
+        difficulty: getDifficulty(),
+        suggestions: document.getElementById("suggestions")?.value || "",
+        includeKey: document.getElementById("includeKey")?.checked || false
     };
-    
-    // Include paper type info
-    payload.examType = document.getElementById("examType")?.value || "";
 
-    // If state board selected include state
-    const state = document.getElementById("stateSelect")?.value;
-    if (state) payload.state = state;
-
-    // If competitive selected include exam
-    const comp = document.getElementById("competitiveExam")?.value;
-    if (comp) payload.competitiveExam = comp;
-
-    // include scope for clarity (not needed by backend but useful in logging)
+    // client validation
+    const examType = document.getElementById("examType").value;
+    if (!examType) { showToast("Please select paper type"); return; }
+    if (examType === "state-board") {
+        // when full syllabus (scope === 'all') is chosen, subject and chapter are not required
+        if (scope === "single") {
+            if (!payload.subject) { showToast("Select subject"); return; }
+            if (!payload.chapter) { showToast("Select chapter"); return; }
+        }
+        payload.state = document.getElementById("stateSelect")?.value || "";
+    }
+    if (examType === "competitive") {
+        const comp = document.getElementById("competitiveExam")?.value;
+        if (comp) payload.competitiveExam = comp;
+        if (scope === "single") {
+            if (!payload.subject) { showToast("Select subject"); return; }
+            if (!payload.chapter) { showToast("Select chapter"); return; }
+        }
+    }
     if (scope === "all") payload.all_chapters = true;
-
+    payload.examType = examType;
 
     try {
-
         const res = await fetch("/generate", {
-
             method: "POST",
-
-            headers: {
-                "Content-Type": "application/json"
-            },
-
+            headers: { "Content-Type": "application/json" },
             body: JSON.stringify(payload)
-
         });
-
-
-        const result =
-            await res.json();
-
-
+        const result = await res.json();
         showLoading(false);
-
-
         if (!result.success) {
-
             showToast("Generation failed");
-
             return;
-
         }
-
-
-        currentPaper =
-            result.paper || "";
-
-        currentAnswerKey =
-            result.answer_key || "";
-
-
+        currentPaper = result.paper || "";
+        currentAnswerKey = result.answer_key || "";
         showToast("Paper generated");
-
-    }
-    catch {
-
+    } catch {
         showLoading(false);
-
         showToast("Server error");
-
     }
-
 }
 
 
@@ -366,7 +399,7 @@ async function downloadPDF() {
         state: document.getElementById("stateSelect")?.value || "",
         competitiveExam: document.getElementById("competitiveExam")?.value || "",
         includeKey: document.getElementById("includeKey")?.checked || false,
-        answer_key: currentAnswerKey
+        answer_key: document.getElementById("answerKey")?.value || currentAnswerKey
     };
 
     const res = await fetch("/generate", {
@@ -508,21 +541,68 @@ document.addEventListener("DOMContentLoaded", () => {
         updateFormVisibility();
         updateSidebar();
     });
+
+
+
+    // difficulty radios (if present)
+    document.querySelectorAll('input[name="difficulty"]').forEach(r => {
+        r.addEventListener('change', updateSidebar);
+    });
     document.getElementById("subject").addEventListener("change", () => {
         updateChapters();
         updateSidebar();
     });
     document.getElementById("chapter").addEventListener("change", updateSidebar);
     document.getElementById("totalMarks").addEventListener("change", updateSidebar);
-    document.getElementById("examType").addEventListener("change", () => {
+    const examTypeEl = document.getElementById("examType");
+    examTypeEl.addEventListener("change", () => {
         updateFormVisibility();
         updateSidebar();
+        // provide guidance when type changes
+        const val = examTypeEl.value;
+        if (val === "state-board") {
+            showHint("Pick your state board and specify scope, then choose class/subject.");
+        } else if (val === "competitive") {
+            showHint("Select competitive exam and paper scope (chapter or full syllabus).");
+        } else {
+            showHint("Start by selecting the paper type above.");
+        }
     });
     document.getElementById("stateSelect").addEventListener("change", updateSidebar);
     document.getElementById("competitiveExam").addEventListener("change", updateSidebar);
     document.getElementById("scopeSelect")?.addEventListener("change", () => {
         updateFormVisibility();
         updateSidebar();
+        const val = document.getElementById("scopeSelect").value;
+        if (val === "all") {
+            showHint("Full syllabus chosen – chapter selection is disabled.");
+        } else {
+            showHint("Chapter-specific paper; please choose a chapter.");
+        }
+    });
+
+    // answer key toggle (no custom override textarea in current UI)
+    document.getElementById("includeKey")?.addEventListener("change", e => {
+        updateSidebar();
+        // when checked we only include the generated key in PDF; no manual textarea
+    });
+
+    // field hint and focus helpers
+    const hintEl = document.getElementById("fieldHint");
+    function showHint(text) {
+        if (hintEl) hintEl.textContent = text || "";
+    }
+    document.querySelectorAll("select, input, textarea").forEach(el => {
+        const hint = el.dataset.hint;
+        el.addEventListener("focus", () => {
+            showHint(hint);
+            const card = el.closest(".card");
+            if (card) card.classList.add("focused");
+        });
+        el.addEventListener("blur", () => {
+            const card = el.closest(".card");
+            if (card) card.classList.remove("focused");
+        });
     });
 
     document.getElementById("paperForm").addEventListener("submit", e => {
@@ -535,6 +615,12 @@ document.addEventListener("DOMContentLoaded", () => {
     if (theme === "dark") {
         document.documentElement.setAttribute("data-theme", "dark");
     }
+
+    // sidebar collapse toggle
+    const sidebar = document.querySelector('.sidebar');
+    document.getElementById('toggleSidebar').addEventListener('click', () => {
+        sidebar.classList.toggle('collapsed');
+    });
 
     // initial updates
     updateFormVisibility();

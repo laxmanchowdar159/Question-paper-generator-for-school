@@ -29,6 +29,8 @@
 
 <div class="sidebar-header">
 
+<button id="toggleSidebar" class="sidebar-toggle" aria-label="Collapse sidebar">☰</button>
+
 <div class="logo">
 
 <div class="logo-icon">📘</div>
@@ -58,44 +60,42 @@ Current Paper
 </div>
 
 
-<div class="sidebar-row">
+<div class="sidebar-row" data-icon="📚">
+  <span class="sidebar-label">Class</span>: <span id="sb-class">—</span>
+</div>
 
-Class: <span id="sb-class">—</span>
-
+<div class="sidebar-row" data-icon="⚡">
+  <span class="sidebar-label">Difficulty</span>: <span id="sb-difficulty">—</span>
 </div>
 
 
-<div class="sidebar-row">
-
-Subject: <span id="sb-subject">—</span>
-
+<div class="sidebar-row" data-icon="🎓">
+  <span class="sidebar-label">Subject</span>: <span id="sb-subject">—</span>
 </div>
 
 
-<div class="sidebar-row">
-
-Chapter: <span id="sb-chapter">—</span>
-
+<div class="sidebar-row" data-icon="📖">
+  <span class="sidebar-label">Chapter</span>: <span id="sb-chapter">—</span>
 </div>
 
-
-<div class="sidebar-row">
-
-Marks: <span id="sb-marks">—</span>
-
-
-<div class="sidebar-row">
-
-Paper Type: <span id="sb-type">—</span>
-
+<div class="sidebar-row" data-icon="🗂️">
+  <span class="sidebar-label">Scope</span>: <span id="sb-scope">—</span>
 </div>
 
-<div class="sidebar-row">
-
-Board/Exam: <span id="sb-board">—</span>
-
+<div class="sidebar-row" data-icon="✏️">
+  <span class="sidebar-label">Marks</span>: <span id="sb-marks">—</span>
 </div>
 
+<div class="sidebar-row" data-icon="📋">
+  <span class="sidebar-label">Paper Type</span>: <span id="sb-type">—</span>
+</div>
+
+<div class="sidebar-row" data-icon="🏛️">
+  <span class="sidebar-label">Board/Exam</span>: <span id="sb-board">—</span>
+</div>
+
+<div class="sidebar-row" data-icon="🔑">
+  <span class="sidebar-label">Include Key</span>: <span id="sb-key">—</span>
 </div>
 
 
@@ -160,6 +160,9 @@ AI Tips
       <p>Generate professional exam papers instantly</p>
     </header>
 
+    <!-- dynamic field hint -->
+    <div id="fieldHint" class="field-hint">Start by selecting the paper type above.</div>
+
 
 <!-- Exam Type -->
 
@@ -167,8 +170,7 @@ AI Tips
 
 <label data-icon="📋">Paper Type</label>
 
-
-<select id="examType" name="examType" required>
+<select id="examType" name="examType" required data-hint="Choose between State board or Competitive exam paper">
 
 <option value="">Select paper type</option>
 
@@ -177,6 +179,8 @@ AI Tips
 <option value="competitive">Competitive Exam</option>
 
 </select>
+
+<p class="microcopy">State board papers can now be full-syllabus or chapter-wise; choose above.</p>
 
 </div>
 
@@ -188,7 +192,7 @@ AI Tips
 
 <label data-icon="🗂️">Select State Board</label>
 
-<select id="stateSelect" name="state">
+<select id="stateSelect" name="state" data-hint="Pick the state whose syllabus/pattern you need">
 
 <option value="">Select state</option>
 
@@ -207,6 +211,8 @@ AI Tips
 <option value="Uttar Pradesh">Uttar Pradesh</option>
 
 </select>
+
+<p class="microcopy">Choose the board for which you want the question paper. You can generate a full-syllabus paper using the scope selector below.</p>
 
 </div>
 
@@ -236,14 +242,15 @@ AI Tips
 
 </div>
 
-<!-- Conditional: Scope for competitive exams (single vs all chapters) -->
+<!-- Conditional: Scope (state or competitive) - single chapter vs full syllabus/ all chapters -->
 
 <div id="scopeCard" class="card" style="display:none">
   <label data-icon="🔖">Paper Scope</label>
-  <select id="scopeSelect" name="scope">
+  <select id="scopeSelect" name="scope" data-hint="Decide whether the paper should cover one chapter or the full syllabus">
     <option value="single">Single Chapter</option>
-    <option value="all">All Chapters</option>
+    <option value="all">Full Syllabus</option>
   </select>
+  <p class="microcopy">Full Syllabus will generate questions covering the entire subject. When selected, the subject field will be hidden.</p>
 </div>
 
 
@@ -255,7 +262,7 @@ AI Tips
 <label data-icon="📚">Class</label>
 
 
-<select id="class" name="class" required>
+<select id="class" name="class" required data-hint="Which grade level is this paper for?">
 
 <option value="">Select class</option>
 
@@ -271,22 +278,26 @@ AI Tips
 
 </select>
 
+<p class="microcopy">Pick the grade (e.g. 10th standard) for which the questions should be generated.</p>
+
 </div>
 
 
 
-<!-- Subject -->
+<!-- Subject (hidden when full syllabus selected) -->
 
-<div class="card">
+<div id="subjectCard" class="card">
 
 <label data-icon="🎓">Subject</label>
 
 
-<select id="subject" name="subject">
+<select id="subject" name="subject" data-hint="Select which subject you need the question paper for">
 
 <option value="">Select subject</option>
 
 </select>
+
+<p class="microcopy">After choosing a class, pick the subject. If you choose Full Syllabus scope the subject field will be hidden and questions will span the entire subject.</p>
 
 </div>
 
@@ -299,11 +310,13 @@ AI Tips
 <label data-icon="📖">Chapter</label>
 
 
-<select id="chapter" name="chapter">
+<select id="chapter" name="chapter" data-hint="Choose the chapter or leave blank if using full syllabus scope">
 
 <option value="">Select chapter</option>
 
 </select>
+
+<p class="microcopy">For state-board full papers or 'full syllabus' scope, you may leave this blank; it will cover all chapters.</p>
 
 </div>
 
@@ -316,7 +329,7 @@ AI Tips
 <label data-icon="✏️">Total Marks</label>
 
 
-<select id="totalMarks" name="marks">
+<select id="totalMarks" name="marks" data-hint="Set the total mark value for the paper">
 
 <option value="100">100</option>
 
@@ -330,42 +343,38 @@ AI Tips
 
 </select>
 
+<p class="microcopy">Choose how many marks the full paper should be worth.</p>
+
 </div>
 
 
 
 <!-- Difficulty -->
 
-<div class="card">
-
-<label data-icon="⚡">Difficulty</label>
-
-
-<select name="difficulty">
-
-<option value="Easy">Easy</option>
-
-<option value="Medium">Medium</option>
-
-<option value="Hard">Hard</option>
-
-</select>
-
+<div class="card difficulty-card">
+  <label data-icon="⚡">Difficulty</label>
+  <div class="radio-group" id="difficultyGroup" data-hint="Pick the overall difficulty level of the paper">
+    <label><input type="radio" name="difficulty" value="Easy"> Easy</label>
+    <label><input type="radio" name="difficulty" value="Medium" checked> Medium</label>
+    <label><input type="radio" name="difficulty" value="Hard"> Hard</label>
+  </div>
+  <p class="microcopy">Easy for simpler questions, Hard for challenging problems.</p>
+</div>
 
 <form id="paperForm" class="form-grid">
 
 <!-- PRIORITY: Custom Instructions (Overrides & Additional Data) -->
 
-<div class="card full" style="background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(6, 182, 212, 0.1) 100%); border: 2px solid #3b82f6;">
+<div class="card full" style="background: linear-gradient(135deg, rgba(59, 130, 246, 0.06) 0%, rgba(6, 182, 212, 0.06) 100%); border: 1px solid rgba(59,130,246,0.12);">
 
-<label style="font-weight: 800; color: #3b82f6; font-size: 16px;">
+<label style="font-weight: 700; color: var(--text-primary); font-size: 15px;">
 
-✨ Custom Instructions (Override/Additional Data)
+Custom Instructions — Additional details
 
 </label>
 
-<p style="font-size: 13px; color: #475569; margin-bottom: 10px; font-style: italic;">
-Use this field to provide missing information, override defaults, or add specific requirements (diagrams, formulas, exam patterns, etc.)
+<p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 10px;">
+Provide extra directions for the paper: request step‑by‑step solutions, require diagrams, emphasise specific question types, or follow a particular marking scheme. Keep it concise and actionable.
 </p>
 
 <textarea
@@ -376,13 +385,28 @@ name="suggestions"
 
 rows="5"
 
-placeholder="Example: Include detailed solutions, limit to 3 questions per section, add diagram labels, specific board pattern, etc."
+data-hint="Provide extra instructions: e.g., add step-by-step solutions, include diagrams, follow board pattern"
 
-style="border: 2px solid #3b82f6; font-weight: 500;"
+placeholder="Examples: Include worked solutions for each long question; include 2 labelled diagrams in Section B; follow Karnataka state marking pattern."
+
+style="border: 1px solid var(--border-color); font-weight: 500;"
 
 ></textarea>
 
 </div>
+
+
+<!-- Answer key inclusion toggle -->
+<div id="includeKeyCard" class="card">
+  <label data-icon="🔑">
+    <input type="checkbox" id="includeKey" name="includeKey" data-hint="Toggle to append an answer key page in the generated PDF">
+    Add detailed answer key page to PDF
+  </label>
+  <p class="microcopy">Check this if you want the answer key automatically included.</p>
+</div>
+
+<!-- Removed custom answer-key textarea (automatic key generation retained) -->
+<!-- If manual key override is desired later, reintroduce a single optional field here. -->
 
 
 

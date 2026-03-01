@@ -86,7 +86,17 @@ body {
    ============================================ */
 
 body {
-    display: block;
+    /* two-column layout: sidebar + content */
+    display: grid;
+    grid-template-columns: auto 1fr;
+    min-height: 100vh;
+}
+
+/* fallback for mobile - sidebar becomes stacked*/
+@media (max-width: 768px) {
+    body {
+        display: block;
+    }
 }
 
 .sidebar {
@@ -98,12 +108,46 @@ body {
     position: fixed;
     left: 0;
     top: 0;
-    width: 320px;
+    width: 320px; /* expanded width for breathing room */
     height: 100vh;
     overflow-y: auto;
     z-index: 100;
     box-shadow: var(--shadow-lg);
+    transition: width 0.3s ease;
 }
+
+/* collapse state */
+.sidebar.collapsed {
+    width: 64px;
+    padding: 28px 8px;
+}
+
+.sidebar.collapsed .logo-text,
+.sidebar.collapsed .logo-sub,
+.sidebar.collapsed .sidebar-title,
+.sidebar.collapsed .sidebar-label,
+.sidebar.collapsed .sidebar-tips,
+.sidebar.collapsed .sidebar-row span:not(.sidebar-icon) {
+    display: none;
+}
+.sidebar.collapsed .sidebar-row {
+    justify-content: center;
+}
+
+.sidebar-toggle {
+    background: none;
+    border: none;
+    font-size: 20px;
+    cursor: pointer;
+    align-self: flex-end;
+    margin-bottom: 12px;
+    color: var(--text-secondary);
+    transition: color 0.2s;
+}
+.sidebar-toggle:hover {
+    color: var(--accent-primary);
+}
+ /* increased width per user request */
 
 .sidebar-header {
     margin-bottom: 32px;
@@ -198,8 +242,7 @@ body {
 
 /* Main Content */
 .main-content {
-    grid-column: 2;
-    padding: 48px 60px;
+    padding: 48px 80px;
     overflow-y: auto;
     background: 
         radial-gradient(circle at 25% 25%, rgba(59, 130, 246, 0.02) 0%, transparent 50%),
@@ -207,6 +250,23 @@ body {
         linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
     min-height: 100vh;
 }
+
+/* responsive adjustments for smaller screens */
+@media (max-width: 768px) {
+    .sidebar {
+        position: relative;
+        width: 100%;
+        height: auto;
+        box-shadow: none;
+    }
+    .main-content {
+        padding: 24px 16px;
+    }
+    .form-wrapper {
+        padding: 24px 16px;
+    }
+}
+
 
 /* ============================================
    HEADER SECTION
@@ -217,6 +277,10 @@ body {
     max-width: 900px;
     margin: 0 auto;
     padding: 24px 0;
+    background: var(--bg-secondary);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
+    padding: 32px 24px;
 }
 
 .header-section {
@@ -228,6 +292,30 @@ body {
     border-radius: var(--radius-lg);
     text-align: center;
 }
+
+/* hint area styling */
+.field-hint {
+    background: var(--bg-tertiary);
+    border-left: 4px solid var(--accent-secondary);
+    padding: 12px 16px;
+    margin-bottom: 24px;
+    border-radius: var(--radius);
+    color: var(--text-secondary);
+    font-size: 14px;
+    font-style: italic;
+    transition: var(--transition);
+}
+
+.card.focused {
+    box-shadow: var(--shadow-lg);
+    border-color: var(--accent-primary);
+    transition: var(--transition);
+}
+
+.card.focused label {
+    color: var(--accent-primary);
+}
+
 
 @keyframes slideInUp {
     from {
@@ -241,14 +329,19 @@ body {
 }
 
 .header-section h1 {
-    font-size: 32px;
-    font-weight: 800;
+    font-size: 36px;
+    font-weight: 900;
     margin-bottom: 12px;
     /* keep gradient text effect */
     background: var(--gradient-primary);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
+}
+
+.header-section p {
+    font-size: 18px;
+    color: #f1f5f9;
 }
 
 /* add icon before each label when data-icon attr provided */
@@ -282,11 +375,12 @@ body {
    ============================================ */
 
 .form-grid {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 24px;
-    margin-bottom: 32px;
-    max-width: 1000px;
+    display: grid;
+    /* comfortable two-column layout, cards won't collapse too much */
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 28px;
+    margin-bottom: 40px;
+    max-width: 1100px;
 }
 
 .card {
@@ -296,11 +390,59 @@ body {
     padding: 20px;
     box-shadow: var(--shadow);
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    flex: 1 1 calc(50% - 12px);
-    min-width: 200px;
+    min-width: 220px;
     position: relative;
     overflow: hidden;
+    margin-bottom: 16px;
 }
+
+.card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+}
+
+/* subtle shine effect on hover */
+.card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+    transition: left 0.5s;
+    pointer-events: none;
+}
+
+.card:hover::before {
+    left: 100%;
+}
+
+/* interactive input styles */
+.card select,
+.card input,
+.card textarea {
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    padding: 8px;
+    width: 100%;
+    transition: var(--transition);
+}
+
+.card select:hover,
+.card input:hover,
+.card textarea:hover {
+    border-color: var(--accent-primary);
+}
+
+.card select:focus,
+.card input:focus,
+.card textarea:focus {
+    outline: none;
+    border-color: var(--accent-secondary);
+    box-shadow: 0 0 0 3px rgba(6, 182, 212, 0.2);
+}
+
 
 /* Add subtle shine effect on hover */
 .card::before {
@@ -327,7 +469,7 @@ body {
 
 /* Full width cards for priority & buttons */
 .card.full {
-    flex: 1 1 100%;
+    grid-column: 1 / -1;
 }
 
 .card[style*="background: linear-gradient"] {
@@ -383,7 +525,7 @@ body {
 .card input[type="number"],
 .card textarea {
     width: 100%;
-    padding: 12px 14px;
+    padding: 14px 16px;
     border: 2px solid var(--border-color);
     border-radius: var(--radius-sm);
     background-color: var(--bg-primary);
@@ -391,7 +533,52 @@ body {
     font-family: inherit;
     font-size: 14px;
     transition: var(--transition);
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 6'%3E%3Cpath fill='%23666' d='M0 0l5 6 5-6z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    background-size: 10px 6px;
+    cursor: pointer;
 }
+.card select:focus {
+    background-color: var(--bg-primary);
+}
+
+.card select option {
+    background: var(--bg-primary);
+    color: var(--text-primary);
+}
+.card select option:first-child {
+    color: var(--text-tertiary);
+    font-style: italic;
+}
+/* difficulty radio group styling */
+.radio-group {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+.radio-group label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 14px;
+    cursor: pointer;
+    padding: 8px 14px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-full);
+    transition: var(--transition);
+}
+.radio-group label:has(input:checked) {
+    background-color: var(--accent-primary);
+    color: #fff;
+    border-color: var(--accent-primary);
+}
+.radio-group input[type="radio"] {
+    accent-color: var(--accent-primary);
+    /* keep native control but hide default circle if desired */
+}
+
 
 .card select.field-error,
 .card input.field-error {
@@ -894,7 +1081,7 @@ body {
 
 body {
     display: block;
-    padding-left: 320px; /* leave space for fixed sidebar */
+    padding-left: 280px; /* leave space for fixed sidebar */
     height: auto;
 }
 
@@ -907,7 +1094,7 @@ body {
     position: fixed;
     left: 0;
     top: 0;
-    width: 320px;
+    width: 280px;
     height: 100vh;
     overflow-y: auto;
     z-index: 100;
@@ -1642,7 +1829,7 @@ button#generateBtn:disabled { background-color: #9ca3af; cursor: not-allowed; }
     letter-spacing: 0.2px;
     box-shadow: 0 14px 36px rgba(14,165,164,0.14);
     border: none;
-    min-width: 320px;
+    min-width: 280px;
 }
 
 .btn-generate:hover {
@@ -1764,17 +1951,22 @@ button#generateBtn:disabled { background-color: #9ca3af; cursor: not-allowed; }
 /* Sidebar Info Rows */
 
 .sidebar-row {
-
     font-size: 14px;
-
-    margin-bottom: 6px;
-
+    margin-bottom: 10px;
     display: flex;
-
     justify-content: space-between;
-
     color: var(--text-secondary);
+    align-items: center;
+}
 
+.sidebar-row[data-icon]::before {
+    content: attr(data-icon) " ";
+    margin-right: 4px;
+}
+
+.sidebar-row .sidebar-label {
+    font-weight: 700;
+    color: var(--text-primary);
 }
 
 

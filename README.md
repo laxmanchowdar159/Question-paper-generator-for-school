@@ -10,7 +10,7 @@ ExamCraft is a sophisticated AI-powered application that generates high-quality,
 - Google Gemini AI generates contextual, high-quality questions (auto-selects latest available model: Gemini 2.0 Flash, 1.5 Flash, or Gemini Pro)
 - Board-specific optimizations (Andhra Board, CBSE, ICSE, etc.)
 - Curriculum-aligned with educational standards
-- **Fallback Generator**: If API key is missing or unavailable, generates template-based papers locally
+- **Fallback Generator**: If API key is missing, invalid, or the AI library fails, the app automatically uses a simple local generator (no extra flag needed).
 
 ### 📋 **Flexible Customization**
 - Multiple boards, classes (6-10), subjects, and chapters
@@ -33,9 +33,15 @@ ExamCraft is a sophisticated AI-powered application that generates high-quality,
 ### 🌙 **Premium User Experience**
 - Dark mode with full color scheme support
 - Theme persistence across sessions
+- Sidebar can be collapsed to icons only for a cleaner workspace
 - Form state auto-saves to localStorage
 - Fully responsive (desktop, tablet, mobile)
 - Interactive feature showcase and guide
+
+### 🎨 **Visual Enhancements**
+- Gradient headers and soft card shadows for a modern look
+- Hover animations and focus highlights for interactive feel
+- Adjustable layout grid and improved color palette
 
 ### 💾 **Smart Form Management**
 - Auto-saves all inputs as you type
@@ -92,8 +98,12 @@ gunicorn app:app --bind 0.0.0.0:8000
 1. **Enter Details** → Your name, school name
 2. **Select Board** → Andhra Board (or your region)
 3. **Choose Class & Subject** → 10th, Mathematics
-4. **Pick Chapter** → Dynamically loads from subject
+4. **Pick Chapter or Full Paper** → Dynamically loads from subject; use the scope selector to request a full‑syllabus paper (state boards & competitive exams)
 5. **Set Marks & Difficulty** → 100 marks, Medium
+
+> 💡 A contextual hint box above the form provides step-by-step guidance as you interact with fields.
+
+> ℹ️ When no subject is selected for a full‑syllabus paper the server substitutes a generic `Mixed Subjects` label so the AI prompt remains valid.
 6. **Add Instructions** → "Focus on word problems"
 7. **Generate** → Auto-downloads PDF in 5-10 seconds
 

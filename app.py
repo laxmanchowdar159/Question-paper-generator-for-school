@@ -183,7 +183,7 @@ def build_local_paper(cls, subject, chapter, marks, difficulty):
     paper = f"""
 {subject} Question Paper
 Class: {cls}
-Chapter: {chapter}
+Chapter: {chapter or 'Full syllabus'}
 Marks: {marks}
 Difficulty: {difficulty}
 
@@ -242,41 +242,27 @@ def generate():
         state = data.get("state", "")
         competitive_exam = data.get("competitiveExam", "")
         exam_type = data.get("examType", "")
-        if state:
+
+        # determine board string based on explicit type
+        if exam_type == "state-board" and state:
             board = f"{state} State Board"
-        elif competitive_exam:
+        elif exam_type == "competitive" and competitive_exam:
             board = competitive_exam
         else:
             board = data.get("board", "Standard Curriculum")
-        suggestions = data.get("suggestions", "")
 
+        suggestions = data.get("suggestions", "")
         generated_text = None
         api_error = None
+        prompt = None
 
+        # if the user didn't pick a subject and we are generating a
+        # full‑syllabus paper, give the model a generic value instead of blank
+        if not subject and (data.get("scope") == "all" or data.get("all_chapters")):
+            subject = "Mixed Subjects"
 
-        # ==========================================
-        # GEMINI GENERATION
-        # ==========================================
-
-        if api_key and genai:
-
-            try:
-
-                # Try latest model first, fallback to older versions if needed
-                model_names = ["gemini-2.0-flash", "gemini-1.5-flash", "gemini-pro"]
-                model = None
-                
-                for model_name in model_names:
-                    try:
-                        model = genai.GenerativeModel(model_name)
-                        break
-                    except Exception:
-                        continue
-                
-                if not model:
-                    raise Exception("No compatible Gemini models available")
-
-                prompt = f"""
+        # prepare prompt even if we don't call Gemini (useful for debugging)
+        prompt = f"""
 You are a senior official examination authority responsible for creating real board-level exam papers.
 
 Your output must be equivalent to official CBSE, ICSE, IB, or State Board exam papers.
@@ -295,7 +281,7 @@ EXAM DETAILS
 ═══════════════════════════════════════
 
 Class: {class_name}
-Subject: {subject}
+Subject: {subject or "(none)"}
 Chapter: {chapter or "Full syllabus"}
 Board/Exam: {board}
 Exam Type: {exam_type or "Standard"}
@@ -318,7 +304,7 @@ The paper MUST include:
 
 ═══════════════════════════════════════
 MATHEMATICS REQUIREMENTS
-═══════════════════════════════════════
+═══════════════════════════════
 
 Include real mathematical notation:
 
@@ -355,7 +341,7 @@ Example:
 
 ═══════════════════════════════════════
 DIAGRAM REQUIREMENTS
-═══════════════════════════════════════
+═══════════════════════════════
 
 Insert placeholders like:
 
@@ -382,32 +368,54 @@ Ensure:
 Generate complete paper now.
 """
 
+        # allow override from client
+        if data.get("prompt"):
+            prompt = data.get("prompt")
+
+        # ==========================================
+        # GEMINI GENERATION
+        # ==========================================
+
+        # automatically fall back if we don't have an API key or the library
+        # isn't imported successfully; this prevents unexpected 502s
+        use_fallback = bool(data.get("use_fallback")) or not (api_key and genai)
+
+        if api_key and genai and not use_fallback:
+
+            try:
+                # Try latest model first, fallback to older versions if needed
+                model_names = ["gemini-2.0-flash", "gemini-1.5-flash", "gemini-pro"]
+                model = None
+                for model_name in model_names:
+                    try:
+                        model = genai.GenerativeModel(model_name)
+                        break
+                    except Exception:
+                        continue
+                if not model:
+                    raise Exception("No compatible Gemini models available")
+
                 response = model.generate_content(prompt)
 
                 if response and hasattr(response, "text") and response.text.strip():
-
                     generated_text = response.text.strip()
-
                 else:
-
                     api_error = "Empty response from Gemini"
-
-
             except Exception as e:
-
                 api_error = str(e)
-
+        else:
+            # note for debugging that fallback was chosen automatically
+            if not (api_key and genai):
+                api_error = "No Gemini API key/library available; using local fallback."
+            elif use_fallback:
+                api_error = "Requested fallback generation."
 
         # ==========================================
         # FALLBACK GENERATOR (only used when expressly allowed)
         # ==========================================
 
-        # In production we prefer failing loudly rather than returning a
-        # meaningless dummy paper.  If the caller passed the flag
-        # `use_fallback` we will generate a simple template; otherwise we
-        # propagate the API error.
         if not generated_text:
-            if data.get("use_fallback"):
+            if use_fallback:
                 generated_text = build_local_paper(
                     class_name,
                     subject,
@@ -420,7 +428,8 @@ Generate complete paper now.
                 return jsonify({
                     "success": False,
                     "error": "AI generation failed",
-                    "api_error": api_error
+                    "api_error": api_error,
+                    "prompt": prompt
                 }), 502
 
 
@@ -480,7 +489,15 @@ Generate complete paper now.
 
             "answer_key": key,
 
-            "api_error": api_error
+            "api_error": api_error,
+
+            "prompt": prompt,
+
+            # echo scope for client awareness ("all" vs "single")
+            "scope": data.get("scope") or ("all" if data.get("all_chapters") else "single"),
+
+            # inform client when fallback was used
+            "used_fallback": use_fallback
 
         })
 
