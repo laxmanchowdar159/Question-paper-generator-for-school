@@ -863,7 +863,7 @@ def health():
 @app.route("/chapters")
 def chapters():
     try:
-        data_path = Path("data/curriculum.json")
+        data_path = Path(os.path.dirname(os.path.abspath(__file__))) / "data" / "curriculum.json"
         if not data_path.exists():
             return jsonify({"success": False, "error": "curriculum.json not found"})
         with open(data_path, encoding="utf-8") as f:
