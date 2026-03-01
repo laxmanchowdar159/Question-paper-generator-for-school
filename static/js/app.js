@@ -1,6 +1,6 @@
 // =====================================================================
 // ExamCraft — Frontend Controller
-// Scope: AP/TS State Boards (Classes 6–10) + NTSE, NSO, IMO, IJSO
+// Scope: AP/TS State Boards (Classes 6-10) + NTSE, NSO, IMO, IJSO
 // =====================================================================
 
 let curriculumData   = {};
@@ -459,7 +459,7 @@ async function generatePaper() {
     if (scope === 'all') payload.all_chapters = true;
 
     showLoading(true, 'Crafting your paper…');
-    setHint('Generating — usually 20–45 seconds…');
+    setHint('Generating — usually 20-45 seconds…');
 
     try {
         const res    = await fetch('/generate', {

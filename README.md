@@ -14,7 +14,7 @@ ExamCraft is a Flask web app for school teachers that generates printable questi
 
 - **AI-generated questions** via Google Gemini (auto-selects best available model: Gemini 2.0 Flash → 1.5 Flash → Pro)
 - **Supports Indian boards**: CBSE, ICSE, Andhra Board, State Board, IB
-- **Classes 6–10**, multiple subjects and chapters per subject
+- **Classes 6-10**, multiple subjects and chapters per subject
 - **Difficulty levels**: Easy, Medium, Hard, Mixed
 - **Marks options**: 20, 40, 60, 80, 100
 - **Answer key** generated on a separate PDF page

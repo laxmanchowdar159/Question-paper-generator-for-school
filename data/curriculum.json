@@ -350,7 +350,7 @@
       "Number Series",
       "Letter Series",
       "Mixed Series",
-      "Coding–Decoding",
+      "Coding-Decoding",
       "Blood Relations",
       "Direction and Distance",
       "Ranking and Ordering",
@@ -415,11 +415,11 @@
   },
   "NSO": {
     "Logical Reasoning": [
-      "Analogy", "Series", "Odd One Out", "Coding–Decoding",
+      "Analogy", "Series", "Odd One Out", "Coding-Decoding",
       "Direction Sense", "Blood Relations", "Mirror and Water Images",
       "Figure Counting", "Pattern Completion", "Embedded Figures"
     ],
-    "Science (Class 6–10 Integrated)": [
+    "Science (Class 6-10 Integrated)": [
       "Motion, Force and Laws",
       "Gravitation",
       "Work, Energy and Power",
@@ -440,11 +440,11 @@
   },
   "IMO": {
     "Logical Reasoning": [
-      "Number Analogy", "Letter/Number Series", "Coding–Decoding",
+      "Number Analogy", "Letter/Number Series", "Coding-Decoding",
       "Ranking", "Venn Diagrams", "Data Interpretation",
       "Figure Pattern", "Calendar and Clock"
     ],
-    "Mathematics (Class 6–10 Integrated)": [
+    "Mathematics (Class 6-10 Integrated)": [
       "Number System and Operations",
       "Fractions, Decimals and Percentages",
       "Ratio, Proportion and Unitary Method",

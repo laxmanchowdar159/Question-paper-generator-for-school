@@ -441,7 +441,7 @@ def create_exam_pdf(text, subject, chapter, board="",
     doc = SimpleDocTemplate(buf, pagesize=A4,
                             leftMargin=LM, rightMargin=RM,
                             topMargin=TM, bottomMargin=BM,
-                            title=f"{subject}{' – '+chapter if chapter else ''}")
+                            title=f"{subject}{' - '+chapter if chapter else ''}")
     elems = []
 
     def _pull(pat, default=""):
@@ -979,10 +979,10 @@ def _prompt_ap_ts(subject, chap, board, cls_str, cls_n, m, difficulty, extra, ma
     pat = _PATTERN_AP_TS
 
     if cls_n <= 8:
-        # Classes 6–8: 50-mark SA pattern
+        # Classes 6-8: 50-mark SA pattern
         return _prompt_ap_ts_6_8(subject, chap, board, cls_str, m, difficulty, extra, math_note, pat)
     else:
-        # Classes 9–10: 100-mark SSC pattern
+        # Classes 9-10: 100-mark SSC pattern
         return _prompt_ap_ts_9_10(subject, chap, board, cls_str, m, difficulty, extra, math_note, pat)
 
 
@@ -1213,7 +1213,7 @@ Section A — Objective  ({obj_m} Marks)  [1 Mark each]
     for i in range(2, n_obj + 1)
 ) + f"""
 Section B — Very Short Answer  ({vsq_m} Marks)  [2 Marks each]
-(Answer ALL questions in 1–2 sentences.)
+(Answer ALL questions in 1-2 sentences.)
 
 {n_obj + 1}. [question] [2 Marks]
 """ + "".join(
@@ -1299,7 +1299,7 @@ Difficulty: {difficulty}
 MAT PATTERN:
 - All questions are MCQ with 4 options (A) (B) (C) (D).
 - Each carries 1 mark. {marking}
-- Question types to include: Verbal Analogy, Non-Verbal Analogy, Number Series, Letter Series, Mixed Series, Coding–Decoding, Blood Relations, Direction & Distance, Ranking & Ordering, Clock & Calendar, Venn Diagrams, Mirror Image, Paper Folding, Embedded Figures, Figure Matrix, Mathematical Reasoning.
+- Question types to include: Verbal Analogy, Non-Verbal Analogy, Number Series, Letter Series, Mixed Series, Coding-Decoding, Blood Relations, Direction & Distance, Ranking & Ordering, Clock & Calendar, Venn Diagrams, Mirror Image, Paper Folding, Embedded Figures, Figure Matrix, Mathematical Reasoning.
 - Distribute approximately: Analogy (15Q), Series (15Q), Coding/Decoding (10Q), Blood Relations (8Q), Direction/Distance (8Q), Ranking/Ordering (8Q), Clock/Calendar (5Q), Figure-based (15Q), Mathematical Reasoning (16Q).
 
 ABSOLUTE RULES:
@@ -1344,7 +1344,7 @@ SAT PATTERN:
 - Social Science: {n_soc} questions (History ~13, Geography ~13, Civics ~7, Economics ~7)
 - Mathematics: {n_mat} questions
 - All MCQ, 1 mark each, 4 options. {marking}
-- Questions are numbered sequentially 1–{total_q} across all subjects.
+- Questions are numbered sequentially 1-{total_q} across all subjects.
 
 ABSOLUTE RULES:
 R1. Every question is complete, curriculum-accurate, original.
@@ -1362,7 +1362,7 @@ INSTRUCTIONS
 1. This paper contains {total_q} questions — Science ({n_sci}), Social Science ({n_soc}), Mathematics ({n_mat}).
 2. Each question carries 1 mark. {marking}
 
-SCIENCE  (Questions 1–{n_sci})
+SCIENCE  (Questions 1-{n_sci})
 
 1. [Science question — Physics/Chemistry/Biology] [1 Mark]
    (A) ...  (B) ...  (C) ...  (D) ...
@@ -1370,7 +1370,7 @@ SCIENCE  (Questions 1–{n_sci})
     f"{i}. [Science question] [1 Mark]\n   (A) ...  (B) ...  (C) ...  (D) ...\n"
     for i in range(2, n_sci + 1)
 ) + f"""
-SOCIAL SCIENCE  (Questions {n_sci+1}–{n_sci+n_soc})
+SOCIAL SCIENCE  (Questions {n_sci+1}-{n_sci+n_soc})
 
 {n_sci+1}. [Social Science question] [1 Mark]
    (A) ...  (B) ...  (C) ...  (D) ...
@@ -1378,7 +1378,7 @@ SOCIAL SCIENCE  (Questions {n_sci+1}–{n_sci+n_soc})
     f"{n_sci+i}. [Social Science question] [1 Mark]\n   (A) ...  (B) ...  (C) ...  (D) ...\n"
     for i in range(2, n_soc + 1)
 ) + f"""
-MATHEMATICS  (Questions {n_sci+n_soc+1}–{total_q})
+MATHEMATICS  (Questions {n_sci+n_soc+1}-{total_q})
 
 {n_sci+n_soc+1}. [Maths question] [1 Mark]
    (A) ...  (B) ...  (C) ...  (D) ...
@@ -1550,7 +1550,7 @@ def _prompt_ijso(comp, exam_full, subject, chap, cls_str, m, difficulty, extra, 
     # Physics 27, Chemistry 27, Biology 26
     n_phy = 27; n_che = 27; n_bio = 26
 
-    topic = chap if chap and chap != "as per syllabus" else "Integrated Science (Class 9–10 level)"
+    topic = chap if chap and chap != "as per syllabus" else "Integrated Science (Class 9-10 level)"
 
     return f"""You are a senior examiner creating an official IJSO / NSEJS Stage 1 practice paper.
 Exam: {exam_full} (NSEJS Stage 1 style)   Class: {cls_str}   Questions: {n_q}   Time: {dur}
@@ -1561,11 +1561,11 @@ IJSO/NSEJS PATTERN:
 - 4 options per question, ONE correct answer.
 - Marking: {marking}. Total maximum = {n_q*3} marks if all correct.
 - Level: Class 10 NCERT standard with deep application and multi-concept questions.
-- Questions are numbered sequentially 1–{n_q}.
+- Questions are numbered sequentially 1-{n_q}.
 
 ABSOLUTE RULES:
 R1. Physics, Chemistry, Biology questions must be accurately labelled with section headers.
-R2. Every question is complete, original, curriculum-accurate at Class 9–10 NCERT level.
+R2. Every question is complete, original, curriculum-accurate at Class 9-10 NCERT level.
 R3. Questions must test understanding and application, not just recall.
 R4. Wrong options must arise from plausible misconceptions or partial understanding.
 R5. Options: (A) ...  (B) ...  (C) ...  (D) ... on one line after question.
@@ -1581,15 +1581,15 @@ INSTRUCTIONS
 1. Each question has ONE correct answer. Marking: +3 correct, −1 wrong, 0 unattempted.
 2. Questions cover Physics, Chemistry and Biology equally.
 
-PHYSICS  (Questions 1–{n_phy})
+PHYSICS  (Questions 1-{n_phy})
 
-1. [Physics question at Class 9–10 level, application-based] [+3/−1]
+1. [Physics question at Class 9-10 level, application-based] [+3/−1]
    (A) ...  (B) ...  (C) ...  (D) ...
 """ + "".join(
     f"{i}. [Physics question] [+3/−1]\n   (A) ...  (B) ...  (C) ...  (D) ...\n"
     for i in range(2, n_phy + 1)
 ) + f"""
-CHEMISTRY  (Questions {n_phy+1}–{n_phy+n_che})
+CHEMISTRY  (Questions {n_phy+1}-{n_phy+n_che})
 
 {n_phy+1}. [Chemistry question] [+3/−1]
    (A) ...  (B) ...  (C) ...  (D) ...
@@ -1597,7 +1597,7 @@ CHEMISTRY  (Questions {n_phy+1}–{n_phy+n_che})
     f"{n_phy+i}. [Chemistry question] [+3/−1]\n   (A) ...  (B) ...  (C) ...  (D) ...\n"
     for i in range(2, n_che + 1)
 ) + f"""
-BIOLOGY  (Questions {n_phy+n_che+1}–{n_q})
+BIOLOGY  (Questions {n_phy+n_che+1}-{n_q})
 
 {n_phy+n_che+1}. [Biology question] [+3/−1]
    (A) ...  (B) ...  (C) ...  (D) ...

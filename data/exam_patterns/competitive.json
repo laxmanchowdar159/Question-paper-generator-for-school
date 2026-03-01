@@ -11,7 +11,7 @@
             {
               "name": "MAT — Mental Ability Test",
               "questions": 100, "marks": 100, "duration": "2 Hours",
-              "types": ["Analogy (Verbal & Non-Verbal)", "Series (Number, Letter, Figure)", "Classification", "Pattern Recognition", "Coding–Decoding", "Blood Relations", "Direction & Distance", "Ranking & Ordering", "Clock & Calendar", "Problem Solving", "Mirror/Water Image", "Embedded Figures"]
+              "types": ["Analogy (Verbal & Non-Verbal)", "Series (Number, Letter, Figure)", "Classification", "Pattern Recognition", "Coding-Decoding", "Blood Relations", "Direction & Distance", "Ranking & Ordering", "Clock & Calendar", "Problem Solving", "Mirror/Water Image", "Embedded Figures"]
             },
             {
               "name": "SAT — Scholastic Aptitude Test",
@@ -39,7 +39,7 @@
     "NSO": {
       "full_name": "National Science Olympiad",
       "conducting_body": "Science Olympiad Foundation (SOF)",
-      "eligibility": "Classes 1–12. For school context: Classes 6–10.",
+      "eligibility": "Classes 1-12. For school context: Classes 6-10.",
       "levels": 2,
       "paper_structure": {
         "Classes_6_10": {
@@ -47,7 +47,7 @@
             {
               "name": "Section 1 — Logical Reasoning",
               "questions": 10, "marks_each": 1, "total": 10,
-              "types": ["Analogy", "Odd One Out", "Series Completion", "Coding–Decoding", "Direction Sense", "Mirror & Water Images", "Figure Counting", "Pattern Recognition"]
+              "types": ["Analogy", "Odd One Out", "Series Completion", "Coding-Decoding", "Direction Sense", "Mirror & Water Images", "Figure Counting", "Pattern Recognition"]
             },
             {
               "name": "Section 2 — Science",
@@ -73,7 +73,7 @@
     "IMO": {
       "full_name": "International Mathematics Olympiad",
       "conducting_body": "Science Olympiad Foundation (SOF)",
-      "eligibility": "Classes 1–12. For school context: Classes 6–10.",
+      "eligibility": "Classes 1-12. For school context: Classes 6-10.",
       "levels": 2,
       "paper_structure": {
         "Classes_6_10": {
@@ -81,7 +81,7 @@
             {
               "name": "Section 1 — Logical Reasoning",
               "questions": 10, "marks_each": 1, "total": 10,
-              "types": ["Number Analogy", "Letter Series", "Coding–Decoding", "Ranking", "Venn Diagrams", "Puzzle", "Data Interpretation", "Figure Pattern"]
+              "types": ["Number Analogy", "Letter Series", "Coding-Decoding", "Ranking", "Venn Diagrams", "Puzzle", "Data Interpretation", "Figure Pattern"]
             },
             {
               "name": "Section 2 — Mathematical Reasoning",
