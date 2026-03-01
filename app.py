@@ -2,13 +2,14 @@ import os
 import re
 import json
 import time
+import base64
 from pathlib import Path
 from io import BytesIO
 
 # ── PDF ──────────────────────────────────────────────────────────────
 from reportlab.platypus import (
     SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle,
-    PageBreak, HRFlowable, KeepTogether
+    PageBreak, HRFlowable, KeepTogether, Image as RLImage
 )
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.pagesizes import A4
@@ -369,12 +370,13 @@ class ExamCanvas:
         canvas.setLineWidth(0.4)
         canvas.line(LM, 20, RM, 20)
 
-        # Footer text
+        # Footer text — credit only on page 1
         canvas.setFont(_f("Ital"), 7.5)
         canvas.setFillColor(C_GREY)
-        canvas.drawString(LM, 10,
-            "ExamCraft  ·  Created by Laxman Nimmagadda"
-            "  (if the paper is hard, I am not guilty)")
+        if doc.page == 1:
+            canvas.drawString(LM, 10,
+                "ExamCraft  ·  Created by Laxman Nimmagadda"
+                "  (if the paper is hard, I am not guilty)")
         canvas.drawRightString(RM, 10, f"Page {doc.page}")
 
         canvas.restoreState()
@@ -487,7 +489,8 @@ _HDR_SKIP = re.compile(
 # MAIN PDF BUILDER
 # ═══════════════════════════════════════════════════════════════════════
 def create_exam_pdf(text, subject, chapter, board="",
-                   answer_key=None, include_key=False) -> bytes:
+                   answer_key=None, include_key=False, diagrams=None) -> bytes:
+    """diagrams: dict mapping diagram description -> svg string (pre-generated)"""
 
     register_fonts()
     st = _styles()
@@ -631,13 +634,29 @@ def create_exam_pdf(text, subject, chapter, board="",
         if s.startswith('[DIAGRAM:') or s.lower().startswith('[draw'):
             flush_opts()
             label = s.strip('[]')
+            desc  = re.sub(r'^DIAGRAM:\s*', '', label, flags=re.I).strip()
             elems.append(Paragraph(f'<i>{label}</i>', st["DiagLabel"]))
-            box = Table([['']],  colWidths=[PW], rowHeights=[50])
-            box.setStyle(TableStyle([
-                ('BOX',        (0,0),(-1,-1), 0.7, C_RULE),
-                ('BACKGROUND', (0,0),(-1,-1), HexColor('#fafafa')),
-            ]))
-            elems.append(box)
+
+            # Try to use pre-generated SVG image
+            img = None
+            if diagrams:
+                for d_key, d_svg in diagrams.items():
+                    if d_svg and (d_key.lower() in desc.lower() or desc.lower() in d_key.lower()):
+                        img = svg_to_rl_image(d_svg, width_mm=130)
+                        break
+                if img is None and desc in diagrams:
+                    img = svg_to_rl_image(diagrams[desc], width_mm=130)
+
+            if img is not None:
+                elems.append(Spacer(1, 4))
+                elems.append(img)
+            else:
+                box = Table([['']],  colWidths=[PW], rowHeights=[60])
+                box.setStyle(TableStyle([
+                    ('BOX',        (0,0),(-1,-1), 0.7, C_RULE),
+                    ('BACKGROUND', (0,0),(-1,-1), HexColor('#fafafa')),
+                ]))
+                elems.append(box)
             elems.append(Spacer(1, 4))
             continue
 
@@ -1001,8 +1020,78 @@ def split_key(text):
 
 
 # ═══════════════════════════════════════════════════════════════════════
-# ROUTES
+# AI DIAGRAM GENERATION (SVG via Gemini)
+# Returns an SVG string for a given diagram description
 # ═══════════════════════════════════════════════════════════════════════
+
+def generate_diagram_svg(description: str):
+    """Ask Gemini to produce a clean SVG diagram for the given description."""
+    prompt = f"""You are an expert scientific illustrator for school textbooks. Create a clean, accurate SVG diagram for:
+
+"{description}"
+
+STRICT RULES:
+1. Output ONLY the SVG code. No markdown, no explanation, no code fences.
+2. SVG must start with <svg and end with </svg>.
+3. Use: <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 260" width="400" height="260">
+4. Use ONLY black (#111111) and dark grey (#555555) for strokes. White (#ffffff) or light grey (#f0f0f0) fills only.
+5. stroke-width 2 for main lines, 1 for detail lines.
+6. Add clear text labels, font-size="12" font-family="Arial,sans-serif" fill="#111111".
+7. Geometrically accurate. Include all key parts a student needs to see.
+8. No external resources, no JavaScript, no CSS classes — pure SVG primitives only.
+9. Keep it clean and suitable for a printed exam paper.
+
+Output the SVG now:"""
+
+    text, err = call_gemini(prompt)
+    if not text:
+        return None
+
+    # Extract SVG from response
+    svg_match = re.search(r'<svg[\s\S]*?</svg>', text, re.IGNORECASE)
+    if svg_match:
+        return svg_match.group(0)
+    return None
+
+
+def svg_to_rl_image(svg_str: str, width_pt: float = 360):
+    """Convert SVG string to a ReportLab drawable. Tries svglib then cairosvg."""
+    # Method 1: svglib (pure Python)
+    try:
+        from svglib.svglib import svg2rlg
+        from reportlab.graphics import renderPDF
+        import tempfile, os as _os
+        with tempfile.NamedTemporaryFile(suffix='.svg', delete=False, mode='w', encoding='utf-8') as f:
+            f.write(svg_str)
+            tmp = f.name
+        drawing = svg2rlg(tmp)
+        _os.unlink(tmp)
+        if drawing:
+            # Scale to desired width
+            scale = width_pt / drawing.width
+            drawing.width  = width_pt
+            drawing.height = drawing.height * scale
+            drawing.transform = (scale, 0, 0, scale, 0, 0)
+            return drawing
+    except Exception:
+        pass
+
+    # Method 2: cairosvg → PNG → RLImage
+    try:
+        import cairosvg
+        png_bytes = cairosvg.svg2png(bytestring=svg_str.encode('utf-8'),
+                                      output_width=int(width_pt * 1.5))
+        img = RLImage(BytesIO(png_bytes))
+        ratio = width_pt / img.imageWidth
+        img.drawWidth  = width_pt
+        img.drawHeight = img.imageHeight * ratio
+        return img
+    except Exception:
+        pass
+
+    return None
+
+
 @app.route("/")
 def index():
     return render_template("index.html")
@@ -1075,9 +1164,23 @@ def download_pdf():
         if not paper_text.strip():
             return jsonify({"success": False, "error": "No paper text provided"}), 400
 
+        # ── Generate AI diagrams for every [DIAGRAM: ...] tag ──────────
+        diagrams = {}
+        if GEMINI_KEY and GENAI_AVAILABLE:
+            diag_descs = re.findall(
+                r'\[DIAGRAM:\s*([^\]]+)\]|\[draw\s+([^\]]+)\]',
+                paper_text, re.IGNORECASE)
+            for d1, d2 in diag_descs:
+                desc = (d1 or d2).strip()
+                if desc and desc not in diagrams:
+                    svg = generate_diagram_svg(desc)
+                    if svg:
+                        diagrams[desc] = svg
+
         pdf_bytes = create_exam_pdf(
             paper_text, subject, chapter,
-            board=board, answer_key=answer_key, include_key=include_key)
+            board=board, answer_key=answer_key,
+            include_key=include_key, diagrams=diagrams)
 
         parts    = [p for p in [board, subject, chapter] if p]
         filename = ("_".join(parts) + ".pdf").replace(" ", "_").replace("/", "-")

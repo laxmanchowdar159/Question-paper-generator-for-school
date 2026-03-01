@@ -298,17 +298,18 @@ function showLoading(show, titleText) {
     if (titleText) { const t = document.getElementById('loaderTitle'); if (t) t.textContent = titleText; }
     clearInterval(_stepInterval);
     if (show) {
-        const ids = ['ls1','ls2','ls3','ls4'];
+        const ids = ['ls1','ls2','ls3','ls4','ls5'];
+        const delays = [0, 5000, 11000, 17000, 26000]; // diagram step gets more time
         ids.forEach(id => { const el = document.getElementById(id); if (el) el.classList.remove('active','done'); });
-        let i = 0;
         const el0 = document.getElementById(ids[0]); if (el0) el0.classList.add('active');
-        _stepInterval = setInterval(() => {
-            const cur = document.getElementById(ids[i]);
-            if (cur) { cur.classList.remove('active'); cur.classList.add('done'); }
-            i++;
-            if (i < ids.length) { const nxt = document.getElementById(ids[i]); if (nxt) nxt.classList.add('active'); }
-            else clearInterval(_stepInterval);
-        }, 7000);
+        ids.slice(1).forEach((id, idx) => {
+            setTimeout(() => {
+                const prev = document.getElementById(ids[idx]);
+                if (prev) { prev.classList.remove('active'); prev.classList.add('done'); }
+                const cur = document.getElementById(id);
+                if (cur) cur.classList.add('active');
+            }, delays[idx + 1]);
+        });
     }
 }
 
