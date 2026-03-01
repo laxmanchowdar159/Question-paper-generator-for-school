@@ -241,7 +241,7 @@ def is_separator_line(line: str) -> bool:
 # ═══════════════════════════════════════════════════════════════════════
 
 class ExamPageCanvas:
-    """Adds page number footer to every page."""
+    """Adds page number and branding footer to every page."""
     def __init__(self, canvas, doc):
         self.canvas = canvas
         self.doc    = doc
@@ -249,11 +249,15 @@ class ExamPageCanvas:
     def __call__(self, canvas, doc):
         canvas.saveState()
         canvas.setFont(body_font(), 8)
-        canvas.setFillColor(HexColor("#888888"))
-        canvas.drawRightString(
-            A4[0] - 36, 22,
-            f"Page {doc.page}"
-        )
+        canvas.setFillColor(HexColor("#aaaaaa"))
+        # Left: ExamCraft branding
+        canvas.drawString(28, 16, "ExamCraft — AI Exam Paper Generator")
+        # Right: page number
+        canvas.drawRightString(A4[0] - 28, 16, f"Page {doc.page}")
+        # Thin line above footer
+        canvas.setStrokeColor(HexColor("#dddddd"))
+        canvas.setLineWidth(0.5)
+        canvas.line(28, 24, A4[0] - 28, 24)
         canvas.restoreState()
 
 
@@ -345,38 +349,46 @@ def create_exam_pdf(
     styles  = build_styles()
     bf      = bold_font()
     bdf     = body_font()
-    PAGE_W  = A4[0] - 76  # usable width (38mm margins each side)
+    PAGE_W  = A4[0] - 56  # usable width (28mm margins each side — wider)
 
     doc = SimpleDocTemplate(
         buffer, pagesize=A4,
-        rightMargin=38, leftMargin=38,
-        topMargin=36, bottomMargin=36,
+        rightMargin=28, leftMargin=28,
+        topMargin=30, bottomMargin=28,
         title=f"{subject} - {chapter}" if chapter else subject,
     )
 
     elements = []
 
     # ── Header box ───────────────────────────────────────────────────
-    header_data = [
-        [Paragraph(f"<b>{subject or 'Question Paper'}</b>", styles["ExamTitle"])],
-    ]
+    # Two-column header: left = title/chapter, right = board/meta
+    left_content  = [Paragraph(f"<b>{subject or 'Question Paper'}</b>", styles["ExamTitle"])]
+    right_content = []
     if chapter:
-        header_data.append([Paragraph(f"Chapter: {chapter}", styles["ExamSubtitle"])])
+        left_content.append(Paragraph(f"Chapter: {chapter}", styles["ExamSubtitle"]))
     if board:
-        header_data.append([Paragraph(board, styles["ExamMeta"])])
+        right_content.append(Paragraph(f"<b>{board}</b>", styles["ExamMeta"]))
+    right_content.append(Paragraph("ExamCraft — AI Generated", styles["ExamMeta"]))
 
-    header_tbl = Table([[row[0]] for row in header_data], colWidths=[PAGE_W])
+    left_cell  = [item for item in left_content]
+    right_cell = [item for item in right_content]
+
+    header_tbl = Table(
+        [[left_cell, right_cell]],
+        colWidths=[PAGE_W * 0.65, PAGE_W * 0.35]
+    )
     header_tbl.setStyle(TableStyle([
-        ("BACKGROUND",   (0, 0), (-1, -1), HexColor("#e8eaf6")),
-        ("ROUNDEDCORNERS", [6]),
-        ("BOX",          (0, 0), (-1, -1), 1.5, ACCENT),
-        ("TOPPADDING",   (0, 0), (-1, -1), 10),
-        ("BOTTOMPADDING",(0, 0), (-1, -1), 10),
-        ("LEFTPADDING",  (0, 0), (-1, -1), 14),
-        ("RIGHTPADDING", (0, 0), (-1, -1), 14),
+        ("BACKGROUND",    (0, 0), (-1, -1), HexColor("#e8eaf6")),
+        ("BOX",           (0, 0), (-1, -1), 1.5, ACCENT),
+        ("TOPPADDING",    (0, 0), (-1, -1), 12),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 12),
+        ("LEFTPADDING",   (0, 0), (-1, -1), 16),
+        ("RIGHTPADDING",  (0, 0), (-1, -1), 16),
+        ("VALIGN",        (0, 0), (-1, -1), "MIDDLE"),
+        ("ALIGN",         (1, 0), (1, -1),  "RIGHT"),
     ]))
     elements.append(header_tbl)
-    elements.append(Spacer(1, 10))
+    elements.append(Spacer(1, 12))
 
     # ── Parse body ───────────────────────────────────────────────────
     table_data: list = []

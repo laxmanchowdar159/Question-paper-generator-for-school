@@ -224,11 +224,11 @@ body {
   position: relative;
   z-index: 1;
   display: grid;
-  grid-template-columns: 300px 1fr;
-  gap: 20px;
-  max-width: 1180px;
+  grid-template-columns: 320px 1fr;
+  gap: 24px;
+  max-width: 1400px;
   margin: 0 auto;
-  padding: 24px 24px 60px;
+  padding: 24px 32px 60px;
   align-items: start;
 }
 
@@ -826,8 +826,8 @@ body {
 
 .preview-ta {
   width: 100%;
-  min-height: 260px;
-  padding: 14px;
+  min-height: 420px;
+  padding: 16px;
   background: rgba(0,0,0,0.2);
   border: 1px solid var(--glass-border);
   border-radius: 12px;
@@ -940,23 +940,92 @@ body {
 }
 
 /* ── Responsive ──────────────────────────────────────────── */
+@media (max-width: 1100px) {
+  .app-shell {
+    grid-template-columns: 280px 1fr;
+    padding: 20px 20px 60px;
+    gap: 18px;
+  }
+}
+
 @media (max-width: 900px) {
   .app-shell {
     grid-template-columns: 1fr;
-    padding: 16px;
+    padding: 12px 14px 60px;
+    gap: 14px;
   }
-  .left-col { position: static; }
-  .nav-center { display: none; }
-  .three-col { grid-template-columns: 1fr 1fr; }
-  .type-grid { grid-template-columns: 1fr 1fr; }
+  .left-col {
+    position: static;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  .left-credit { grid-column: 1 / -1; text-align: center; }
+  .hero-card   { grid-column: 1 / -1; }
+  .nav-center  { display: none; }
+  .three-col   { grid-template-columns: 1fr 1fr; }
+  .type-grid   { grid-template-columns: 1fr 1fr; }
 }
 
-@media (max-width: 560px) {
-  .three-col { grid-template-columns: 1fr; }
+@media (max-width: 620px) {
+  .left-col { display: flex; flex-direction: column; }
+  .three-col { grid-template-columns: 1fr 1fr; }
   .two-col   { grid-template-columns: 1fr; }
-  .diff-row  { flex-direction: column; }
-  .results-header { flex-direction: column; align-items: flex-start; }
+  .chip-row  { flex-wrap: wrap; }
+  .results-header { flex-direction: column; align-items: flex-start; gap: 10px; }
+  .results-btns   { flex-wrap: wrap; gap: 8px; width: 100%; }
+  .res-btn { flex: 1 1 calc(50% - 4px); justify-content: center; }
+  .scope-row { flex-direction: column; }
+  .scope-btn { width: 100%; }
+  .diff-row  { flex-direction: row; flex-wrap: wrap; gap: 6px; }
+  .diff-btn  { flex: 1 1 28%; }
+  .hero-title { font-size: 26px; }
+  .topnav { padding: 0 14px; }
+  .nav-name { font-size: 15px; }
 }
+
+@media (max-width: 400px) {
+  .app-shell { padding: 8px 8px 60px; }
+  .form-card { padding: 14px 12px; }
+  .three-col { grid-template-columns: 1fr; }
+  .diff-btn  { flex: 1 1 100%; }
+}
+
+/* ── Custom Mark Input ──────────────────────────────────────── */
+.chip.chip-custom {
+  background: transparent;
+  border-style: dashed;
+  color: var(--text-b);
+}
+.chip.chip-custom.active {
+  background: rgba(124,106,255,0.12);
+  border-color: var(--accent);
+  border-style: solid;
+  color: var(--accent-2);
+}
+.custom-mark-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+  animation: slideUp .2s var(--spring) both;
+}
+.custom-mark-input {
+  flex: 1;
+  min-width: 0;
+  padding: 8px 12px !important;
+  font-size: 13px !important;
+  border-radius: 10px;
+}
+.custom-mark-input::-webkit-inner-spin-button,
+.custom-mark-input::-webkit-outer-spin-button { opacity: 1; }
+.custom-mark-unit {
+  font-size: 12px;
+  font-family: var(--font-mono);
+  color: var(--text-c);
+  white-space: nowrap;
+}
+
 
 /* ── History Panel ─────────────────────────────────────────── */
 .history-card { padding: 16px 18px; }

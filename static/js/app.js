@@ -228,13 +228,59 @@ window.selectScope = function(val) {
     if (btn) btn.classList.add('active');
     const sel = document.getElementById('scopeSelect');
     sel.value = val; sel.dispatchEvent(new Event('change'));
+    applySmartMarkDefault(val);
 };
 window.selectMark = function(btn) {
     document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
     btn.classList.add('active');
+    const customWrap = document.getElementById('customMarkWrap');
+    if (customWrap) customWrap.style.display = 'none';
+    const hint = document.getElementById('marksAutoHint');
+    if (hint) hint.textContent = '';
     document.getElementById('totalMarks').value = btn.dataset.val;
     updateSidebar();
 };
+window.toggleCustomMark = function(btn) {
+    document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+    btn.classList.add('active');
+    const hint = document.getElementById('marksAutoHint');
+    if (hint) hint.textContent = '';
+    const customWrap = document.getElementById('customMarkWrap');
+    const customInput = document.getElementById('customMarkInput');
+    if (customWrap) {
+        customWrap.style.display = 'flex';
+        if (customInput) customInput.focus();
+    }
+};
+window.applyCustomMark = function(val) {
+    const num = parseInt(val, 10);
+    if (num > 0) {
+        document.getElementById('totalMarks').value = num;
+        updateSidebar();
+    }
+};
+
+// Smart default marks: 20 for single chapter, 80 for full syllabus
+function applySmartMarkDefault(scope) {
+    const currentChip = document.querySelector('.chip.active:not(.chip-custom)');
+    const customChip  = document.getElementById('chipCustom');
+    const isCustom    = customChip && customChip.classList.contains('active');
+    // Only auto-set if user hasn't manually changed it (or it's not custom)
+    if (!isCustom) {
+        const target = scope === 'all' ? '80' : '20';
+        document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+        const hint = document.getElementById('marksAutoHint');
+        document.getElementById('customMarkWrap').style.display = 'none';
+        const targetChip = document.querySelector(`.chip[data-val="${target}"]`);
+        if (targetChip) {
+            targetChip.classList.add('active');
+            if (hint) hint.textContent = scope === 'all' ? '(full syllabus default)' : '(chapter default)';
+        }
+        document.getElementById('totalMarks').value = target;
+        updateSidebar();
+    }
+}
+
 window.selectDiff = function(val, btn) {
     document.querySelectorAll('.diff-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
@@ -478,4 +524,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     updateFormVisibility();
     updateSidebar();
+    // Set initial smart default: single chapter = 20 marks
+    applySmartMarkDefault('single');
 });

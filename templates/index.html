@@ -230,17 +230,22 @@
       <div class="card-title">Marks &amp; Difficulty</div>
       <div class="two-col">
         <div class="field-wrap" id="marksCard">
-          <label class="field-label">Total Marks</label>
+          <label class="field-label">Total Marks <span class="marks-auto-hint" id="marksAutoHint" style="font-size:10px;color:var(--accent-2);font-family:var(--font-mono);margin-left:6px;opacity:.8;"></span></label>
           <div class="chip-row" id="markChips">
-            <button type="button" class="chip active" data-val="100" onclick="selectMark(this)">100</button>
-            <button type="button" class="chip" data-val="80" onclick="selectMark(this)">80</button>
-            <button type="button" class="chip" data-val="60" onclick="selectMark(this)">60</button>
-            <button type="button" class="chip" data-val="50" onclick="selectMark(this)">50</button>
-            <button type="button" class="chip" data-val="25" onclick="selectMark(this)">25</button>
+            <button type="button" class="chip" data-val="20" onclick="selectMark(this)">20</button>
+            <button type="button" class="chip active" data-val="80" onclick="selectMark(this)">80</button>
+            <button type="button" class="chip" data-val="100" onclick="selectMark(this)">100</button>
+            <button type="button" class="chip chip-custom" id="chipCustom" onclick="toggleCustomMark(this)">Custom</button>
+          </div>
+          <div id="customMarkWrap" class="custom-mark-wrap" style="display:none;">
+            <input type="number" id="customMarkInput" class="custom-mark-input glass-select"
+              placeholder="Enter marks…" min="1" max="500"
+              oninput="applyCustomMark(this.value)">
+            <span class="custom-mark-unit">marks</span>
           </div>
           <select id="totalMarks" name="marks" style="display:none">
-            <option value="100">100</option><option value="80">80</option>
-            <option value="60">60</option><option value="50">50</option><option value="25">25</option>
+            <option value="80">80</option><option value="20">20</option>
+            <option value="100">100</option>
           </select>
         </div>
         <div class="field-wrap" id="difficultyCard">
