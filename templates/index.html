@@ -9,7 +9,6 @@
 </head>
 <body>
 
-<!-- ── Aurora background ── -->
 <div class="aurora" aria-hidden="true">
   <div class="aurora-orb orb-1"></div>
   <div class="aurora-orb orb-2"></div>
@@ -18,7 +17,6 @@
   <div class="noise-overlay"></div>
 </div>
 
-<!-- ── Top nav bar ── -->
 <nav class="topnav">
   <div class="nav-brand">
     <div class="nav-logo">
@@ -44,23 +42,18 @@
   </div>
 </nav>
 
-<!-- ── Main layout ── -->
 <div class="app-shell">
 
-  <!-- ════ LEFT COLUMN — Hero + Live Config ════ -->
+  <!-- ════ LEFT COLUMN ════ -->
   <aside class="left-col">
 
-    <!-- Hero -->
     <div class="hero-card glass-card">
-      <div class="hero-eyebrow">
-        <span class="pulse-dot"></span>
-        Gemini AI · Live
-      </div>
+      <div class="hero-eyebrow"><span class="pulse-dot"></span>Gemini AI · Live</div>
       <h1 class="hero-title">Craft Perfect<br><em>Exam Papers</em></h1>
-      <p class="hero-sub">Board-aligned, syllabus-accurate question papers — generated in under 30 seconds.</p>
+      <p class="hero-sub">Board-aligned, syllabus-accurate question papers in under 30 seconds.</p>
     </div>
 
-    <!-- Live Config Panel -->
+    <!-- Live Config -->
     <div class="config-card glass-card">
       <div class="config-label">Current Paper</div>
       <div class="config-grid">
@@ -75,24 +68,28 @@
       </div>
     </div>
 
-    <!-- Tips -->
-    <div class="tips-card glass-card">
-      <div class="config-label">Pro Tips</div>
-      <ul class="tips-list">
-        <li>Say "include labelled diagrams" for science</li>
-        <li>Ask for step-by-step solutions in maths</li>
-        <li>Specify "follow 2024 board pattern"</li>
-        <li>Hard difficulty = competitive-level rigor</li>
-      </ul>
+    <!-- History Panel -->
+    <div class="history-card glass-card">
+      <div class="history-header">
+        <div class="config-label" style="margin-bottom:0">Recent Papers</div>
+        <button class="clear-history-btn" onclick="clearHistory()" title="Clear history">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+        </button>
+      </div>
+      <div id="historyList" class="history-list">
+        <div class="history-empty">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" opacity=".3"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+          <span>No papers yet</span>
+        </div>
+      </div>
     </div>
 
     <div class="left-credit">by Laxman Nimmagadda · © 2026</div>
   </aside>
 
-  <!-- ════ RIGHT COLUMN — Form ════ -->
+  <!-- ════ RIGHT COLUMN ════ -->
   <main class="right-col">
 
-    <!-- Hint bar -->
     <div class="hint-bar" id="fieldHint">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
       <span id="hintText">Begin by selecting a paper type below.</span>
@@ -123,7 +120,7 @@
       </select>
     </div>
 
-    <!-- STEP 2a — State Board -->
+    <!-- STEP 2a — State -->
     <div class="form-card glass-card collapsed" id="stateCard">
       <div class="card-step">02</div>
       <div class="card-title">Select State</div>
@@ -187,7 +184,7 @@
       </select>
     </div>
 
-    <!-- STEP 4 — Paper Details -->
+    <!-- STEP 4 — Details -->
     <div class="form-card glass-card">
       <div class="card-step">04</div>
       <div class="card-title">Paper Details</div>
@@ -243,8 +240,7 @@
           </div>
           <select id="totalMarks" name="marks" style="display:none">
             <option value="100">100</option><option value="80">80</option>
-            <option value="60">60</option><option value="50">50</option>
-            <option value="25">25</option>
+            <option value="60">60</option><option value="50">50</option><option value="25">25</option>
           </select>
         </div>
         <div class="field-wrap" id="difficultyCard">
@@ -263,21 +259,13 @@
       </div>
     </div>
 
-    <!-- STEP 6 — Instructions + Generate -->
+    <!-- STEP 6 — Instructions -->
     <form id="paperForm" novalidate>
       <div class="form-card glass-card">
         <div class="card-step">06</div>
-        <div class="card-title">
-          Custom Instructions
-          <span class="opt-tag">optional</span>
-        </div>
-        <textarea
-          id="suggestions"
-          name="suggestions"
-          rows="3"
-          class="glass-ta"
-          placeholder="e.g. Include 2 labelled diagrams · Follow AP Board 2024 pattern · Step-by-step solutions for all long answers"
-        ></textarea>
+        <div class="card-title">Custom Instructions <span class="opt-tag">optional</span></div>
+        <textarea id="suggestions" name="suggestions" rows="3" class="glass-ta"
+          placeholder="e.g. Include 2 labelled diagrams · Follow AP Board 2024 pattern · Step-by-step solutions for all long answers"></textarea>
         <label class="toggle-row" for="includeKey">
           <div class="toggle-wrap">
             <input type="checkbox" id="includeKey" name="includeKey" class="toggle-cb">
@@ -289,12 +277,10 @@
           </div>
         </label>
       </div>
-
-      <!-- CTA -->
       <button type="submit" class="cta-btn" id="generateBtn">
         <span class="cta-glow"></span>
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-        Generate &amp; Download PDF
+        Generate Paper
       </button>
       <p class="cta-note">Gemini AI · ~15–30 seconds · No account needed</p>
     </form>
@@ -307,11 +293,11 @@
           Paper Ready
         </div>
         <div class="results-btns">
-          <button class="res-btn primary" onclick="downloadPDF(false)">
+          <button class="res-btn primary" id="dlPaperBtn" onclick="downloadPDF(false)">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
             Download PDF
           </button>
-          <button class="res-btn gold" onclick="downloadPDF(true)">
+          <button class="res-btn gold" id="dlKeyBtn" onclick="downloadPDF(true)">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
             PDF + Answer Key
           </button>
@@ -340,7 +326,7 @@
     </div>
 
   </main>
-</div><!-- /app-shell -->
+</div>
 
 <!-- Loading Overlay -->
 <div id="loadingModal" class="loader-overlay" style="display:none">
@@ -356,7 +342,7 @@
         <svg width="20" height="20" viewBox="0 0 32 32" fill="none"><polygon points="16,2 30,9 30,23 16,30 2,23 2,9" stroke="currentColor" stroke-width="2" fill="none"/><circle cx="16" cy="16" r="4" fill="currentColor"/></svg>
       </div>
     </div>
-    <h3 class="loader-title">Crafting your paper…</h3>
+    <h3 class="loader-title" id="loaderTitle">Crafting your paper…</h3>
     <div class="loader-steps">
       <div class="l-step" id="ls1"><div class="l-dot"></div><span>Analysing syllabus</span></div>
       <div class="l-step" id="ls2"><div class="l-dot"></div><span>Writing questions</span></div>
@@ -366,7 +352,6 @@
   </div>
 </div>
 
-<!-- Toast -->
 <div id="notificationToast" class="toast-msg"></div>
 
 <script src="/static/js/app.js"></script>
