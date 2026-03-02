@@ -600,3 +600,39 @@ body{
   .type-grid{grid-template-columns:1fr}
   .results-header{flex-direction:column;align-items:flex-start;gap:10px}
 }
+
+/* ── Progress Stepper ──────────────────────────────────────── */
+.stepper-card { padding: 14px 16px 12px; }
+.stepper-label {
+  font-family: var(--font-mono); font-size: 9px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: .14em; color: var(--text-c); margin-bottom: 12px;
+}
+.stepper-list { display: flex; flex-direction: column; gap: 2px; }
+.step-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 6px 8px; border-radius: 8px;
+  font-size: 12px; color: var(--text-c);
+  transition: all .2s var(--ease);
+}
+.step-item.active { color: var(--accent-2); background: var(--accent-dim); font-weight: 600; }
+.step-item.done  { color: var(--green); }
+.step-dot {
+  width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+  background: var(--glass-border);
+  transition: all .25s var(--ease);
+}
+.step-item.active .step-dot {
+  background: var(--accent);
+  box-shadow: 0 0 8px var(--accent-glow);
+  animation: pulseGlow 1.4s ease-in-out infinite;
+}
+.step-item.done .step-dot { background: var(--green); }
+
+/* ── Marks Note Banner ─────────────────────────────────────── */
+.marks-note {
+  display: flex; align-items: center; gap: 7px;
+  padding: 8px 12px; border-radius: 8px; margin-bottom: 14px;
+  background: var(--gold-dim); border: 1px solid rgba(255,209,102,.2);
+  font-size: 12px; color: var(--text-b);
+}
+.marks-note strong { color: var(--gold); }

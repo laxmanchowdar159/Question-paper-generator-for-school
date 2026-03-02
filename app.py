@@ -237,18 +237,18 @@ def _process(text: str) -> str:
 # ═══════════════════════════════════════════════════════════════════════
 # COLOURS
 # ═══════════════════════════════════════════════════════════════════════
-# Professional exam paper palette
-C_NAVY  = HexColor("#1a237e")   # Deep navy for header
+# Real exam paper palette — clean, minimal, professional
+C_NAVY  = HexColor("#000000")   # Pure black for headers
 C_STEEL = HexColor("#1a1a1a")   # Near-black for question numbers
 C_BODY  = HexColor("#1a1a1a")   # Body text
-C_GREY  = HexColor("#444444")   # Marks label, dark grey
-C_LIGHT = HexColor("#e8eaf6")   # Section banner background, light indigo tint
-C_RULE  = HexColor("#3949ab")   # Rules/borders, indigo
-C_MARK  = HexColor("#c62828")   # Mark labels, deep red for visibility
-C_KRED  = HexColor("#1a237e")   # Answer key headings, navy
-C_KFILL = HexColor("#f3f4ff")   # Answer key background, very light blue
-C_STEP  = HexColor("#1a1a1a")   # Key steps, body colour
-C_HDR   = HexColor("#1a237e")   # Header band fill
+C_GREY  = HexColor("#555555")   # Marks label
+C_LIGHT = HexColor("#f2f2f2")   # Section banner background — very light grey
+C_RULE  = HexColor("#000000")   # Rules — black
+C_MARK  = HexColor("#000000")   # Mark labels
+C_KRED  = HexColor("#000000")   # Answer key headings
+C_KFILL = HexColor("#f8f8f8")   # Answer key background
+C_STEP  = HexColor("#1a1a1a")   # Key steps
+C_HDR   = HexColor("#000000")   # Header (unused but keep for compat)
 
 
 # ═══════════════════════════════════════════════════════════════════════
@@ -266,35 +266,35 @@ def _styles():
             for k, v in kw.items():
                 setattr(base[name], k, v)
 
-    S("PTitle",    fontName=B, fontSize=16, textColor=white,
-      alignment=TA_CENTER, leading=24, spaceAfter=0, spaceBefore=0)
-    S("PMeta",     fontName=R, fontSize=9, textColor=white,
+    S("PTitle",    fontName=B, fontSize=15, textColor=black,
+      alignment=TA_CENTER, leading=22, spaceAfter=0, spaceBefore=0)
+    S("PMeta",     fontName=R, fontSize=9, textColor=C_BODY,
       alignment=TA_LEFT, leading=13, spaceAfter=0)
-    S("PMetaR",    fontName=R, fontSize=9, textColor=white,
+    S("PMetaR",    fontName=R, fontSize=9, textColor=C_BODY,
       alignment=TA_RIGHT, leading=13, spaceAfter=0)
-    S("PMetaC",    fontName=R, fontSize=9, textColor=white,
+    S("PMetaC",    fontName=R, fontSize=9, textColor=C_BODY,
       alignment=TA_CENTER, leading=13, spaceAfter=0)
-    S("SecBanner", fontName=B, fontSize=10.5, textColor=C_NAVY,
+    S("SecBanner", fontName=B, fontSize=10.5, textColor=black,
       leading=15, spaceAfter=0, spaceBefore=0)
     S("InstrHead", fontName=B, fontSize=9.5, textColor=C_BODY,
       leading=14, spaceAfter=2, spaceBefore=4)
     S("Instr",     fontName=R, fontSize=9.5, textColor=C_BODY,
       leading=14, spaceAfter=2, leftIndent=18, firstLineIndent=-18)
     S("Q",         fontName=R, fontSize=10.5, textColor=C_BODY,
-      alignment=TA_JUSTIFY, leading=16, spaceBefore=5, spaceAfter=1,
+      alignment=TA_JUSTIFY, leading=15, spaceBefore=5, spaceAfter=1,
       leftIndent=22, firstLineIndent=-22)
     S("QCont",     fontName=R, fontSize=10.5, textColor=C_BODY,
-      alignment=TA_JUSTIFY, leading=16, spaceBefore=1, spaceAfter=1, leftIndent=22)
+      alignment=TA_JUSTIFY, leading=15, spaceBefore=1, spaceAfter=1, leftIndent=22)
     S("QSub",      fontName=R, fontSize=10.5, textColor=C_BODY,
-      alignment=TA_JUSTIFY, leading=16, spaceBefore=2, spaceAfter=1,
+      alignment=TA_JUSTIFY, leading=15, spaceBefore=2, spaceAfter=1,
       leftIndent=36, firstLineIndent=-14)
     S("Opt",       fontName=R, fontSize=10, textColor=C_BODY,
       leading=14, spaceAfter=0, leftIndent=0)
-    S("KTitle",    fontName=B, fontSize=14, textColor=white,
-      alignment=TA_CENTER, leading=20, spaceAfter=6, spaceBefore=0)
-    S("KSec",      fontName=B, fontSize=10.5, textColor=C_NAVY,
+    S("KTitle",    fontName=B, fontSize=13, textColor=black,
+      alignment=TA_CENTER, leading=18, spaceAfter=6, spaceBefore=0)
+    S("KSec",      fontName=B, fontSize=10.5, textColor=black,
       leading=14, spaceAfter=2, spaceBefore=6)
-    S("KQ",        fontName=B, fontSize=10.5, textColor=C_BODY,
+    S("KQ",        fontName=B, fontSize=10.5, textColor=black,
       leading=14, spaceAfter=2, spaceBefore=4, leftIndent=24, firstLineIndent=-24)
     S("KStep",     fontName=R, fontSize=10, textColor=C_STEP,
       leading=15, spaceAfter=1, leftIndent=24)
@@ -315,19 +315,18 @@ class ExamCanvas:
         W = A4[0]
         LM, RM = doc.leftMargin, W - doc.rightMargin
         canvas.saveState()
-        canvas.setStrokeColor(HexColor("#1a237e"))
-        canvas.setLineWidth(1.0)
+        canvas.setStrokeColor(HexColor("#000000"))
+        canvas.setLineWidth(0.6)
         canvas.line(LM, A4[1] - 12*mm, RM, A4[1] - 12*mm)
-        canvas.setStrokeColor(HexColor("#3949ab"))
-        canvas.setLineWidth(0.5)
+        canvas.setStrokeColor(HexColor("#888888"))
+        canvas.setLineWidth(0.4)
         canvas.line(LM, 20, RM, 20)
         canvas.setFont(_f("Ital"), 7.5)
-        canvas.setFillColor(HexColor("#3949ab"))
+        canvas.setFillColor(C_GREY)
         if doc.page == 1:
             canvas.drawString(LM, 10,
                 "ExamCraft  ·  Created by Laxman Nimmagadda"
                 "  (if the paper is hard, I am not guilty)")
-        canvas.setFillColor(HexColor("#1a237e"))
         canvas.drawRightString(RM, 10, f"Page {doc.page}")
         canvas.restoreState()
 
@@ -339,13 +338,13 @@ def _sec_banner(text, st, pw):
     p = Paragraph(f'<b>{text}</b>', st["SecBanner"])
     t = Table([[p]], colWidths=[pw])
     t.setStyle(TableStyle([
-        ("BACKGROUND",    (0,0),(-1,-1), HexColor("#e8eaf6")),
-        ("LINEBELOW",     (0,0),(-1,-1), 2.0, HexColor("#3949ab")),
-        ("LINETOP",       (0,0),(-1,-1), 0.5, HexColor("#3949ab")),
-        ("LEFTPADDING",   (0,0),(-1,-1), 10),
+        ("BACKGROUND",    (0,0),(-1,-1), HexColor("#f2f2f2")),
+        ("LINEBELOW",     (0,0),(-1,-1), 0.8, HexColor("#111111")),
+        ("LINETOP",       (0,0),(-1,-1), 0.8, HexColor("#111111")),
+        ("LEFTPADDING",   (0,0),(-1,-1), 8),
         ("RIGHTPADDING",  (0,0),(-1,-1), 8),
-        ("TOPPADDING",    (0,0),(-1,-1), 5),
-        ("BOTTOMPADDING", (0,0),(-1,-1), 5),
+        ("TOPPADDING",    (0,0),(-1,-1), 4),
+        ("BOTTOMPADDING", (0,0),(-1,-1), 4),
     ]))
     return t
 
@@ -487,7 +486,7 @@ def create_exam_pdf(text, subject, chapter, board="",
         return m.group(1).strip() if m else default
 
     h_marks = _pull(r'Total\s*Marks\s*[:/]\s*(\d+)', "100")
-    h_time  = _pull(r'Time\s*(?:Allowed|:)\s*([^\n]+)', "3 Hours 15 Minutes")
+    h_time  = _pull(r'Time\s*(?:Allowed|:)\s*([^\n]+)', "3 Hours")
     h_class = _pull(r'Class\s*[:/]?\s*(\d+\w*)', "")
     h_board = board or _pull(r'Board\s*[:/]\s*([^\n]+)', "")
 
@@ -498,17 +497,17 @@ def create_exam_pdf(text, subject, chapter, board="",
     if disp_chapter:
         title_str += f"  —  {disp_chapter}"
 
-    # ── Navy header band ─────────────────────────────────────────────
     tbl_title = Table(
         [[Paragraph(title_str, st["PTitle"])]],
         colWidths=[PW])
     tbl_title.setStyle(TableStyle([
-        ("BACKGROUND",    (0,0),(-1,-1), C_HDR),
-        ("TOPPADDING",    (0,0),(-1,-1), 10),
+        ("BACKGROUND",    (0,0),(-1,-1), white),
+        ("LINEBELOW",     (0,0),(-1,-1), 1.5, black),
+        ("LINETOP",       (0,0),(-1,-1), 1.5, black),
+        ("TOPPADDING",    (0,0),(-1,-1), 6),
         ("BOTTOMPADDING", (0,0),(-1,-1), 6),
-        ("LEFTPADDING",   (0,0),(-1,-1), 10),
-        ("RIGHTPADDING",  (0,0),(-1,-1), 10),
-        ("ROUNDEDCORNERS", [4, 4, 0, 0]),
+        ("LEFTPADDING",   (0,0),(-1,-1), 0),
+        ("RIGHTPADDING",  (0,0),(-1,-1), 0),
     ]))
 
     left_meta  = "  |  ".join(x for x in [h_board, f"Class {h_class}" if h_class else ""] if x)
@@ -516,19 +515,18 @@ def create_exam_pdf(text, subject, chapter, board="",
     tbl_meta = Table(
         [[Paragraph(left_meta,  st["PMeta"]),
           Paragraph(right_meta, st["PMetaR"])]],
-        colWidths=[PW*0.50, PW*0.50])
+        colWidths=[PW*0.55, PW*0.45])
     tbl_meta.setStyle(TableStyle([
-        ("BACKGROUND",    (0,0),(-1,-1), C_HDR),
-        ("LINEBELOW",     (0,0),(-1,-1), 2.0, HexColor("#ffd600")),
-        ("TOPPADDING",    (0,0),(-1,-1), 4),
-        ("BOTTOMPADDING", (0,0),(-1,-1), 6),
-        ("LEFTPADDING",   (0,0),(-1,-1), 10),
-        ("RIGHTPADDING",  (0,0),(-1,-1), 10),
+        ("BACKGROUND",    (0,0),(-1,-1), white),
+        ("LINEBELOW",     (0,0),(-1,-1), 0.6, HexColor("#888888")),
+        ("TOPPADDING",    (0,0),(-1,-1), 3),
+        ("BOTTOMPADDING", (0,0),(-1,-1), 4),
+        ("LEFTPADDING",   (0,0),(-1,-1), 0),
+        ("RIGHTPADDING",  (0,0),(-1,-1), 0),
         ("VALIGN",        (0,0),(-1,-1), "MIDDLE"),
-        ("ROUNDEDCORNERS", [0, 0, 4, 4]),
     ]))
 
-    elems += [tbl_title, tbl_meta, Spacer(1, 10)]
+    elems += [tbl_title, tbl_meta, Spacer(1, 8)]
 
     tbl_rows    = []
     in_table    = False
@@ -762,13 +760,13 @@ def create_exam_pdf(text, subject, chapter, board="",
         elems.append(PageBreak())
         kt = Table([[Paragraph("ANSWER KEY", st["KTitle"])]], colWidths=[PW])
         kt.setStyle(TableStyle([
-            ("BACKGROUND",    (0,0),(-1,-1), C_HDR),
-            ("LINEBELOW",     (0,0),(-1,-1), 2.5, HexColor("#ffd600")),
-            ("TOPPADDING",    (0,0),(-1,-1), 10),
-            ("BOTTOMPADDING", (0,0),(-1,-1), 10),
-            ("LEFTPADDING",   (0,0),(-1,-1), 10),
+            ("BACKGROUND",    (0,0),(-1,-1), C_KFILL),
+            ("LINEBELOW",     (0,0),(-1,-1), 2.0, black),
+            ("LINETOP",       (0,0),(-1,-1), 2.0, black),
+            ("TOPPADDING",    (0,0),(-1,-1), 8),
+            ("BOTTOMPADDING", (0,0),(-1,-1), 8),
         ]))
-        elems += [kt, Spacer(1, 12)]
+        elems += [kt, Spacer(1, 10)]
 
         key_lines = answer_key.split('\n')
         ki = 0
@@ -1058,49 +1056,95 @@ def build_prompt(class_name, subject, chapter, board, exam_type,
 
 
 def _compute_structure(marks):
-    """Dynamically compute AP/TS-style paper structure for any mark value."""
+    """Compute AP/TS paper structure that EXACTLY matches requested mark total."""
     m = max(10, int(marks))
+
+    # ── Small papers (< 40M): simplified 2-section Part B ─────────────
+    if m < 40:
+        partA = max(4, round(m * 0.20))
+        partB = m - partA
+
+        # Part A — exact budget (1M items)
+        n_mcq   = max(1, round(partA * 0.50))
+        n_fill  = max(1, round(partA * 0.25))
+        n_match = partA - n_mcq - n_fill
+        if n_match < 1:
+            n_match = 1
+            n_fill  = max(1, partA - n_mcq - 1)
+            n_mcq   = partA - n_fill - 1
+        actual_partA = n_mcq + n_fill + n_match
+
+        # Part B — VSQ (2M) + SA (2M each, all compulsory, no choice)
+        n_vsq   = max(1, round(partB * 0.50) // 2)
+        vsq_tot = n_vsq * 2
+        sa_rem  = partB - vsq_tot
+        n_sa_given = max(1, sa_rem // 2)
+        sa_tot  = n_sa_given * 2
+        # absorb any 1M rounding gap into an extra VSQ
+        if vsq_tot + sa_tot < partB:
+            extra = (partB - vsq_tot - sa_tot) // 2
+            n_vsq += extra; vsq_tot = n_vsq * 2
+
+        return dict(
+            m=m, partA=actual_partA, partB=partB, total=m, small=True,
+            n_mcq=n_mcq, n_fill=n_fill, n_match=n_match,
+            n_vsq=n_vsq, vsq_total=vsq_tot,
+            n_sa_given=n_sa_given, n_sa_att=n_sa_given, sa_total=sa_tot, marks_sa=2,
+            n_la_given=0, n_la_att=0, la_total=0,
+            n_app_given=0, n_app_att=0, app_total=0, marks_per_app=0,
+            iv_start=1, iv_end=n_vsq,
+            v_start=n_vsq+1, v_end=n_vsq+n_sa_given,
+            vi_start=0, vi_end=0, vii_start=0, vii_end=0,
+        )
+
+    # ── Full papers (≥ 40M): complete 7-section AP/TS structure ───────
     partA = round(m * 0.20)
     partB = m - partA
 
-    # Part A sections
-    mcq_marks  = round(partA * 0.50)
-    fill_marks = round(partA * 0.25)
-    match_marks = partA - mcq_marks - fill_marks
-    n_mcq   = mcq_marks          # 1 mark each
-    n_fill  = fill_marks         # 1 mark each
-    n_match = max(2, match_marks) # pairs; each pair = 1 mark
+    # Part A — exact (1M per item)
+    n_mcq   = round(partA * 0.50)
+    n_fill  = round(partA * 0.25)
+    n_match = partA - n_mcq - n_fill
+    if n_match < 1:
+        n_match = 1; n_fill = max(1, partA - n_mcq - 1)
+    actual_partA = n_mcq + n_fill + n_match
 
-    # Part B sections (percentage-based, marks per question fixed)
-    vsq_marks  = round(partB * 0.25)
-    sa_marks   = round(partB * 0.20)
-    la_marks   = round(partB * 0.30)
-    app_marks  = partB - vsq_marks - sa_marks - la_marks
+    # Part B — budget-safe, absorb leftover into VSQ
+    vsq_bud = round(partB * 0.25)
+    sa_bud  = round(partB * 0.20)
+    la_bud  = round(partB * 0.30)
+    app_bud = partB - vsq_bud - sa_bud - la_bud
 
-    n_vsq       = max(2, vsq_marks  // 2)       # 2 marks each, all compulsory
-    n_sa_att    = max(2, sa_marks   // 4)       # attempt N
-    n_sa_given  = n_sa_att + 2                  # give N+2
-    n_la_att    = max(1, la_marks   // 6)       # attempt N
+    n_vsq      = max(1, vsq_bud // 2)
+    n_sa_att   = max(1, sa_bud  // 4)
+    n_la_att   = max(1, la_bud  // 6)
+    mpa        = 10 if app_bud >= 10 else 8 if app_bud >= 8 else 4
+    n_app_att  = max(1, app_bud // mpa)
+
+    vsq_tot = n_vsq    * 2
+    sa_tot  = n_sa_att * 4
+    la_tot  = n_la_att * 6
+    app_tot = n_app_att * mpa
+    leftover = partB - (vsq_tot + sa_tot + la_tot + app_tot)
+    # Absorb leftover into VSQ (2M chunks)
+    if leftover >= 2:
+        extra = leftover // 2
+        n_vsq   += extra
+        vsq_tot += extra * 2
+    actual_partB = vsq_tot + sa_tot + la_tot + app_tot
+
+    n_sa_given  = n_sa_att + 2
     n_la_given  = n_la_att + 2
-    marks_per_app = 10 if app_marks >= 10 else 8 if app_marks >= 8 else max(4, (app_marks // 2) * 2)
-    n_app_att   = max(1, app_marks  // marks_per_app)
     n_app_given = n_app_att + 1
 
-    actual_vsq   = n_vsq * 2
-    actual_sa    = n_sa_att * 4
-    actual_la    = n_la_att * 6
-    actual_app   = n_app_att * marks_per_app
-    actual_partB = actual_vsq + actual_sa + actual_la + actual_app
-    actual_total = partA + actual_partB
-
     return dict(
-        m=m, partA=partA, partB=actual_partB, total=actual_total,
+        m=m, partA=actual_partA, partB=actual_partB, total=actual_partA+actual_partB,
+        small=False,
         n_mcq=n_mcq, n_fill=n_fill, n_match=n_match,
-        mcq_marks=mcq_marks, fill_marks=fill_marks, match_marks=match_marks,
-        n_vsq=n_vsq, vsq_total=actual_vsq,
-        n_sa_given=n_sa_given, n_sa_att=n_sa_att, sa_total=actual_sa,
-        n_la_given=n_la_given, n_la_att=n_la_att, la_total=actual_la,
-        n_app_given=n_app_given, n_app_att=n_app_att, marks_per_app=marks_per_app, app_total=actual_app,
+        n_vsq=n_vsq, vsq_total=vsq_tot,
+        n_sa_given=n_sa_given, n_sa_att=n_sa_att, sa_total=sa_tot, marks_sa=4,
+        n_la_given=n_la_given, n_la_att=n_la_att, la_total=la_tot,
+        n_app_given=n_app_given, n_app_att=n_app_att, app_total=app_tot, marks_per_app=mpa,
         iv_start=1, iv_end=n_vsq,
         v_start=n_vsq+1, v_end=n_vsq+n_sa_given,
         vi_start=n_vsq+n_sa_given+1, vi_end=n_vsq+n_sa_given+n_la_given,
@@ -1118,32 +1162,73 @@ def _simple_state_board(subject, chapter, board, cls, marks, difficulty, extra, 
     }.get(difficulty, "25% recall, 40% apply, 25% analyse, 10% evaluate")
 
     s = _compute_structure(marks)
-    actual = s['total']
+    m = s['total']  # exact total
 
-    # Build timing based on marks
-    if actual <= 30:
-        time_str = "1 Hour"
-    elif actual <= 60:
-        time_str = "2 Hours"
-    else:
-        time_str = "3 Hours 15 Minutes"
+    if m <= 30:   time_str = "1 Hour"
+    elif m <= 60: time_str = "2 Hours"
+    else:         time_str = "3 Hours 15 Minutes"
 
     match_word = "pairs" if s['n_match'] != 1 else "pair"
 
+    # --- Small paper: simplified structure ---
+    if s.get('small'):
+        return f"""You are an experienced {board} Class {cls} examiner. Generate a complete, ready-to-print exam paper.
+{extra}
+PAPER DETAILS
+Subject : {subject}
+Chapter : {chap_str}
+Class   : {cls}   Board: {board}
+Total   : {m} marks   Difficulty: {difficulty} ({diff_mix})
+
+STRUCTURE (follow exactly):
+
+PART A — OBJECTIVE ({s['partA']} marks)
+Section I   — {s['n_mcq']} MCQ × 1 mark = {s['n_mcq']} marks  [Q1–Q{s['n_mcq']}]
+Section II  — {s['n_fill']} Fill-in-the-blank × 1 mark = {s['n_fill']} marks
+Section III — 1 Match-the-following ({s['n_match']} {match_word}) = {s['n_match']} marks
+                    Subtotal = {s['partA']} marks
+
+PART B — WRITTEN ({s['partB']} marks)
+Section IV  — {s['n_vsq']} Very Short Answer (ALL compulsory) × 2 marks = {s['vsq_total']} marks
+Section V   — {s['n_sa_given']} Short Answer (ALL compulsory) × 2 marks = {s['sa_total']} marks
+                    Subtotal = {s['partB']} marks
+               GRAND TOTAL = {m} marks ✓
+{math_notation}
+FORMATTING:
+- MCQ: 4 options (A)(B)(C)(D), line ends (   )
+- Fill-blank: __________
+- Match: pipe table with {s['n_match']} data rows
+- All questions about "{chap_str}" only
+- Every question ends with correct [N Mark(s)] tag
+
+After all questions write ANSWER KEY with complete solutions.
+
+BEGIN:
+
+{subject} — {chap_str}
+{board} | Class {cls}   Total Marks: {m}   Time: {time_str}
+
+PART A — OBJECTIVE  ({s['partA']} Marks)
+(Answer on this sheet.)
+
+Section I — Multiple Choice Questions  [1 Mark each]
+"""
+
+    # --- Full paper: complete AP/TS 7-section structure ---
     return f"""You are an experienced {board} Class {cls} examiner. Generate a complete, ready-to-print exam paper.
 {extra}
 PAPER DETAILS
 Subject   : {subject}
 Chapter   : {chap_str}
 Class     : {cls}   Board: {board}
-Total     : {actual} marks   Difficulty: {difficulty} ({diff_mix})
+Total     : {m} marks   Difficulty: {difficulty} ({diff_mix})
 
-STRUCTURE (follow exactly — question counts computed from {actual}-mark blueprint):
+STRUCTURE (follow exactly — scaled from {m}-mark AP/TS blueprint):
 
 PART A — OBJECTIVE ({s['partA']} marks)
-Section I   — {s['n_mcq']} MCQ × 1 mark = {s['mcq_marks']} marks  [Q1–Q{s['n_mcq']}]
-Section II  — {s['n_fill']} Fill-in-the-blank × 1 mark = {s['fill_marks']} marks  [Q{s['n_mcq']+1}–Q{s['n_mcq']+s['n_fill']}]
-Section III — 1 Match-the-following ({s['n_match']} {match_word}) = {s['match_marks']} marks  [Q{s['n_mcq']+s['n_fill']+1}]
+Section I   — {s['n_mcq']} MCQ × 1 mark = {s['n_mcq']} marks  [Q1–Q{s['n_mcq']}]
+Section II  — {s['n_fill']} Fill-in-the-blank × 1 mark = {s['n_fill']} marks  [Q{s['n_mcq']+1}–Q{s['n_mcq']+s['n_fill']}]
+Section III — 1 Match-the-following ({s['n_match']} {match_word}) = {s['n_match']} marks  [Q{s['n_mcq']+s['n_fill']+1}]
                               Subtotal = {s['partA']} marks
 
 PART B — WRITTEN ({s['partB']} marks)
@@ -1152,31 +1237,27 @@ Section V   — {s['n_sa_given']} Short Answer given, attempt any {s['n_sa_att']
 Section VI  — {s['n_la_given']} Long Answer given, attempt any {s['n_la_att']} × 6 marks = {s['la_total']} marks  [Q{s['vi_start']}–Q{s['vi_end']}, each with OR option]
 Section VII — {s['n_app_given']} Application/Problem given, attempt any {s['n_app_att']} × {s['marks_per_app']} marks = {s['app_total']} marks  [Q{s['vii_start']}–Q{s['vii_end']}]
                               Subtotal = {s['partB']} marks
-                         GRAND TOTAL = {actual} marks ✓
+                         GRAND TOTAL = {m} marks ✓
 {math_notation}
 FORMATTING RULES:
-- Every question ends with its mark tag: [1 Mark] [2 Marks] [4 Marks] [6 Marks] [{s['marks_per_app']} Marks]
-- MCQ: exactly 4 options (A)(B)(C)(D), line ends with (   ) for student to write answer
+- Every question ends with correct [N Mark(s)] tag
+- MCQ: exactly 4 options (A)(B)(C)(D), line ends with (   )
 - Fill-blank: use __________ for the blank
-- Match: pipe table with exactly {s['n_match']} data rows:
-  | Group A | Group B |
-  |---|---|
-  | item | match |
+- Match: pipe table with exactly {s['n_match']} data rows
 - Every Section VI question needs an OR alternative
-- Diagrams: write [DIAGRAM: description] on its own line, nothing else
+- Diagrams: write [DIAGRAM: description] on its own line
 - All questions must be about "{chap_str}" only
-- No two questions should test the same thing
 
-After all questions, write:
+After all questions write:
 
 ANSWER KEY
 
-Then give complete answers with full worked solutions.
+Give complete answers with full worked solutions.
 
-BEGIN the paper now. Write the header then Part A directly.
+BEGIN:
 
 {subject} — {chap_str}
-{board} | Class {cls}   Total Marks: {actual}   Time: {time_str}
+{board} | Class {cls}   Total Marks: {m}   Time: {time_str}
 
 PART A — OBJECTIVE  ({s['partA']} Marks)
 (Answer on this sheet. Submit after 30 minutes.)

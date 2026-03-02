@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ExamCraft — AI Exam Paper Generator</title>
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/static/css/style.css">
 </head>
 <body>
@@ -24,7 +24,7 @@
       </svg>
     </div>
     <span class="nav-name">ExamCraft</span>
-    <span class="nav-badge" id="themeLabel">AI</span>
+    <span class="nav-badge">AI</span>
   </div>
   <div class="nav-center">
     <span class="nav-pill">🏛️ AP &amp; TS Boards</span>
@@ -35,7 +35,7 @@
     <div class="nav-theme-group">
       <button class="theme-cycle-btn" onclick="cycleTheme()" title="Change colour theme">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
-        <span id="themeLabel">Violet</span>
+        <span id="themeLabel">Teal</span>
       </button>
       <div class="nav-theme-divider"></div>
       <button class="theme-toggle" id="themeBtn" onclick="toggleDark()" title="Toggle light / dark mode">
@@ -47,15 +47,29 @@
 </nav>
 
 <div class="app-shell">
+  <!-- ── Left Sidebar ── -->
   <aside class="left-col">
     <div class="hero-card glass-card">
       <div class="hero-eyebrow"><span class="pulse-dot"></span>Gemini AI · Live</div>
-      <h1 class="hero-title">Build Board-Perfect<br><em>Exam Papers</em></h1>
-      <p class="hero-sub">AP & TS board-accurate papers and competitive practice sets — AI-generated, scaled to your marks, ready in 60 seconds.</p>
+      <h1 class="hero-title">Build Board-<br>Perfect <em>Exams</em></h1>
+      <p class="hero-sub">AP &amp; TS board-accurate papers scaled to <em>your</em> marks — not always 100.</p>
       <div class="hero-stats">
         <div class="hero-stat"><span class="hero-stat-num">AP·TS</span><span class="hero-stat-lbl">State Boards</span></div>
         <div class="hero-stat"><span class="hero-stat-num">4</span><span class="hero-stat-lbl">Olympiads</span></div>
         <div class="hero-stat"><span class="hero-stat-num">PDF</span><span class="hero-stat-lbl">Export</span></div>
+      </div>
+    </div>
+
+    <!-- Progress Stepper -->
+    <div class="stepper-card glass-card">
+      <div class="stepper-label">Your progress</div>
+      <div class="stepper-list" id="stepperList">
+        <div class="step-item active" id="step-1"><div class="step-dot"></div><span>Paper Type</span></div>
+        <div class="step-item" id="step-2"><div class="step-dot"></div><span>Board / Exam</span></div>
+        <div class="step-item" id="step-3"><div class="step-dot"></div><span>Scope</span></div>
+        <div class="step-item" id="step-4"><div class="step-dot"></div><span>Details</span></div>
+        <div class="step-item" id="step-5"><div class="step-dot"></div><span>Marks &amp; Level</span></div>
+        <div class="step-item" id="step-6"><div class="step-dot"></div><span>Generate</span></div>
       </div>
     </div>
 
@@ -90,6 +104,7 @@
     <div class="left-credit">by Laxman Nimmagadda · © 2026</div>
   </aside>
 
+  <!-- ── Main Form ── -->
   <main class="right-col">
     <div class="hint-bar" id="fieldHint">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
@@ -97,9 +112,9 @@
     </div>
 
     <!-- STEP 1 — Paper Type -->
-    <div class="form-card glass-card">
+    <div class="form-card glass-card" data-step="1">
       <div class="card-step">01</div>
-      <div class="card-title">Paper Type</div>
+      <div class="card-title">What are you preparing for?</div>
       <div class="type-grid">
         <button class="type-tile" id="tile-state" onclick="selectType('state-board')">
           <div class="tile-icon">🏛️</div>
@@ -122,9 +137,9 @@
     </div>
 
     <!-- STEP 2a — State -->
-    <div class="form-card glass-card collapsed" id="stateCard">
+    <div class="form-card glass-card collapsed" id="stateCard" data-step="2">
       <div class="card-step">02</div>
-      <div class="card-title">Select State</div>
+      <div class="card-title">Select your state board</div>
       <div class="field-wrap">
         <label class="field-label">State Board</label>
         <div class="select-shell">
@@ -139,9 +154,9 @@
     </div>
 
     <!-- STEP 2b — Competitive -->
-    <div class="form-card glass-card collapsed" id="competitiveCard">
+    <div class="form-card glass-card collapsed" id="competitiveCard" data-step="2">
       <div class="card-step">02</div>
-      <div class="card-title">Competitive Exam</div>
+      <div class="card-title">Choose your exam</div>
       <div class="field-wrap">
         <label class="field-label">Examination</label>
         <div class="select-shell">
@@ -160,12 +175,11 @@
       </div>
     </div>
 
-    <!-- STEP 3 — Scope (different UI for board vs competitive) -->
-    <div class="form-card glass-card collapsed" id="scopeCard">
+    <!-- STEP 3 — Scope -->
+    <div class="form-card glass-card collapsed" id="scopeCard" data-step="3">
       <div class="card-step">03</div>
       <div class="card-title" id="scopeCardTitle">Paper Scope</div>
 
-      <!-- Board scope: One Chapter / All Chapters -->
       <div id="boardScopeRow" class="scope-row" style="display:none">
         <button class="scope-btn active" id="bscope-single" onclick="selectBoardScope('single')">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
@@ -179,7 +193,6 @@
         </button>
       </div>
 
-      <!-- Competitive scope: One Topic / Full Subject / All Subjects -->
       <div id="compScopeRow" style="display:none">
         <div class="scope-row scope-row--three">
           <button class="scope-btn active" id="cscope-topic" onclick="selectCompScope('topic')">
@@ -199,15 +212,13 @@
           </button>
         </div>
       </div>
-
       <select id="scopeSelect" name="scope" style="display:none">
-        <option value="single">single</option>
-        <option value="all">all</option>
+        <option value="single">single</option><option value="all">all</option>
       </select>
     </div>
 
     <!-- STEP 4 — Details -->
-    <div class="form-card glass-card" id="detailsCard">
+    <div class="form-card glass-card" id="detailsCard" data-step="4">
       <div class="card-step">04</div>
       <div class="card-title">Paper Details</div>
       <div class="three-col" id="detailsCols">
@@ -247,9 +258,13 @@
     </div>
 
     <!-- STEP 5 — Marks & Difficulty -->
-    <div class="form-card glass-card">
+    <div class="form-card glass-card" data-step="5">
       <div class="card-step">05</div>
       <div class="card-title">Marks &amp; Difficulty</div>
+      <div class="marks-note">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        Paper sections scale to match <strong>exactly</strong> what you select
+      </div>
       <div class="two-col">
         <div class="field-wrap" id="marksCard">
           <label class="field-label">Total Marks <span class="marks-auto-hint" id="marksAutoHint"></span></label>
@@ -284,13 +299,13 @@
       </div>
     </div>
 
-    <!-- STEP 6 — Instructions -->
+    <!-- STEP 6 — Generate -->
     <form id="paperForm" novalidate>
-      <div class="form-card glass-card">
+      <div class="form-card glass-card" data-step="6">
         <div class="card-step">06</div>
-        <div class="card-title">Custom Instructions <span class="opt-tag">optional</span></div>
+        <div class="card-title">Final touches <span class="opt-tag">optional</span></div>
         <textarea id="suggestions" name="suggestions" rows="3" class="glass-ta"
-          placeholder="e.g. Focus on numerical problems · Include 2 labelled diagrams · Step-by-step solutions for all long answers"></textarea>
+          placeholder="e.g. Focus on numerical problems · Include labelled diagrams · Step-by-step solutions for all long answers"></textarea>
         <label class="toggle-row" for="includeKey">
           <div class="toggle-wrap">
             <input type="checkbox" id="includeKey" name="includeKey" class="toggle-cb" onchange="updateSidebar()">
@@ -307,7 +322,7 @@
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
         Generate Paper
       </button>
-      <p class="cta-note">Gemini AI · ~30-60s with diagrams · No account needed</p>
+      <p class="cta-note">Gemini AI · ~30–60 s · Sections scale to your exact mark total</p>
     </form>
 
     <!-- Results Panel -->
@@ -352,6 +367,7 @@
   </main>
 </div>
 
+<!-- Loading Modal -->
 <div id="loadingModal" class="loader-overlay" style="display:none">
   <div class="loader-glass">
     <div class="loader-ring">
@@ -378,5 +394,29 @@
 
 <div id="notificationToast" class="toast-msg"></div>
 <script src="/static/js/app.js"></script>
+<script>
+// Update stepper as user progresses
+function updateStepper() {
+  const examType = document.getElementById('examType')?.value;
+  const cls = document.getElementById('class')?.value;
+  const marks = document.getElementById('totalMarks')?.value;
+  let completed = 1;
+  if (examType) completed = 2;
+  if (examType && cls) completed = 4;
+  if (examType && cls && marks) completed = 5;
+  for (let i = 1; i <= 6; i++) {
+    const el = document.getElementById('step-' + i);
+    if (!el) continue;
+    el.classList.toggle('active', i === Math.min(completed + 1, 6));
+    el.classList.toggle('done', i <= completed);
+  }
+}
+// Patch updateSidebar to also update stepper
+const _origUpdateSidebar = window.updateSidebar;
+window.updateSidebar = function() {
+  if (_origUpdateSidebar) _origUpdateSidebar();
+  updateStepper();
+};
+</script>
 </body>
 </html>
