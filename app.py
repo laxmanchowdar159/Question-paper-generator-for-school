@@ -108,23 +108,63 @@ _GREEK = {
     r'\Phi':'Φ', r'\Psi':'Ψ', r'\Omega':'Ω',
 }
 _SYM = {
+    # Arithmetic
     r'\times':'×', r'\div':'÷', r'\pm':'±', r'\mp':'∓',
-    r'\cdot':'·', r'\ldots':'…', r'\cdots':'⋯',
+    r'\cdot':'·', r'\bullet':'•',
+    # Dots
+    r'\ldots':'…', r'\cdots':'⋯', r'\vdots':'⋮', r'\ddots':'⋱',
+    # Calculus/Analysis
     r'\infty':'∞', r'\partial':'∂', r'\nabla':'∇',
-    r'\in':'∈', r'\notin':'∉', r'\subset':'⊂', r'\supset':'⊃',
-    r'\cup':'∪', r'\cap':'∩',
-    r'\leq':'≤', r'\geq':'≥', r'\neq':'≠', r'\approx':'≈',
-    r'\equiv':'≡', r'\sim':'~', r'\propto':'∝',
-    r'\rightarrow':'→', r'\leftarrow':'←', r'\Rightarrow':'⇒',
-    r'\Leftarrow':'⇐', r'\leftrightarrow':'↔',
+    r'\int':'∫', r'\oint':'∮', r'\iint':'∬', r'\iiint':'∭',
+    r'\sum':'Σ', r'\prod':'Π', r'\coprod':'∐',
+    # Sets
+    r'\in':'∈', r'\notin':'∉', r'\ni':'∋',
+    r'\subset':'⊂', r'\subseteq':'⊆', r'\supset':'⊃', r'\supseteq':'⊇',
+    r'\cup':'∪', r'\cap':'∩', r'\emptyset':'∅', r'\varnothing':'∅',
+    r'\setminus':'\\',
+    # Relations
+    r'\leq':'≤', r'\geq':'≥', r'\le':'≤', r'\ge':'≥',
+    r'\neq':'≠', r'\ne':'≠', r'\approx':'≈',
+    r'\equiv':'≡', r'\sim':'~', r'\simeq':'≃', r'\propto':'∝',
+    r'\ll':'≪', r'\gg':'≫',
+    # Arrows
+    r'\rightarrow':'→', r'\leftarrow':'←',
+    r'\Rightarrow':'⇒', r'\Leftarrow':'⇐',
+    r'\leftrightarrow':'↔', r'\Leftrightarrow':'⇔',
     r'\uparrow':'↑', r'\downarrow':'↓',
-    r'\forall':'∀', r'\exists':'∃', r'\neg':'¬',
-    r'\angle':'∠', r'\perp':'⊥', r'\parallel':'∥',
-    r'\triangle':'△', r'\degree':'°', r'\circ':'°',
+    r'\to':'→', r'\gets':'←', r'\mapsto':'↦',
+    r'\implies':'⇒', r'\iff':'⇔',
+    # Logic
+    r'\forall':'∀', r'\exists':'∃', r'\nexists':'∄',
+    r'\neg':'¬', r'\lnot':'¬', r'\land':'∧', r'\lor':'∨',
+    # Geometry
+    r'\angle':'∠', r'\measuredangle':'∡', r'\sphericalangle':'∢',
+    r'\perp':'⊥', r'\parallel':'∥', r'\not\parallel':'∦',
+    r'\triangle':'△', r'\square':'□',
+    r'\cong':'≅', r'\ncong':'≇', r'\sim':'~',
+    # Common
+    r'\degree':'°', r'\circ':'°',
     r'\therefore':'∴', r'\because':'∵',
-    r'\int':'∫', r'\oint':'∮',
-    r'\to':'→', r'\gets':'←',
-    r'\%':'%', r'\$':'$',
+    r'\prime':'′', r'\doubleprime':'″',
+    r'\%':'%', r'\$':'$', r'\#':'#',
+    # Trig (just ensure they pass through cleanly)
+    r'\sin':'sin', r'\cos':'cos', r'\tan':'tan',
+    r'\sec':'sec', r'\csc':'csc', r'\cot':'cot',
+    r'\arcsin':'arcsin', r'\arccos':'arccos', r'\arctan':'arctan',
+    r'\sinh':'sinh', r'\cosh':'cosh', r'\tanh':'tanh',
+    r'\log':'log', r'\ln':'ln', r'\lg':'log',
+    r'\exp':'exp', r'\lim':'lim', r'\max':'max', r'\min':'min',
+    r'\sup':'sup', r'\inf':'inf', r'\det':'det',
+    r'\gcd':'gcd', r'\lcm':'lcm', r'\mod':'mod',
+    r'\deg':'deg', r'\dim':'dim', r'\ker':'ker', r'\rank':'rank',
+    # Number sets
+    r'\mathbb{R}':'ℝ', r'\mathbb{Z}':'ℤ', r'\mathbb{N}':'ℕ',
+    r'\mathbb{Q}':'ℚ', r'\mathbb{C}':'ℂ',
+    # Brackets (just remove the commands, let the chars through)
+    r'\lfloor':'⌊', r'\rfloor':'⌋', r'\lceil':'⌈', r'\rceil':'⌉',
+    r'\langle':'⟨', r'\rangle':'⟩',
+    # Misc
+    r'\hline':'', r'\\':'',
 }
 
 
@@ -280,28 +320,28 @@ def _styles():
       leading=14, spaceAfter=2, spaceBefore=4)
     S("Instr",     fontName=R, fontSize=9.5, textColor=C_BODY,
       leading=14, spaceAfter=2, leftIndent=18, firstLineIndent=-18)
-    S("Q",         fontName=R, fontSize=10.5, textColor=C_BODY,
-      alignment=TA_JUSTIFY, leading=15, spaceBefore=5, spaceAfter=1,
-      leftIndent=22, firstLineIndent=-22)
-    S("QCont",     fontName=R, fontSize=10.5, textColor=C_BODY,
-      alignment=TA_JUSTIFY, leading=15, spaceBefore=1, spaceAfter=1, leftIndent=22)
-    S("QSub",      fontName=R, fontSize=10.5, textColor=C_BODY,
-      alignment=TA_JUSTIFY, leading=15, spaceBefore=2, spaceAfter=1,
-      leftIndent=36, firstLineIndent=-14)
-    S("Opt",       fontName=R, fontSize=10, textColor=C_BODY,
-      leading=14, spaceAfter=0, leftIndent=0)
+    S("Q",         fontName=R, fontSize=11, textColor=C_BODY,
+      alignment=TA_JUSTIFY, leading=16, spaceBefore=6, spaceAfter=2,
+      leftIndent=24, firstLineIndent=-24)
+    S("QCont",     fontName=R, fontSize=11, textColor=C_BODY,
+      alignment=TA_JUSTIFY, leading=16, spaceBefore=1, spaceAfter=2, leftIndent=24)
+    S("QSub",      fontName=R, fontSize=11, textColor=C_BODY,
+      alignment=TA_JUSTIFY, leading=16, spaceBefore=3, spaceAfter=2,
+      leftIndent=38, firstLineIndent=-14)
+    S("Opt",       fontName=R, fontSize=10.5, textColor=C_BODY,
+      leading=15, spaceAfter=1, leftIndent=0)
     S("KTitle",    fontName=B, fontSize=13, textColor=black,
       alignment=TA_CENTER, leading=18, spaceAfter=6, spaceBefore=0)
     S("KSec",      fontName=B, fontSize=10.5, textColor=black,
       leading=14, spaceAfter=2, spaceBefore=6)
     S("KQ",        fontName=B, fontSize=10.5, textColor=black,
       leading=14, spaceAfter=2, spaceBefore=4, leftIndent=24, firstLineIndent=-24)
-    S("KStep",     fontName=R, fontSize=10, textColor=C_STEP,
-      leading=15, spaceAfter=1, leftIndent=24)
-    S("KSub",      fontName=R, fontSize=10, textColor=C_BODY,
-      leading=15, spaceAfter=1, leftIndent=36, firstLineIndent=-12)
-    S("KMath",     fontName=I, fontSize=10, textColor=C_BODY,
-      leading=15, spaceAfter=1, leftIndent=32)
+    S("KStep",     fontName=R, fontSize=10.5, textColor=C_STEP,
+      leading=16, spaceAfter=2, leftIndent=24)
+    S("KSub",      fontName=R, fontSize=10.5, textColor=C_BODY,
+      leading=16, spaceAfter=2, leftIndent=36, firstLineIndent=-12)
+    S("KMath",     fontName=I, fontSize=10.5, textColor=C_BODY,
+      leading=16, spaceAfter=2, leftIndent=32)
     S("DiagLabel", fontName=I, fontSize=9, textColor=C_GREY,
       leading=12, spaceAfter=2, spaceBefore=2)
     return base
@@ -316,17 +356,13 @@ class ExamCanvas:
         LM, RM = doc.leftMargin, W - doc.rightMargin
         canvas.saveState()
         canvas.setStrokeColor(HexColor("#000000"))
-        canvas.setLineWidth(0.6)
+        canvas.setLineWidth(0.5)
         canvas.line(LM, A4[1] - 12*mm, RM, A4[1] - 12*mm)
-        canvas.setStrokeColor(HexColor("#888888"))
+        canvas.setStrokeColor(HexColor("#aaaaaa"))
         canvas.setLineWidth(0.4)
         canvas.line(LM, 20, RM, 20)
-        canvas.setFont(_f("Ital"), 7.5)
+        canvas.setFont(_f("Reg"), 8)
         canvas.setFillColor(C_GREY)
-        if doc.page == 1:
-            canvas.drawString(LM, 10,
-                "ExamCraft  ·  Created by Laxman Nimmagadda"
-                "  (if the paper is hard, I am not guilty)")
         canvas.drawRightString(RM, 10, f"Page {doc.page}")
         canvas.restoreState()
 
@@ -463,8 +499,62 @@ _FIG_JUNK = re.compile(
 # ═══════════════════════════════════════════════════════════════════════
 # MAIN PDF BUILDER
 # ═══════════════════════════════════════════════════════════════════════
+
+def _strip_ai_noise(text: str) -> str:
+    """Remove AI-generated preamble and closing remarks from the paper text."""
+    if not text or not text.strip():
+        return text
+    lines = text.split('\n')
+    _preamble_pat = re.compile(
+        r'^(okay|sure|here|alright|certainly|of course|i\'ve|i have|'
+        r'below is|here is|here\'s|this is|the following|examcraft|'
+        r'created by|note:|please note|disclaimer)',
+        re.IGNORECASE
+    )
+    _real_start = re.compile(
+        r'^(SECTION|PART|Q\.?\s*\d|^\d+[\.\)\]]\s|'
+        r'MATHEMATICS|SCIENCE|PHYSICS|CHEMISTRY|BIOLOGY|SOCIAL|ENGLISH|HINDI|TELUGU|'
+        r'Class\s+\d|Board:|Total\s+Marks)',
+        re.IGNORECASE
+    )
+    _closing_pat = re.compile(
+        r'^(i hope|this completes|do you want|let me know|please let|'
+        r'feel free|if you need|note that|end of paper|---\s*$)',
+        re.IGNORECASE
+    )
+    # Find where real content starts
+    start_idx = 0
+    for i, ln in enumerate(lines[:20]):  # only check first 20 lines for preamble
+        s = ln.strip()
+        if not s:
+            continue
+        if _preamble_pat.match(s):
+            start_idx = i + 1
+        elif _real_start.match(s):
+            start_idx = i
+            break
+        elif re.match(r'^[-=]{3,}\s*$', s):
+            start_idx = i + 1
+    # Trim trailing closing remarks
+    end_idx = len(lines)
+    for i in range(len(lines) - 1, max(len(lines) - 10, 0) - 1, -1):
+        s = lines[i].strip()
+        if not s:
+            end_idx = i
+        elif _closing_pat.match(s) or re.match(r'^[-=]{3,}\s*$', s):
+            end_idx = i
+        else:
+            break
+    return '\n'.join(lines[start_idx:end_idx]).strip()
+
+
 def create_exam_pdf(text, subject, chapter, board="",
                    answer_key=None, include_key=False, diagrams=None) -> bytes:
+
+    # Strip AI preamble/closing noise before parsing
+    text = _strip_ai_noise(text)
+    if answer_key:
+        answer_key = _strip_ai_noise(answer_key)
 
     register_fonts()
     st = _styles()
@@ -1023,7 +1113,7 @@ def build_prompt(class_name, subject, chapter, board, exam_type,
                  difficulty, marks, suggestions):
 
     m   = max(10, int(marks) if str(marks).isdigit() else 100)
-    cls = class_name or "10"
+    cls = str(class_name or "10").strip()
 
     extra = f"\nTEACHER NOTES: {suggestions.strip()}\n" if (suggestions or "").strip() else ""
 
@@ -1034,25 +1124,18 @@ def build_prompt(class_name, subject, chapter, board, exam_type,
         "math", "maths", "science", "physics", "chemistry",
         "biology", "algebra", "geometry", "trigonometry", "statistics"
     ])
-    math_notation = (
-        "\nMATH NOTATION — use $...$ for every expression:\n"
-        "  Powers: $x^{2}$   Fractions: $\\frac{a}{b}$   Roots: $\\sqrt{2}$\n"
-        "  Greek: $\\theta$ $\\alpha$ $\\pi$   Trig: $\\sin\\theta$ $\\cos 60^{\\circ}$\n"
-        "  Subscripts: $H_{2}O$ $v_{0}$   Blanks: __________\n"
-    ) if is_stem else ""
+    math_note = _math_rules() if is_stem else ""
+
+    cls_n = int(re.search(r'\d+', cls).group()) if re.search(r'\d+', cls) else 10
 
     # --- Competitive exam ---
     comp_map = {"ntse": "NTSE", "nso": "NSO", "imo": "IMO", "ijso": "IJSO"}
     for key, val in comp_map.items():
-        if key in board_l:
-            return _simple_competitive(val, subject, chapter, cls, m, difficulty, extra, math_notation)
+        if key in board_l or key == (board or "").lower():
+            return _prompt_competitive(val, subject, chapter, cls, m, difficulty, extra, math_note)
 
-    # --- State board 9-10 ---
-    cls_n = int(re.search(r'\d+', str(cls)).group()) if re.search(r'\d+', str(cls)) else 10
-    if cls_n >= 9:
-        return _simple_state_board(subject, chapter, board, cls, m, difficulty, extra, math_notation)
-    else:
-        return _simple_lower_class(subject, chapter, board, cls, m, difficulty, extra, math_notation)
+    # --- State board: route to full high-quality prompt builders ---
+    return _prompt_ap_ts(subject, chapter, board, cls, cls_n, m, difficulty, extra, math_note)
 
 
 def _compute_structure(marks):
@@ -2007,36 +2090,64 @@ def _prompt_ap_ts_9_10(subject, chap, board, cls_str,
     elif any(k in subj_l for k in ["physics","chemistry","science","biology"]):
         subject_guidance = (
             f"SUBJECT: {subject}  |  CHAPTER: {chap}  |  Class {cls_str}  |  {board}\n\n"
-            f"TOPIC RULE: Every question MUST be exclusively about \"{chap}\".\n"
-            f"* Numericals: Given -> Formula -> Substitution -> Working -> Answer with unit\n"
-            f"* Chemical equations: balanced with state symbols (s) (l) (g) (aq)\n"
-            f"* Diagrams: write [DIAGRAM: full description] only -- no extra text\n"
-            f"* Section VII: full working required, no steps skipped")
+            f"TOPIC RULE: Every question (ALL slots) MUST be exclusively about \"{chap}\".\n"
+            f"Questions from any other chapter = REJECTED.\n\n"
+            f"SECTION QUALITY RULES:\n"
+            f"* MCQ: Wrong options must be plausible — wrong formula, sign error, unit confusion, or step missing.\n"
+            f"  One option should represent the most common student error.\n"
+            f"* Fill-Blanks: Scientific terms, values of constants, names of laws/scientists specific to \"{chap}\".\n"
+            f"* VSQ (2M): One calculation (show formula + substitution) OR define + give one property/example.\n"
+            f"* SA (4M): Include at least one numerical. Format: Given|Find|Formula|Substitution|Answer with unit.\n"
+            f"* LA (6M): Explanation with diagram + 2 examples OR derivation with full working + application.\n"
+            f"* Application (10M): Multi-part practical scenario:\n"
+            f"  Part(a) 3M diagram labelling / identification\n"
+            f"  Part(b) 4M calculation with full working\n"
+            f"  Part(c) 3M conceptual explanation or comparison\n"
+            f"* Chemical equations: MUST be balanced with state symbols (s) (l) (g) (aq).\n"
+            f"* Diagrams: write [DIAGRAM: detailed description] on its own line only.\n"
+            f"* All quantities must have correct SI units in answers.\n"
+            f"ANSWER KEY: VSQ — brief model answer. SA/LA — full worked solutions. Application — complete step-by-step.")
 
     elif any(k in subj_l for k in ["social","history","geography","civics","economics"]):
         subject_guidance = (
             f"SUBJECT: {subject}  |  CHAPTER: {chap}  |  Class {cls_str}  |  {board}\n\n"
-            f"TOPIC RULE: Every question must be about \"{chap}\" only.\n"
-            f"* VSQ: one precise factual answer per mark\n"
-            f"* SA: 4-5 distinct points, sub-headings helpful\n"
-            f"* LA: intro -> 5-6 substantive points -> conclusion\n"
-            f"* Section VII: include one map-marking question (5 specific items on outline map)")
+            f"TOPIC RULE: Every single question (all {s['total'] if False else 'all'} slots) MUST be exclusively about \"{chap}\".\n"
+            f"Questions from any other chapter will cause the paper to be REJECTED.\n\n"
+            f"SECTION QUALITY RULES:\n"
+            f"* MCQ: Test factual recall AND application. Wrong options = plausible confusions from the same chapter.\n"
+            f"* Fill-Blanks: Specific names, dates, terms, or places from \"{chap}\" (not vague fillers).\n"
+            f"* Match: Personalities ↔ Events, Places ↔ Features, Terms ↔ Definitions (all from \"{chap}\").\n"
+            f"* VSQ (2M): State one precise fact OR define one term. Answer in 2-3 sentences. No padding.\n"
+            f"* SA (4M): 4-5 distinct substantive points with sub-headings. Each point ≥ 1 full sentence.\n"
+            f"* LA (6M): Introduction (1 para) → 5-6 developed points → Conclusion. Use headings.\n"
+            f"* Application (10M): Multi-part question: map/data interpretation OR case study from \"{chap}\".\n"
+            f"  Part (a) 3M — short identify/locate, Part (b) 4M — explain/compare, Part (c) 3M — analyse/evaluate.\n"
+            f"ANSWER KEY: VSQ and SA — complete model answers. LA — structured key points. Application — full working.")
 
     elif "english" in subj_l:
         subject_guidance = (
             f"SUBJECT: English  |  {board} Class {cls_str}\n"
             f"NOTE: English papers have NO Part A (no objective section).\n"
-            f"Full 80-mark written paper:\n"
-            f"  Section A -- Reading Comprehension (20 marks): unseen passage + 5 questions\n"
-            f"  Section B -- Writing (20 marks): formal letter OR essay OR notice/report\n"
-            f"  Section C -- Grammar (20 marks): gap-fill, transformation, editing\n"
-            f"  Section D -- Literature (40 marks): prescribed {board} Class {cls_str} texts\n"
-            f"DO NOT generate Part A for English.")
+            f"Full {s['partB'] if False else '80'}-mark written paper:\n"
+            f"  Section A -- Reading Comprehension (20 marks): unseen passage (approx 300 words) + 5 comprehension questions\n"
+            f"  Section B -- Writing Skills (20 marks):\n"
+            f"    -- Formal letter OR Notice OR Report (10 marks) + Essay/Article/Speech (10 marks)\n"
+            f"  Section C -- Grammar & Vocabulary (20 marks):\n"
+            f"    -- Gap-fill (5 marks), Sentence transformation (5 marks), Word forms/Error correction (10 marks)\n"
+            f"  Section D -- Literature (40 marks): Based on prescribed {board} Class {cls_str} textbooks\n"
+            f"    -- Short answer from prose/poem (5×2M=10), Long answer prose (1×6M=6), Poetry analysis (1×4M=4),\n"
+            f"       Character sketch/Theme (1×6M=6), Long answer drama/supplementary (1×6M=6+8=14 marks)\n"
+            f"ANSWER KEY: Full model answers for all sections including model letter/essay.\n"
+            f"DO NOT generate Part A objective section for English.")
 
     else:
         subject_guidance = (
             f"SUBJECT: {subject}  |  CHAPTER: {chap}  |  Class {cls_str}  |  {board}\n"
-            f"TOPIC RULE: Every question must be about \"{chap}\" as per the {board} Class {cls_str} textbook.")
+            f"TOPIC RULE: Every question must be exclusively about \"{chap}\" as per the {board} Class {cls_str} textbook.\n"
+            f"* MCQ wrong options must come from plausible student errors on this topic.\n"
+            f"* VSQ: define terms, state facts, write formulae.\n"
+            f"* SA/LA: structured answers with headings and specific examples from the chapter.\n"
+            f"* Application: multi-part practical/case-study question.")
 
     s = _compute_structure(user_marks)
     actual = s['total']
@@ -2105,11 +2216,25 @@ VERIFY BEFORE OUTPUTTING:
   ALL questions about "{chap}" -- zero from other chapters
   Marks: {s['mcq_marks']}+{s['fill_marks']}+{s['match_marks']}+{s['vsq_total']}+{s['sa_total']}+{s['la_total']}+{s['app_total']} = {actual}
 
-ANSWER KEY FORMAT (write after all questions, on a new page):
-Write "ANSWER KEY" then give complete solutions for all sections.
-Full step-by-step working for Sections IV-VII.
+ANSWER KEY FORMAT (write after all questions, separated by a page break line):
+Write "ANSWER KEY" then give COMPLETE solutions for ALL sections.
+  * Section I: Answer only e.g. "1. (B)  2. (A)  3. (C) ..."
+  * Section II: The exact fill answer.
+  * Section III: All correct pairs listed.
+  * Section IV: 2-4 sentence model answer or worked steps.
+  * Section V: Full structured model answer with headings.
+  * Section VI: Full answer with all steps / sub-parts.
+  * Section VII: Complete step-by-step working, every sub-part answered.
 
-BEGIN. No preamble. Write paper header then Part A directly.
+QUALITY MANDATE:
+  * Questions must test UNDERSTANDING, not just rote memorisation.
+  * At least 1 question per section must involve applying the concept to a new situation.
+  * MCQ distractors must be wrong for a specific, nameable reason (not just random).
+  * SA and LA questions must demand more than textbook reproduction.
+  * Application/VII questions must be realistic, multi-step scenarios.
+  * Every value in numericals must have correct units.
+
+BEGIN. No preamble. No meta-commentary. Start with the paper header immediately.
 
 {subject} -- {chap}
 {board} | Class {cls_str}   Total Marks: {actual}   Time: {time_str}
